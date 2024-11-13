@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/gestoteam
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: admin
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+# Configuración de Swagger
+swagger:
+  enabled: true
+  title: Gestoteam
+  description: API de la aplicación Gestoteam
+  version: 1.0
+  license:
+    name: Apache License Version 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  base-package: com.gestoteam.controller
+
+audit:
+  secret-key: "b7E3aX8Zp4Q2r9Wc"
+
