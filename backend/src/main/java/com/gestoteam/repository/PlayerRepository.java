@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PlayerRepository extends JpaRepository<Player, Long> {
+
     List<Player> findByDeletedFalse();
+
     Optional<Player> findByIdAndDeletedFalse(Long id);
 }

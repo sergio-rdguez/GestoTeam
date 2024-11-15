@@ -12,6 +12,5 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleInvalidAuditException(InvalidAuditException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Audit inválido, usuario no autorizado");
     }
-    
-    // Puedes agregar otros manejadores para diferentes excepciones
+
 }

@@ -1,6 +1,7 @@
 package com.gestoteam.model;
 
 import javax.persistence.*;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -15,6 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 public class Team {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -23,10 +26,16 @@ public class Team {
 
     private String description;
 
-    private String ownerId;
+    private String location;
+
+    private String division;
+
+    @ManyToOne
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Player> players;
+    private List<Player> players = new ArrayList<>();
 
     @CreatedDate
     @Column(updatable = false)
@@ -34,6 +43,8 @@ public class Team {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    private String ownerId;
 
     private Boolean deleted = false;
 }

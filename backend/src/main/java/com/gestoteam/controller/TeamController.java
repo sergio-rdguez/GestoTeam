@@ -3,22 +3,23 @@ package com.gestoteam.controller;
 import com.gestoteam.dto.request.TeamRequest;
 import com.gestoteam.dto.response.TeamResponse;
 import com.gestoteam.service.TeamService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/teams")
+@RequiredArgsConstructor
 public class TeamController {
 
-    @Autowired
-    private TeamService teamService;
+    private final TeamService teamService;
 
     @GetMapping
-    public List<TeamResponse> getAllTeams(@RequestHeader String audit) {
-        return teamService.getAllTeams(audit);
+    public ResponseEntity<List<TeamResponse>> getAllTeams(@RequestHeader String audit) {
+        return ResponseEntity.ok(teamService.getAllTeams(audit));
     }
 
     @GetMapping("/{id}")
@@ -29,12 +30,13 @@ public class TeamController {
     }
 
     @PostMapping
-    public TeamResponse createTeam(@RequestBody TeamRequest teamRequest, @RequestHeader String audit) {
-        return teamService.createTeam(teamRequest, audit);
+    public ResponseEntity<TeamResponse> createTeam(@Valid @RequestBody TeamRequest teamRequest, @RequestHeader String audit) {
+        return ResponseEntity.ok(teamService.createTeam(teamRequest, audit));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TeamResponse> updateTeam(@PathVariable Long id, @RequestBody TeamRequest teamRequest, @RequestHeader String audit) {
+    public ResponseEntity<TeamResponse> updateTeam(
+            @PathVariable Long id, @RequestBody TeamRequest teamRequest, @RequestHeader String audit) {
         return ResponseEntity.ok(teamService.updateTeam(id, teamRequest, audit));
     }
 

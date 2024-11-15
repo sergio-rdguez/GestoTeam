@@ -1,5 +1,8 @@
 package com.gestoteam.model;
 
+import com.gestoteam.enums.PlayerStatus;
+import com.gestoteam.enums.Position;
+
 import javax.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,15 +19,33 @@ import java.time.LocalDateTime;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 public class Player {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private String name;
-    private String position;
+
+    private String surnameFirst;
+
+    private String surnameSecond;
+
+    @Transient
+    private String fullName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Position position;
+
+    @Column(nullable = false)
     private int number;
+
+    @Column(nullable = false)
     private int age;
-    private String status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PlayerStatus status;
 
     @CreatedDate
     @Column(updatable = false)
@@ -36,6 +57,13 @@ public class Player {
     private Boolean deleted = false;
 
     @ManyToOne
-    @JoinColumn(name = "team_id")
+    @JoinColumn(name = "team_id", nullable = false)
     private Team team;
+
+    @PostLoad
+    @PostPersist
+    @PostUpdate
+    public void calculateFullName() {
+        this.fullName = String.join(" ", name, surnameFirst, surnameSecond != null ? surnameSecond : "").trim();
+    }
 }

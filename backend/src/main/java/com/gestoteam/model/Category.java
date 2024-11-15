@@ -5,23 +5,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-import java.time.LocalDate;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class Injury {
+public class Category {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "player_id")
-    private Player player;
+    @Column(nullable = false, unique = true)
+    private String code;
 
-    private LocalDate startDate;
-    private LocalDate estimatedEndDate;
-    private String type;
-    private String observations;
+    @Column(nullable = false, unique = true)
+    private String name;
 }
