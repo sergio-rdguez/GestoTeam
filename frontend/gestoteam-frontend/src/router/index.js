@@ -1,7 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import MainLayout from '@/layouts/MainLayout.vue';
-import TeamsPage from '@/pages/TeamsPage.vue';
-import AddTeamPage from '@/pages/AddTeamPage.vue';
+import TeamsPage from '@/pages/Team/TeamsPage.vue';
+import AddTeamPage from '@/pages/Team/AddTeamPage.vue';
+import TeamDetails from '@/pages/Team/TeamDetails.vue';
+import AddPlayer from '@/pages/player/AddPlayer.vue'
 
 const routes = [
   {
@@ -9,8 +11,10 @@ const routes = [
     component: MainLayout,
     children: [
       { path: '', redirect: '/teams' },
-      { path: '/teams', component: TeamsPage },
+      { path: '/teams', name: 'Teams', component: TeamsPage },
       { path: '/teams/add', component: AddTeamPage },
+      { path: '/teams/:id', name: 'TeamDetails', component: TeamDetails },
+      { path: '/teams/:teamId/add-player', name: 'AddPlayer', component: AddPlayer,},
     ],
   },
 ];

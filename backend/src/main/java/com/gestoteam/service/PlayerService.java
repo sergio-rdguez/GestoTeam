@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -98,4 +99,20 @@ public class PlayerService {
         playerRepository.save(player);
         log.info("Jugador eliminado correctamente");
     }
+
+    public List<PlayerResponse> getPlayersByTeamId(Long teamId, String audit) {
+        Audit auditInfo = validationUtil.validateAudit(audit);
+        log.info("Obteniendo jugadores del equipo con id: {} para el usuario: {}", teamId, auditInfo.getUser());
+
+        Team team = teamRepository.findByIdAndOwnerIdAndDeletedFalse(teamId, auditInfo.getUser())
+                .orElseThrow(() -> new RuntimeException("Equipo no encontrado con ID: " + teamId));
+        validationUtil.validateOwner(auditInfo.getUser(), team);
+
+        return playerRepository.findByTeamIdAndDeletedFalse(teamId)
+                .stream()
+                .sorted(Comparator.comparing(player -> player.getPosition().getOrder()))
+                .map(player -> modelMapper.map(player, PlayerResponse.class))
+                .collect(Collectors.toList());
+    }
+
 }

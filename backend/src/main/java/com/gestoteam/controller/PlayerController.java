@@ -46,4 +46,9 @@ public class PlayerController {
     public void deletePlayer(@PathVariable Long id, @RequestHeader String audit) {
         playerService.deletePlayer(id, audit);
     }
+
+    @GetMapping("/team/{teamId}")
+    public List<PlayerResponse> getPlayersByTeamId(@PathVariable Long teamId, @RequestHeader("audit") String audit) {
+        return playerService.getPlayersByTeamId(teamId, audit);
+    }
 }
