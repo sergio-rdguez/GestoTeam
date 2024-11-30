@@ -11,7 +11,9 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 
 @Data
 @NoArgsConstructor
@@ -40,7 +42,7 @@ public class Player {
     @Column(nullable = false)
     private int number;
 
-    @Column(nullable = false)
+    @Transient
     private int age;
 
     @Enumerated(EnumType.STRING)
@@ -56,6 +58,9 @@ public class Player {
 
     private Boolean deleted = false;
 
+    @Column(nullable = false)
+    private LocalDate birthDate;
+
     @ManyToOne
     @JoinColumn(name = "team_id", nullable = false)
     private Team team;
@@ -63,7 +68,20 @@ public class Player {
     @PostLoad
     @PostPersist
     @PostUpdate
-    public void calculateFullName() {
+    public void calculateFields() {
+        calculateFullName();
+        calculateAge();
+    }
+
+    private void calculateFullName() {
         this.fullName = String.join(" ", name, surnameFirst, surnameSecond != null ? surnameSecond : "").trim();
+    }
+
+    private void calculateAge() {
+        if (birthDate != null) {
+            this.age = Period.between(birthDate, LocalDate.now()).getYears();
+        } else {
+            this.age = 0;
+        }
     }
 }

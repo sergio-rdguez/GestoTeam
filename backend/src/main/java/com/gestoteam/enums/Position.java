@@ -11,7 +11,8 @@ public enum Position {
     MCO("Medio Centro Ofensivo", 7),
     ED("Extremo Derecho", 8),
     EI("Extremo Izquierdo", 9),
-    DC("Delantero Centro", 10);
+    DC("Delantero Centro", 10),
+    NA("No Aplica", 11);
 
     private final String descripcion;
     private final int order;

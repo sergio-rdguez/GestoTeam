@@ -1,7 +1,7 @@
 <template>
-    <div class="add-player-page">
-        <h2>Añadir Jugador</h2>
-        <form @submit.prevent="addPlayer">
+    <div class="player-form-page">
+        <h2>{{ isEditMode ? "Editar Jugador" : "Añadir Jugador" }}</h2>
+        <form @submit.prevent="submitForm">
             <!-- Nombre -->
             <div class="form-group">
                 <label for="name">Nombre</label>
@@ -20,10 +20,10 @@
                 <input type="text" v-model="player.surnameSecond" id="surnameSecond" required />
             </div>
 
-            <!-- Edad -->
+            <!-- Fecha de Nacimiento -->
             <div class="form-group">
-                <label for="age">Edad</label>
-                <input type="number" v-model="player.age" id="age" min="1" required />
+                <label for="birthDate">Fecha de Nacimiento</label>
+                <input type="date" v-model="player.birthDate" id="birthDate" required />
             </div>
 
             <!-- Número -->
@@ -55,12 +55,11 @@
             </div>
 
             <!-- Botones -->
-            <button type="submit" class="btn btn-primary">Guardar</button>
+            <button type="submit" class="btn btn-primary">{{ isEditMode ? "Guardar Cambios" : "Guardar" }}</button>
             <button type="button" @click="cancel" class="btn btn-secondary">Cancelar</button>
         </form>
     </div>
 </template>
-
 <script>
 import apiClient from "@/services/api";
 import { getAudit } from "@/services/audit";
@@ -69,10 +68,11 @@ export default {
     data() {
         return {
             player: {
+                id: null,
                 name: "",
                 surnameFirst: "",
                 surnameSecond: "",
-                age: null,
+                birthDate: null,
                 number: null,
                 position: "",
                 status: "",
@@ -80,47 +80,62 @@ export default {
             },
             positions: [], // Lista de posiciones desde el backend
             statuses: [], // Lista de estados desde el backend
+            isEditMode: false, // Determina si estamos en modo edición
         };
+    },
+    created() {
+        this.isEditMode = !!this.$route.params.id; // Detecta si estamos editando basado en el ID
+        this.fetchEnums();
+        if (this.isEditMode) {
+            this.fetchPlayer();
+        }
     },
     methods: {
         async fetchEnums() {
             try {
-                // Obtener posiciones
-                const positionsResponse = await apiClient.get("/enums/positions");
+                const [positionsResponse, statusesResponse] = await Promise.all([
+                    apiClient.get("/enums/positions"),
+                    apiClient.get("/enums/player-status"),
+                ]);
                 this.positions = positionsResponse.data;
-
-                // Obtener estados
-                const statusesResponse = await apiClient.get("/enums/player-status");
                 this.statuses = statusesResponse.data;
             } catch (error) {
                 console.error("Error al cargar enums:", error);
                 alert("No se pudieron cargar las posiciones o estados. Intenta recargar la página.");
             }
         },
-        async addPlayer() {
+        async fetchPlayer() {
             try {
-                const audit = getAudit(); // Generar el audit dinámicamente
-                await apiClient.post("/players", this.player, {
-                    headers: { audit },
-                });
-                this.$router.push({ name: "TeamDetails", params: { id: this.player.teamId } });
+                const playerId = this.$route.params.id;
+                const response = await apiClient.get(`/players/${playerId}`);
+                this.player = { ...response.data, teamId: response.data.team?.id || this.player.teamId };
             } catch (error) {
-                console.error("Error al añadir jugador:", error);
-                alert("No se pudo añadir el jugador. Inténtalo de nuevo.");
+                console.error("Error al cargar el jugador:", error);
+                alert("No se pudo cargar el jugador. Intenta recargar la página.");
+            }
+        },
+        async submitForm() {
+            try {
+                const audit = getAudit();
+                if (this.isEditMode) {
+                    await apiClient.put(`/players/${this.player.id}`, this.player, { headers: { audit } });
+                    this.$router.push({ name: "PlayerDetails", params: { id: this.player.id } });
+                } else {
+                    await apiClient.post("/players", this.player, { headers: { audit } });
+                    this.$router.push({ name: "TeamPlayers", params: { id: this.player.teamId } });
+                }
+            } catch (error) {
+                console.error("Error al guardar el jugador:", error);
             }
         },
         cancel() {
             this.$router.push({ name: "TeamDetails", params: { id: this.player.teamId } });
         },
     },
-    mounted() {
-        this.fetchEnums(); // Cargar posiciones y estados al montar el componente
-    },
 };
 </script>
-
 <style scoped>
-.add-player-page {
+.player-form-page {
     padding: 20px;
     font-family: 'Arial', sans-serif;
     background: #f9f9f9;

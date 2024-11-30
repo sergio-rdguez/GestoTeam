@@ -14,4 +14,6 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
 
     List<Player> findByTeamIdAndDeletedFalse(Long teamId);
 
+    long countByTeamIdAndDeletedFalse(Long teamId);
+
 }

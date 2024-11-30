@@ -2,10 +2,9 @@ package com.gestoteam.service;
 
 import com.gestoteam.dto.request.TeamRequest;
 import com.gestoteam.dto.response.TeamResponse;
-import com.gestoteam.exception.InvalidAuditException;
+import com.gestoteam.exception.GestoServiceException;
 import com.gestoteam.model.Team;
 import com.gestoteam.repository.TeamRepository;
-import com.gestoteam.util.AuditUtil;
 import com.gestoteam.dto.Audit;
 import com.gestoteam.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +29,7 @@ public class TeamService {
         Audit auditInfo = validationUtil.validateAudit(audit);
         log.info("Obteniendo todos los equipos para el usuario: {}", auditInfo.getUser());
 
-        return teamRepository.findByOwnerIdAndDeletedFalse(auditInfo.getUser())
+        List<TeamResponse> teams = teamRepository.findByOwnerIdAndDeletedFalse(auditInfo.getUser())
                 .stream()
                 .map(team -> {
                     TeamResponse response = new TeamResponse();
@@ -39,25 +38,29 @@ public class TeamService {
                     response.setDescription(team.getDescription());
                     response.setLocation(team.getLocation());
                     response.setDivision(team.getDivision());
-                    response.setCategoryName(team.getCategory().getName());
+                    response.setCategory(team.getCategory().getName());
                     return response;
                 })
                 .collect(Collectors.toList());
+
+        log.info("Se encontraron {} equipos para el usuario: {}", teams.size(), auditInfo.getUser());
+        return teams;
     }
 
     public Optional<TeamResponse> getTeamById(Long id, String audit) {
         Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Obteniendo el equipo con id: {} para el usuario: {}", id, auditInfo.getUser());
+        log.info("Obteniendo el equipo con ID: {} para el usuario: {}", id, auditInfo.getUser());
 
         return teamRepository.findByIdAndOwnerIdAndDeletedFalse(id, auditInfo.getUser())
                 .map(team -> {
+                    log.info("Equipo con ID: {} encontrado para el usuario: {}", id, auditInfo.getUser());
                     TeamResponse response = new TeamResponse();
                     response.setId(team.getId());
                     response.setName(team.getName());
                     response.setDescription(team.getDescription());
                     response.setLocation(team.getLocation());
                     response.setDivision(team.getDivision());
-                    response.setCategoryName(team.getCategory().getName());
+                    response.setCategory(team.getCategory().getName());
                     return response;
                 });
     }
@@ -69,39 +72,56 @@ public class TeamService {
         Team team = modelMapper.map(teamRequest, Team.class);
         team.setOwnerId(auditInfo.getUser());
 
-        Team savedTeam = teamRepository.save(team);
-        log.info("Equipo creado con id: {}", savedTeam.getId());
-        return modelMapper.map(savedTeam, TeamResponse.class);
+        try {
+            Team savedTeam = teamRepository.save(team);
+            log.info("Equipo creado con ID: {} por el usuario: {}", savedTeam.getId(), auditInfo.getUser());
+            return modelMapper.map(savedTeam, TeamResponse.class);
+        } catch (Exception e) {
+            log.error("Error al crear el equipo para el usuario: {}", auditInfo.getUser(), e);
+            throw new GestoServiceException("Error al crear el equipo. Por favor, inténtelo más tarde.");
+        }
     }
 
     public TeamResponse updateTeam(Long id, TeamRequest teamRequest, String audit) {
         Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Actualizando el equipo con id: {} para el usuario: {}", id, auditInfo.getUser());
+        log.info("Actualizando el equipo con ID: {} para el usuario: {}", id, auditInfo.getUser());
 
         return teamRepository.findByIdAndOwnerIdAndDeletedFalse(id, auditInfo.getUser())
                 .map(team -> {
                     modelMapper.map(teamRequest, team);
-                    Team updatedTeam = teamRepository.save(team);
-                    log.info("Equipo actualizado con id: {}", updatedTeam.getId());
-                    return modelMapper.map(updatedTeam, TeamResponse.class);
+                    team.setId(id);
+
+                    try {
+                        Team updatedTeam = teamRepository.save(team);
+                        log.info("Equipo con ID: {} actualizado correctamente para el usuario: {}", id, auditInfo.getUser());
+                        return modelMapper.map(updatedTeam, TeamResponse.class);
+                    } catch (Exception e) {
+                        log.error("Error al actualizar el equipo con ID: {} para el usuario: {}", id, auditInfo.getUser(), e);
+                        throw new GestoServiceException("Error al actualizar el equipo. Por favor, inténtelo más tarde.");
+                    }
                 })
                 .orElseThrow(() -> {
-                    log.warn("Equipo no encontrado o acceso no autorizado para el id de equipo: {}", id);
-                    return new RuntimeException("Equipo no encontrado o no tienes permisos para acceder a él");
+                    log.warn("Equipo con ID: {} no encontrado o no pertenece al usuario: {}", id, auditInfo.getUser());
+                    throw new GestoServiceException("Equipo no encontrado o no tienes permisos para acceder a él.");
                 });
     }
 
     public void deleteTeam(Long id, String audit) {
         Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Eliminando el equipo con id: {} para el usuario: {}", id, auditInfo.getUser());
+        log.info("Eliminando el equipo con ID: {} para el usuario: {}", id, auditInfo.getUser());
 
         teamRepository.findByIdAndOwnerId(id, auditInfo.getUser()).ifPresentOrElse(team -> {
             team.setDeleted(true);
-            teamRepository.save(team);
-            log.info("Equipo con id: {} marcado como eliminado", id);
+            try {
+                teamRepository.save(team);
+                log.info("Equipo con ID: {} eliminado correctamente por el usuario: {}", id, auditInfo.getUser());
+            } catch (Exception e) {
+                log.error("Error al eliminar el equipo con ID: {} para el usuario: {}", id, auditInfo.getUser(), e);
+                throw new GestoServiceException("Error al eliminar el equipo. Por favor, inténtelo más tarde.");
+            }
         }, () -> {
-            log.warn("Equipo con id: {} no encontrado o acceso no autorizado", id);
-            throw new RuntimeException("Equipo no encontrado o no tienes permisos para acceder a él");
+            log.warn("Equipo con ID: {} no encontrado o no pertenece al usuario: {}", id, auditInfo.getUser());
+            throw new GestoServiceException("Equipo no encontrado o no tienes permisos para acceder a él.");
         });
     }
 }

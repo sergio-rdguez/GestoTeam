@@ -21,6 +21,6 @@ public class TeamRequest {
     @Size(max = 30, message = "La división no puede superar los 30 caracteres")
     private String division;
 
-    @NotNull(message = "El ID de la categoría es obligatorio")
-    private Long categoryId;
+    @NotNull(message = "La Categoría es obligatoria")
+    private String category;
 }

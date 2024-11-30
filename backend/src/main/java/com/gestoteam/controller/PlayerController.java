@@ -2,6 +2,7 @@ package com.gestoteam.controller;
 
 import com.gestoteam.dto.request.PlayerRequest;
 import com.gestoteam.dto.response.PlayerResponse;
+import com.gestoteam.dto.response.TeamPlayerSummaryResponse;
 import com.gestoteam.service.PlayerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -48,7 +49,9 @@ public class PlayerController {
     }
 
     @GetMapping("/team/{teamId}")
-    public List<PlayerResponse> getPlayersByTeamId(@PathVariable Long teamId, @RequestHeader("audit") String audit) {
+    public TeamPlayerSummaryResponse getPlayersByTeamId(@PathVariable Long teamId,
+                                                        @RequestHeader("audit") String audit) {
         return playerService.getPlayersByTeamId(teamId, audit);
     }
+
 }

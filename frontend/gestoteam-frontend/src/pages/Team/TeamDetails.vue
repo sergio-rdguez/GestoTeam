@@ -1,35 +1,45 @@
 <template>
   <div class="team-details-page">
     <div v-if="loading" class="loading-message">
-      <p>Cargando...</p>
+      <p>Cargando detalles del equipo...</p>
     </div>
-
     <div v-else>
       <!-- Encabezado del equipo -->
       <div class="team-header">
-        <h2>{{ team.name }}</h2>
-        <p class="division">División: <strong>{{ team.division }}</strong></p>
-        <div class="actions">
-          <button @click="goBack" class="btn btn-secondary">Volver a Mis Equipos</button>
-          <button @click="addPlayer" class="btn btn-primary">Añadir Jugador</button>
-        </div>
+        <h2 class="team-name">{{ team.name }}</h2>
+        <p class="team-division">División: <strong>{{ team.division }}</strong></p>
       </div>
 
-      <!-- Lista de jugadores -->
-      <div class="players-section">
-        <h3 class="players-title">Jugadores</h3>
-        <div class="player-list" v-if="players.length > 0">
-          <div v-for="player in players" :key="player.id" class="player-card">
-            <div class="player-info">
-              <h4 class="player-name">{{ player.fullName }}</h4>
-              <p class="player-details">{{ player.position }} | #{{ player.number }}</p>
-            </div>
-            <div class="player-status">
-              <span :class="['status-label', player.status.toLowerCase()]">{{ player.status }}</span>
-            </div>
-          </div>
+      <!-- Navegación a las secciones -->
+      <div class="team-navigation">
+        <router-link :to="{ name: 'TeamPlayers', params: { id: team.id } }" class="nav-item">
+          Jugadores
+        </router-link>
+        <!--
+        <router-link :to="{ name: 'TeamStatistics', params: { id: team.id } }" class="nav-item">
+          Estadísticas
+        </router-link>
+        <router-link :to="{ name: 'TeamMatches', params: { id: team.id } }" class="nav-item">
+          Próximos Partidos
+        </router-link>
+        <router-link :to="{ name: 'TeamNotifications', params: { id: team.id } }" class="nav-item">
+          Notificaciones
+        </router-link>
+        <router-link :to="{ name: 'TeamTrainings', params: { id: team.id } }" class="nav-item">
+          Entrenamientos
+        </router-link>
+        -->
+      </div>
+
+      <!-- FAB Actions -->
+      <div class="fab-container">
+        <button class="fab" @click="toggleFabMenu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div v-if="showFabMenu" class="fab-actions">
+          <button @click="goBack" class="fab-action">Volver</button>
+          <button @click="editTeam" class="fab-action">Editar Equipo</button>
         </div>
-        <p v-else class="no-players-message">No hay jugadores en este equipo.</p>
       </div>
     </div>
   </div>
@@ -42,8 +52,8 @@ export default {
   data() {
     return {
       team: null,
-      players: [],
       loading: true,
+      showFabMenu: false, // Controla el estado del FAB
     };
   },
   methods: {
@@ -52,20 +62,20 @@ export default {
         const teamId = this.$route.params.id;
         const response = await apiClient.get(`/teams/${teamId}`);
         this.team = response.data;
-
-        const playersResponse = await apiClient.get(`/players/team/${teamId}`);
-        this.players = playersResponse.data;
       } catch (error) {
         console.error("Error al cargar los detalles del equipo:", error);
       } finally {
         this.loading = false;
       }
     },
-    goBack() {
-      this.$router.push({ name: "Teams" }); // Cambiar a la lista de equipos
+    toggleFabMenu() {
+      this.showFabMenu = !this.showFabMenu;
     },
-    addPlayer() {
-      this.$router.push({ name: "AddPlayer", params: { teamId: this.$route.params.id } }); // Redirigir a añadir jugador
+    goBack() {
+      this.$router.push({ name: "Teams" }); // Navega a la lista de equipos
+    },
+    editTeam() {
+      this.$router.push({ name: "EditTeam", params: { id: this.team.id } }); // Navega a la página de edición del equipo
     },
   },
   mounted() {
@@ -74,160 +84,134 @@ export default {
 };
 </script>
 
-
 <style scoped>
+/* General */
 .team-details-page {
   padding: 20px;
   font-family: 'Arial', sans-serif;
-  background: #f9f9f9;
+  background-color: #f9f9f9;
+  min-height: 100vh;
 }
 
+/* Loading Message */
+.loading-message {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+/* Team Header */
 .team-header {
   text-align: center;
-  margin-bottom: 20px;
-  background: #fff;
-  border-radius: 12px;
+  background: white;
   padding: 15px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
 }
 
-.team-header h2 {
-  font-size: 1.8rem;
+.team-name {
+  font-size: 2rem;
+  font-weight: bold;
   color: #333;
 }
 
-.division {
+.team-division {
   font-size: 1rem;
   color: #666;
 }
 
-.actions {
+/* Navigation Links */
+.team-navigation {
   display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 15px;
+  flex-direction: column;
+  gap: 15px;
 }
 
-.actions .btn {
-  padding: 10px 20px;
+.nav-item {
+  text-decoration: none;
+  padding: 12px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 1rem;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-item:hover {
+  background-color: #0056b3;
+  transform: scale(1.05);
+}
+
+/* FAB Actions */
+.fab-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+}
+
+.fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #007bff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.fab i {
+  font-size: 1.5em;
+  color: white;
+}
+
+.fab-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.fab-action {
+  background: white;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  padding: 10px 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
 }
 
-.actions .btn-primary {
-  background-color: #007bff;
+.fab-action:hover {
+  background: #f1f1f1;
+}
+
+.fab-action.danger {
+  background: #dc3545;
   color: white;
 }
 
-.actions .btn-secondary {
-  background-color: #6c757d;
-  color: white;
+.fab-action.danger:hover {
+  background: #c82333;
 }
 
-.players-section {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.players-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #333;
-  text-align: center;
-  margin-bottom: 15px;
-}
-
-.player-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.player-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  background-color: #f4f4f4;
-  border-radius: 8px;
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.player-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.player-name {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #222;
-}
-
-.player-details {
-  font-size: 0.9rem;
-  color: #666;
-}
-
-.player-status {
-  display: flex;
-  align-items: center;
-}
-
-.status-label {
-  padding: 5px 10px;
-  font-size: 0.9rem;
-  font-weight: bold;
-  border-radius: 12px;
-  color: white;
-  text-transform: capitalize;
-}
-
-.status-label.activo {
-  background-color: #28a745;
-}
-
-.status-label.inactivo {
-  background-color: #dc3545;
-}
-
-.no-players-message {
-  text-align: center;
-  color: #666;
-  font-size: 1rem;
-  margin-top: 15px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .team-header h2 {
-    font-size: 1.5rem;
+/* Responsive */
+@media (min-width: 768px) {
+  .team-navigation {
+    flex-direction: row;
+    justify-content: center;
+    gap: 20px;
   }
 
-  .actions .btn {
-    font-size: 0.9rem;
-    padding: 8px 15px;
-  }
-
-  .player-card {
-    padding: 8px;
-  }
-
-  .player-name {
-    font-size: 1rem;
-  }
-
-  .player-details {
-    font-size: 0.8rem;
-  }
-
-  .status-label {
-    font-size: 0.8rem;
+  .nav-item {
+    flex: 1 1 auto;
+    max-width: 200px;
   }
 }
 </style>

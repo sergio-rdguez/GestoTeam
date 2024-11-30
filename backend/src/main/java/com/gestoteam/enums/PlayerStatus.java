@@ -3,8 +3,7 @@ package com.gestoteam.enums;
 public enum PlayerStatus {
     ACTIVO("Activo"),
     LESIONADO("Lesionado"),
-    SUSPENDIDO("Suspendido"),
-    RETIRADO("Retirado");
+    SUSPENDIDO("Suspendido");
 
     private final String descripcion;
 

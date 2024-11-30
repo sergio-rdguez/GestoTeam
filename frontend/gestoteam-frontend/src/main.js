@@ -1,7 +1,14 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
+
+// Bootstrap primero
 import 'bootstrap/dist/css/bootstrap.min.css';
+
+// Font Awesome después
+import '@fortawesome/fontawesome-free/css/all.css';
+
+// Vue Final Modal
 import { createVfm } from 'vue-final-modal';
 
 // Crear la instancia de Vue Final Modal

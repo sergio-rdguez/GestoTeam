@@ -5,6 +5,7 @@ import com.gestoteam.enums.Position;
 import lombok.Data;
 
 import javax.validation.constraints.*;
+import java.time.LocalDate;
 
 @Data
 public class PlayerRequest {
@@ -26,8 +27,8 @@ public class PlayerRequest {
     @Positive(message = "El número debe ser un valor positivo")
     private int number;
 
-    @Positive(message = "La edad debe ser un valor positivo")
-    private int age;
+    @NotNull(message = "La fecha de nacimiento es obligatoria")
+    private LocalDate birthDate;
 
     @NotNull(message = "El estado es obligatorio")
     private PlayerStatus status;

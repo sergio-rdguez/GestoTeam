@@ -24,6 +24,7 @@ public class Statistic {
 
     private int goals;
     private int yellowCards;
+    private int doubleYellowCards;
     private int redCards;
     private int minutesPlayed;
 }

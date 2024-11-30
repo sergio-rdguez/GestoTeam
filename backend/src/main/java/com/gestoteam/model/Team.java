@@ -2,6 +2,7 @@ package com.gestoteam.model;
 
 import javax.persistence.*;
 
+import com.gestoteam.enums.Category;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -30,8 +31,8 @@ public class Team {
 
     private String division;
 
-    @ManyToOne
-    @JoinColumn(name = "category_id", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Category category;
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)

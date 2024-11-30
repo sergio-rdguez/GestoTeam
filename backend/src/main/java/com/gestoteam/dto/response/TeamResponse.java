@@ -2,8 +2,6 @@ package com.gestoteam.dto.response;
 
 import lombok.Data;
 
-import java.time.LocalDate;
-
 @Data
 public class TeamResponse {
     private Long id;
@@ -11,5 +9,5 @@ public class TeamResponse {
     private String description;
     private String location;
     private String division;
-    private String categoryName;
+    private String category;
 }
