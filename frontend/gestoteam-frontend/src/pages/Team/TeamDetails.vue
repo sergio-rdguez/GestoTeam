@@ -15,12 +15,12 @@
         <router-link :to="{ name: 'TeamPlayers', params: { id: team.id } }" class="nav-item">
           Jugadores
         </router-link>
+        <router-link :to="{ name: 'TeamMatches', params: { id: team.id } }" class="nav-item">
+          Partidos
+        </router-link>
         <!--
         <router-link :to="{ name: 'TeamStatistics', params: { id: team.id } }" class="nav-item">
           Estadísticas
-        </router-link>
-        <router-link :to="{ name: 'TeamMatches', params: { id: team.id } }" class="nav-item">
-          Próximos Partidos
         </router-link>
         <router-link :to="{ name: 'TeamNotifications', params: { id: team.id } }" class="nav-item">
           Notificaciones

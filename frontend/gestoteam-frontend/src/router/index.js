@@ -9,7 +9,8 @@ import UserSettings from '@/pages/settings/UserSettings.vue';
 import TeamDetails from "@/pages/Team/TeamDetails.vue";
 import TeamPlayers from "@/pages/Team/TeamPlayers.vue";
 import TeamStatistics from "@/pages/Team/TeamStatistics.vue";
-import TeamMatches from "@/pages/Team/TeamMatches.vue";
+import TeamMatches from "@/pages/Team/Matches/TeamMatches.vue";
+import MatchDetails from '@/pages/Team/Matches/MatchDetails.vue';
 import TeamNotifications from "@/pages/Team/TeamNotifications.vue";
 import TeamTrainings from "@/pages/Team/TeamTrainings.vue";
 import LoginPage from '@/pages/auth/LoginPage.vue';
@@ -31,6 +32,7 @@ const routes = [
       { path: "/teams/:id/players", name: "TeamPlayers", component: TeamPlayers },
       { path: "/teams/:id/statistics", name: "TeamStatistics", component: TeamStatistics },
       { path: "/teams/:id/matches", name: "TeamMatches", component: TeamMatches },
+      { path: "/matches/:id",name: "MatchDetails", component: MatchDetails, props: true,},
       { path: "/teams/:id/notifications", name: "TeamNotifications", component: TeamNotifications },
       { path: "/teams/:id/trainings", name: "TeamTrainings", component: TeamTrainings },
       { path: '/teams/:teamId/add-player', name: 'AddPlayer', component: PlayerForm },
