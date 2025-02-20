@@ -1,28 +1,26 @@
 package com.gestoteam.model;
 
 import javax.persistence.*;
+
+import com.gestoteam.model.listener.SeasonEntityListener;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class CallUp {
+@EntityListeners(SeasonEntityListener.class)
+public class Season {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "match_id")
-    private Match match;
+    private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "player_id")
-    private Player player;
+    private LocalDate startDate;
 
-    private String role;
-
-    private String observations;
+    private LocalDate endDate;
 }

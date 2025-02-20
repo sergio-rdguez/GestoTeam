@@ -33,7 +33,7 @@ public class UserSettingsService {
         }
     }
 
-    private UserSettings createDefaultSettings(String userId) {
+    public UserSettings createDefaultSettings(String userId) {
         log.info("Creando configuraciones por defecto para el usuario: {}", userId);
 
         UserSettings defaultSettings = new UserSettings();

@@ -14,15 +14,24 @@
 
     <!-- Lista de partidos -->
     <div class="matches-list">
-      <div v-for="match in filteredMatches" :key="match.id" class="match-item" @click="goToMatchDetails(match.id)">
+      <div
+        v-for="match in filteredMatches"
+        :key="match.id"
+        class="match-item"
+        @click="goToMatchDetails(match.id)"
+      >
         <div class="match-content">
           <h4>{{ match.opponent }}</h4>
           <p><strong>Fecha:</strong> {{ formatDate(match.date) }}</p>
-          <p><strong>Hora:</strong> {{ match.time }}</p>
-          <p><strong>Estadio:</strong> {{ match.venue }}</p>
-          <div class="match-status" v-if="!match.isPast">Pendiente</div>
-          <div class="match-status victory" v-if="match.isPast && match.result === 'Victoria'">{{ match.result }}</div>
-          <div class="match-status defeat" v-if="match.isPast && match.result === 'Derrota'">{{ match.result }}</div>
+          <p><strong>Hora:</strong> {{ formatTime(match.date) }}</p>
+          <p><strong>Estadio:</strong> {{ match.location }}</p>
+          <div class="match-status" v-if="!match.finalized">Pendiente</div>
+          <div class="match-status victory" v-if="match.finalized && match.won === true">
+            {{ match.result }}
+          </div>
+          <div class="match-status defeat" v-if="match.finalized && match.won === false">
+            {{ match.result }}
+          </div>
         </div>
       </div>
     </div>
@@ -59,22 +68,22 @@
           <input v-model="newMatch.venue" type="text" required />
         </div>
         <button type="submit" class="btn primary">Guardar</button>
-        <button type="button" class="btn secondary" @click="toggleMatchForm">Cancelar</button>
+        <button type="button" class="btn secondary" @click="toggleMatchForm">
+          Cancelar
+        </button>
       </form>
     </div>
   </div>
 </template>
 
 <script>
+import apiClient from "@/services/api";
+
 export default {
   data() {
     return {
-      team: { name: "Equipo Dummy" },
-      matches: [
-        { id: 1, opponent: "Equipo A", date: "2024-12-01", time: "18:00", venue: "Estadio Local", isPast: false },
-        { id: 2, opponent: "Equipo B", date: "2024-11-15", time: "20:00", venue: "Estadio Visitante", isPast: true, result: "Victoria" },
-        { id: 3, opponent: "Equipo C", date: "2024-11-10", time: "19:00", venue: "Estadio Neutral", isPast: true, result: "Derrota" },
-      ],
+      team: { name: "Cargando..." },
+      matches: [],
       filter: "upcoming",
       showMatchForm: false,
       showFabMenu: false,
@@ -84,38 +93,68 @@ export default {
         time: "",
         venue: "",
       },
+      loading: true,
     };
   },
   computed: {
     filteredMatches() {
+      // Se filtra según la propiedad "finalized" del match
       return this.matches.filter((match) =>
-        this.filter === "upcoming" ? !match.isPast : match.isPast
+        this.filter === "upcoming" ? !match.finalized : match.finalized
       );
     },
   },
   methods: {
+    async fetchMatches() {
+      try {
+        const teamId = this.$route.params.id;
+        const response = await apiClient.get(`/matches/team/${teamId}`);
+        this.matches = response.data;
+        if (this.matches.length > 0 && this.matches[0].team) {
+          this.team = this.matches[0].team;
+        } else {
+          this.team = { name: "Equipo Desconocido" };
+        }
+      } catch (error) {
+        console.error("Error al cargar los partidos:", error);
+        alert("No se pudieron cargar los partidos.");
+      } finally {
+        this.loading = false;
+      }
+    },
     toggleMatchForm() {
       this.showMatchForm = !this.showMatchForm;
-      this.showFabMenu = false; // Cierra el menú FAB si está abierto
+      this.showFabMenu = false;
     },
     toggleFabMenu() {
       this.showFabMenu = !this.showFabMenu;
     },
     goBack() {
-      this.$router.go(-1); // Navega a la pantalla anterior
+      this.$router.go(-1);
     },
-    addMatch() {
-      const id = this.matches.length + 1;
-      this.matches.push({
-        id,
-        ...this.newMatch,
-        isPast: new Date(this.newMatch.date) < new Date(),
-      });
-      this.newMatch = { opponent: "", date: "", time: "", venue: "" };
-      this.showMatchForm = false;
+    async addMatch() {
+      try {
+        const dateTime = new Date(`${this.newMatch.date}T${this.newMatch.time}`);
+        const teamId = this.$route.params.id;
+        const matchPayload = {
+          opponent: this.newMatch.opponent,
+          date: dateTime.toISOString(),
+          location: this.newMatch.venue,
+          result: "",
+          finalized: dateTime < new Date(), // Usa el boolean "finalized"
+          teamId: teamId,
+        };
+        const response = await apiClient.post("/matches", matchPayload);
+        this.matches.push(response.data);
+        this.newMatch = { opponent: "", date: "", time: "", venue: "" };
+        this.showMatchForm = false;
+      } catch (error) {
+        console.error("Error al agregar el partido:", error);
+        alert("No se pudo agregar el partido. Inténtalo de nuevo.");
+      }
     },
-    goToMatchDetails(id) {
-      this.$router.push({ name: "MatchDetails", params: { id } });
+    goToMatchDetails(matchId) {
+      this.$router.push({ name: "MatchDetails", params: { id: matchId } });
     },
     formatDate(date) {
       return new Date(date).toLocaleDateString("es-ES", {
@@ -124,19 +163,21 @@ export default {
         day: "numeric",
       });
     },
+    formatTime(date) {
+      return new Date(date).toLocaleTimeString("es-ES", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    },
+  },
+  mounted() {
+    this.fetchMatches();
   },
 };
 </script>
 
 <style scoped>
 /* General */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f9f9f9;
-}
-
 .team-matches-page {
   padding: 20px;
   background-color: #f9f9f9;
@@ -230,11 +271,6 @@ body {
 .match-status.defeat {
   border-color: #dc3545;
   color: #721c24;
-}
-
-.match-arrow {
-  font-size: 1.5rem;
-  color: #007bff;
 }
 
 /* FAB */

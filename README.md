@@ -19,7 +19,7 @@
 
 ## Requisitos del Sistema
 
-- **Java**: Versión 21 o superior.
+- **Java**: Versión 17.
 - **Node.js**: Versión 14 o superior.
 - **PostgreSQL**: Versión 13 o superior.
 

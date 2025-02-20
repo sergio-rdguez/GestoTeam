@@ -5,12 +5,15 @@ import com.gestoteam.dto.response.PlayerResponse;
 import com.gestoteam.dto.response.TeamPlayerSummaryResponse;
 import com.gestoteam.exception.GestoServiceException;
 import com.gestoteam.model.Player;
+import com.gestoteam.model.PlayerMatchStats;
 import com.gestoteam.model.Team;
 import com.gestoteam.model.UserSettings;
+import com.gestoteam.repository.PlayerMatchStatsRepository;
 import com.gestoteam.repository.PlayerRepository;
 import com.gestoteam.repository.TeamRepository;
 import com.gestoteam.dto.Audit;
 import com.gestoteam.repository.UserSettingsRepository;
+import com.gestoteam.util.GlobalUtil;
 import com.gestoteam.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,10 +32,12 @@ import java.util.stream.Collectors;
 public class PlayerService {
 
     private final PlayerRepository playerRepository;
+    private final PlayerMatchStatsRepository playerMatchStatsRepository;
     private final UserSettingsRepository userSettingsRepository;
     private final TeamRepository teamRepository;
     private final ModelMapper modelMapper;
     private final ValidationUtil validationUtil;
+    private final GlobalUtil globalUtil;
 
     public List<PlayerResponse> getAllPlayers(String audit) {
         Audit auditInfo = validationUtil.validateAudit(audit);
@@ -54,7 +59,11 @@ public class PlayerService {
 
         Optional<PlayerResponse> playerResponse = playerRepository.findByIdAndDeletedFalse(id)
                 .filter(player -> player.getTeam().getOwnerId().equals(auditInfo.getUser()))
-                .map(player -> modelMapper.map(player, PlayerResponse.class));
+                .map(player -> {
+                    PlayerResponse response = modelMapper.map(player, PlayerResponse.class);
+                    fillSeasonStats(response, id, globalUtil.getCurrentSeason().getId());
+                    return response;
+                });
 
         if (playerResponse.isEmpty()) {
             log.warn("Jugador con ID: {} no encontrado o no pertenece al usuario: {}", id, auditInfo.getUser());
@@ -165,5 +174,41 @@ public class PlayerService {
 
         log.info("Se obtuvo correctamente la información de {} jugadores del equipo ID: {}", players.size(), teamId);
         return response;
+    }
+
+    private void fillSeasonStats(PlayerResponse response, Long playerId, Long seasonId) {
+        List<PlayerMatchStats> statsList = playerMatchStatsRepository.findByPlayerIdAndMatch_Season_Id(playerId, seasonId);
+
+        int convoked = (int) statsList.stream().filter(PlayerMatchStats::isCalledUp).count();
+        int starterCount = (int) statsList.stream().filter(PlayerMatchStats::isStarter).count();
+        int substituteCount = (int) statsList.stream().filter(s -> s.isCalledUp() && !s.isStarter()).count();
+        int playedMatches = (int) statsList.stream().filter(s -> s.getMinutesPlayed() > 0).count();
+        int totalGoals = statsList.stream().mapToInt(PlayerMatchStats::getGoals).sum();
+        double averageGoals = playedMatches > 0 ? (double) totalGoals / playedMatches : 0;
+        int yellowCards = (int) statsList.stream().filter(PlayerMatchStats::isYellowCard).count();
+        int redCards = (int) statsList.stream().filter(PlayerMatchStats::isRedCard).count();
+        int doubleYellowCards = (int) statsList.stream().filter(PlayerMatchStats::isDoubleYellowCard).count();
+
+        PlayerResponse.StatsResponse.MatchesStats matchesStats = new PlayerResponse.StatsResponse.MatchesStats();
+        matchesStats.setConvoked(convoked);
+        matchesStats.setStarter(starterCount);
+        matchesStats.setSubstitute(substituteCount);
+        matchesStats.setPlayed(playedMatches);
+
+        PlayerResponse.StatsResponse.GoalsStats goalsStats = new PlayerResponse.StatsResponse.GoalsStats();
+        goalsStats.setTotal(totalGoals);
+        goalsStats.setAverage(averageGoals);
+
+        PlayerResponse.StatsResponse.CardsStats cardsStats = new PlayerResponse.StatsResponse.CardsStats();
+        cardsStats.setYellow(yellowCards);
+        cardsStats.setRed(redCards);
+        cardsStats.setDoubleYellow(doubleYellowCards);
+
+        PlayerResponse.StatsResponse statsResponse = new PlayerResponse.StatsResponse();
+        statsResponse.setMatches(matchesStats);
+        statsResponse.setGoals(goalsStats);
+        statsResponse.setCards(cardsStats);
+
+        response.setStats(statsResponse);
     }
 }

@@ -15,6 +15,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final UserSettingsService userSettingsService;
 
     public void register(String username, String rawPassword) {
         if (userRepository.existsByUsername(username)) {
@@ -25,6 +26,7 @@ public class AuthService {
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(rawPassword));
         userRepository.save(user);
+        userSettingsService.createDefaultSettings(username);
     }
 
     public void login(String username, String rawPassword) {

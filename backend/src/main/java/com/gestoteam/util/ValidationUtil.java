@@ -1,6 +1,7 @@
 package com.gestoteam.util;
 
 import com.gestoteam.dto.Audit;
+import com.gestoteam.exception.GestoServiceException;
 import com.gestoteam.model.Team;
 import com.gestoteam.util.AuditUtil;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ public class ValidationUtil {
             return auditUtil.decryptAudit(audit);
         } catch (Exception e) {
             log.error("Audit inválido: {}", audit, e);
-            throw new RuntimeException("Audit inválido, acceso no autorizado");
+            throw new GestoServiceException("Audit inválido, acceso no autorizado");
         }
     }
 
