@@ -25,11 +25,13 @@ public class Team {
 
     private String name;
 
-    private String description;
-
     private String location;
 
+    private String field;
+
     private String division;
+
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

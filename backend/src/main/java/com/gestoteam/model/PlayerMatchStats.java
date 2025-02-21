@@ -10,6 +10,11 @@ import javax.validation.constraints.Max;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Table(
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"match_id", "player_id"})
+        }
+)
 public class PlayerMatchStats {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

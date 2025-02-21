@@ -1,8 +1,10 @@
 package com.gestoteam.service;
 
 import com.gestoteam.dto.request.MatchRequest;
+import com.gestoteam.dto.request.MatchUpdateRequest;
 import com.gestoteam.dto.response.MatchDetailsResponse;
 import com.gestoteam.dto.response.MatchResponse;
+import com.gestoteam.dto.response.TeamResponse;
 import com.gestoteam.model.Match;
 import com.gestoteam.model.Team;
 import com.gestoteam.repository.MatchRepository;
@@ -49,13 +51,26 @@ public class MatchService {
                 .collect(Collectors.toList());
     }
 
-    public MatchResponse updateMatch(Long id, Match match) {
+    public MatchResponse updateMatch(Long id, MatchUpdateRequest request) {
         Match existingMatch = matchRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Match not found"));
-        modelMapper.map(match, existingMatch);
+        if (request.getDate() != null) {
+            existingMatch.setDate(request.getDate());
+        }
+        if (request.getOpponent() != null) {
+            existingMatch.setOpponent(request.getOpponent());
+        }
+        if (request.getLocation() != null) {
+            existingMatch.setLocation(request.getLocation());
+        }
+        if (request.getResult() != null) {
+            existingMatch.setResult(request.getResult());
+        }
+        existingMatch.setWon(request.isWon());
         Match savedMatch = matchRepository.save(existingMatch);
         return modelMapper.map(savedMatch, MatchResponse.class);
     }
+
 
     public void deleteMatch(Long id) {
         Match existingMatch = matchRepository.findById(id)
@@ -68,8 +83,10 @@ public class MatchService {
         Match match = matchRepository.findById(id)
                 .filter(m -> !m.isDeleted())
                 .orElseThrow(() -> new RuntimeException("Match not found"));
-        
+        Team team = match.getTeam();
         MatchDetailsResponse response = modelMapper.map(match, MatchDetailsResponse.class);
+        TeamResponse teamResponse = modelMapper.map(team, TeamResponse.class);
+        response.setTeam(teamResponse);
         response.setPlayerStats(match.getPlayerStats().stream().map(stats -> {
             var dto = modelMapper.map(stats, com.gestoteam.dto.response.PlayerMatchStatsResponse.class);
             dto.setPlayerId(stats.getPlayer().getId());

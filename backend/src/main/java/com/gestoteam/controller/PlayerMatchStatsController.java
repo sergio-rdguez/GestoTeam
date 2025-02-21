@@ -1,26 +1,31 @@
 package com.gestoteam.controller;
 
-import com.gestoteam.model.PlayerMatchStats;
+import com.gestoteam.dto.request.PlayerMatchStatsRequest;
+import com.gestoteam.dto.response.PlayerMatchStatsResponse;
 import com.gestoteam.service.PlayerMatchStatsService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/player-match-stats")
+@RequiredArgsConstructor
 public class PlayerMatchStatsController {
 
     private final PlayerMatchStatsService playerMatchStatsService;
 
-    public PlayerMatchStatsController(PlayerMatchStatsService playerMatchStatsService) {
-        this.playerMatchStatsService = playerMatchStatsService;
-    }
-
     @GetMapping("/{id}")
-    public PlayerMatchStats getPlayerMatchStats(@PathVariable Long id) {
+    public PlayerMatchStatsResponse getPlayerMatchStats(@PathVariable Long id) {
         return playerMatchStatsService.getPlayerMatchStatsById(id);
     }
 
+    @PostMapping
+    public PlayerMatchStatsResponse createPlayerMatchStats(@RequestBody PlayerMatchStatsRequest request) {
+        return playerMatchStatsService.createPlayerMatchStats(request);
+    }
+
     @PutMapping("/{id}")
-    public PlayerMatchStats updatePlayerMatchStats(@PathVariable Long id, @RequestBody PlayerMatchStats updatedStats) {
-        return playerMatchStatsService.updatePlayerMatchStats(id, updatedStats);
+    public PlayerMatchStatsResponse updatePlayerMatchStats(@PathVariable Long id,
+                                                           @RequestBody PlayerMatchStatsRequest request) {
+        return playerMatchStatsService.updatePlayerMatchStats(id, request);
     }
 }

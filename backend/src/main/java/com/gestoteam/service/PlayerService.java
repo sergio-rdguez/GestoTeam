@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -47,7 +49,7 @@ public class PlayerService {
                 .stream()
                 .filter(player -> player.getTeam().getOwnerId().equals(auditInfo.getUser()))
                 .map(player -> modelMapper.map(player, PlayerResponse.class))
-                .collect(Collectors.toList());
+                .collect(toList());
 
         log.info("Se encontraron {} jugadores para el usuario: {}", players.size(), auditInfo.getUser());
         return players;
@@ -160,7 +162,7 @@ public class PlayerService {
                     summary.setStatus(player.getStatus());
                     return summary;
                 })
-                .collect(Collectors.toList());
+                .collect(toList());
 
         Map<String, Long> statusCount = players.stream()
                 .collect(Collectors.groupingBy(player -> player.getStatus().getDescripcion(), Collectors.counting()));
@@ -179,15 +181,19 @@ public class PlayerService {
     private void fillSeasonStats(PlayerResponse response, Long playerId, Long seasonId) {
         List<PlayerMatchStats> statsList = playerMatchStatsRepository.findByPlayerIdAndMatch_Season_Id(playerId, seasonId);
 
-        int convoked = (int) statsList.stream().filter(PlayerMatchStats::isCalledUp).count();
-        int starterCount = (int) statsList.stream().filter(PlayerMatchStats::isStarter).count();
-        int substituteCount = (int) statsList.stream().filter(s -> s.isCalledUp() && !s.isStarter()).count();
-        int playedMatches = (int) statsList.stream().filter(s -> s.getMinutesPlayed() > 0).count();
-        int totalGoals = statsList.stream().mapToInt(PlayerMatchStats::getGoals).sum();
+        List<PlayerMatchStats> validStats = statsList.stream()
+                .filter(stat -> !stat.getMatch().isDeleted())
+                .toList();
+
+        int convoked = (int) validStats.stream().filter(PlayerMatchStats::isCalledUp).count();
+        int starterCount = (int) validStats.stream().filter(PlayerMatchStats::isStarter).count();
+        int substituteCount = (int) validStats.stream().filter(s -> s.isCalledUp() && !s.isStarter()).count();
+        int playedMatches = (int) validStats.stream().filter(s -> s.getMinutesPlayed() > 0).count();
+        int totalGoals = validStats.stream().mapToInt(PlayerMatchStats::getGoals).sum();
         double averageGoals = playedMatches > 0 ? (double) totalGoals / playedMatches : 0;
-        int yellowCards = (int) statsList.stream().filter(PlayerMatchStats::isYellowCard).count();
-        int redCards = (int) statsList.stream().filter(PlayerMatchStats::isRedCard).count();
-        int doubleYellowCards = (int) statsList.stream().filter(PlayerMatchStats::isDoubleYellowCard).count();
+        int yellowCards = (int) validStats.stream().filter(PlayerMatchStats::isYellowCard).count();
+        int redCards = (int) validStats.stream().filter(PlayerMatchStats::isRedCard).count();
+        int doubleYellowCards = (int) validStats.stream().filter(PlayerMatchStats::isDoubleYellowCard).count();
 
         PlayerResponse.StatsResponse.MatchesStats matchesStats = new PlayerResponse.StatsResponse.MatchesStats();
         matchesStats.setConvoked(convoked);
@@ -211,4 +217,5 @@ public class PlayerService {
 
         response.setStats(statsResponse);
     }
+
 }

@@ -1,6 +1,7 @@
 package com.gestoteam.controller;
 
 import com.gestoteam.dto.request.MatchRequest;
+import com.gestoteam.dto.request.MatchUpdateRequest;
 import com.gestoteam.dto.response.MatchDetailsResponse;
 import com.gestoteam.dto.response.MatchResponse;
 import com.gestoteam.model.Match;
@@ -32,8 +33,8 @@ public class MatchController {
     }
 
     @PutMapping("/{id}")
-    public MatchResponse updateMatch(@PathVariable Long id, @RequestBody Match match) {
-        return matchService.updateMatch(id, match);
+    public MatchResponse updateMatch(@PathVariable Long id, @RequestBody MatchUpdateRequest matchRequest) {
+        return matchService.updateMatch(id, matchRequest);
     }
 
     @DeleteMapping("/{id}")

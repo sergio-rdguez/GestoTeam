@@ -57,6 +57,7 @@ public class TeamService {
                     TeamResponse response = new TeamResponse();
                     response.setId(team.getId());
                     response.setName(team.getName());
+                    response.setField(team.getField());
                     response.setDescription(team.getDescription());
                     response.setLocation(team.getLocation());
                     response.setDivision(team.getDivision());

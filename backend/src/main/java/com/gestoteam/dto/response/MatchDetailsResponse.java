@@ -12,5 +12,7 @@ public class MatchDetailsResponse {
     private String location;
     private String result;
     private boolean won;
+    private boolean finalized;
+    private TeamResponse team;
     private List<PlayerMatchStatsResponse> playerStats;
 }

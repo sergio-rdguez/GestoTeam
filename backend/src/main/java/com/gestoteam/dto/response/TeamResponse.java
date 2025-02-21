@@ -6,8 +6,9 @@ import lombok.Data;
 public class TeamResponse {
     private Long id;
     private String name;
-    private String description;
+    private String field;
     private String location;
     private String division;
     private String category;
+    private String description;
 }

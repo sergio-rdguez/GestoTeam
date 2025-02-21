@@ -11,8 +11,9 @@ public class TeamRequest {
     @Size(max = 50, message = "El nombre no puede superar los 50 caracteres")
     private String name;
 
-    @Size(max = 200, message = "La descripción no puede superar los 200 caracteres")
-    private String description;
+    @NotNull(message = "El campo es obligatorio")
+    @Size(max = 30, message = "El campo no puede superar los 30 caracteres")
+    private String field;
 
     @Size(max = 50, message = "La ubicación no puede superar los 50 caracteres")
     private String location;
@@ -23,4 +24,7 @@ public class TeamRequest {
 
     @NotNull(message = "La Categoría es obligatoria")
     private String category;
+
+    @Size(max = 200, message = "La descripción no puede superar los 200 caracteres")
+    private String description;
 }

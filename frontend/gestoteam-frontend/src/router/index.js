@@ -10,6 +10,7 @@ import TeamDetails from "@/pages/Team/TeamDetails.vue";
 import TeamPlayers from "@/pages/Team/TeamPlayers.vue";
 import TeamStatistics from "@/pages/Team/TeamStatistics.vue";
 import TeamMatches from "@/pages/Team/Matches/TeamMatches.vue";
+import AddMatch from "@/pages/Team/Matches/AddMatch.vue";
 import MatchDetails from '@/pages/Team/Matches/MatchDetails.vue';
 import TeamNotifications from "@/pages/Team/TeamNotifications.vue";
 import TeamTrainings from "@/pages/Team/TeamTrainings.vue";
@@ -32,6 +33,7 @@ const routes = [
       { path: "/teams/:id/players", name: "TeamPlayers", component: TeamPlayers },
       { path: "/teams/:id/statistics", name: "TeamStatistics", component: TeamStatistics },
       { path: "/teams/:id/matches", name: "TeamMatches", component: TeamMatches },
+      { path: "/teams/:teamId/add-match", name: "AddMatch", component: AddMatch },
       { path: "/matches/:id",name: "MatchDetails", component: MatchDetails, props: true,},
       { path: "/teams/:id/notifications", name: "TeamNotifications", component: TeamNotifications },
       { path: "/teams/:id/trainings", name: "TeamTrainings", component: TeamTrainings },
