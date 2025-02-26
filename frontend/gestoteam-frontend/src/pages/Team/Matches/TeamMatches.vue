@@ -1,82 +1,84 @@
 <template>
   <div class="team-matches-page">
-    <h2 class="page-title">Partidos de {{ teamName }}</h2>
-
-    <!-- Filtros de partidos -->
-    <div class="filter-options">
-      <label>
-        <input type="radio" value="upcoming" v-model="filter" /> Próximos
-      </label>
-      <label>
-        <input type="radio" value="past" v-model="filter" /> Disputados
-      </label>
+    <div class="header">
+      <button class="back-button" @click="goBack">
+        <i class="fa-solid fa-arrow-left"></i> Volver
+      </button>
+      <h2 class="page-title">Partidos de {{ teamName }}</h2>
     </div>
 
     <!-- Lista de partidos -->
     <div class="matches-list">
       <div
-        v-for="match in filteredMatches"
+        v-for="match in sortedMatches"
         :key="match.id"
         class="match-item"
         @click="goToMatchDetails(match.id)"
       >
         <div class="match-content">
           <h4>{{ match.opponent }}</h4>
-          <p><strong>Fecha:</strong> {{ formatDate(match.date) }}</p>
-          <p><strong>Hora:</strong> {{ formatTime(match.date) }}</p>
-          <p><strong>Estadio:</strong> {{ match.location }}</p>
-          <div class="match-status" v-if="!match.finalized">Pendiente</div>
-          <div
-            class="match-status victory"
-            v-if="match.finalized && match.won === true"
-          >
-            {{ match.result }}
+          <div class="match-details">
+            <p><strong>Fecha:</strong> {{ formatDate(match.date) }}</p>
+            <p><strong>Hora:</strong> {{ formatTime(match.date) }}</p>
+            <p><strong>Estadio:</strong> {{ match.location }}</p>
           </div>
           <div
-            class="match-status defeat"
-            v-if="match.finalized && match.won === false"
+            class="match-status"
+            :class="{
+              victory: match.finalized && match.won,
+              defeat: match.finalized && !match.won,
+              pending: !match.finalized,
+            }"
           >
-            {{ match.result }}
+            {{ match.finalized ? match.result : "Pendiente" }}
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- FAB flotante -->
-    <div class="fab-container">
-      <button class="fab" @click="toggleFabMenu">
-        <i class="fa-solid fa-bars"></i>
-      </button>
-      <div v-if="showFabMenu" class="fab-menu">
-        <button class="fab-action" @click="goBack">Volver</button>
-        <button class="fab-action" @click="goToAddMatch">
-          Agregar Partido
-        </button>
+      <div v-if="!sortedMatches.length" class="no-matches">
+        <p>No hay partidos disponibles.</p>
       </div>
     </div>
+
+    <!-- FAB para agregar partido directamente -->
+    <button class="fab" @click="goToAddMatch">
+      <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <!-- Componente MessageBox para mensajes -->
+    <MessageBox
+      v-if="showMessage"
+      :message="message"
+      :type="messageType"
+      @close="closeMessage"
+    />
   </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
+import MessageBox from "@/pages/utils/MessageBox.vue";
 
 export default {
+  components: {
+    MessageBox,
+  },
   data() {
     return {
-      team: [{name: "Cargando..."}],
+      team: [{ name: "Cargando..." }],
       matches: [],
-      filter: "upcoming",
-      showFabMenu: false,
       loading: true,
+      showMessage: false,
+      message: "",
+      messageType: "info",
     };
   },
   computed: {
     teamName() {
       return this.team.name;
     },
-    filteredMatches() {
-      return this.matches.filter((match) =>
-        this.filter === "upcoming" ? !match.finalized : match.finalized
+    sortedMatches() {
+      return [...this.matches].sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
       );
     },
   },
@@ -87,8 +89,11 @@ export default {
         const response = await apiClient.get(`/teams/${teamId}`);
         this.team = response.data;
       } catch (error) {
-        console.error("Error al cargar el equipo:", error);
-        this.team = { name: "Equipo Desconocido" };
+        this.message =
+          "Error al cargar el equipo: " +
+          (error.message || "Inténtelo de nuevo.");
+        this.messageType = "error";
+        this.showMessage = true;
       }
     },
     async fetchMatches() {
@@ -97,14 +102,12 @@ export default {
         const response = await apiClient.get(`/matches/team/${teamId}`);
         this.matches = response.data;
       } catch (error) {
-        console.error("Error al cargar los partidos:", error);
-        alert("No se pudieron cargar los partidos.");
+        this.message = "No se pudieron cargar los partidos.";
+        this.messageType = "error";
+        this.showMessage = true;
       } finally {
         this.loading = false;
       }
-    },
-    toggleFabMenu() {
-      this.showFabMenu = !this.showFabMenu;
     },
     goBack() {
       this.$router.push({
@@ -134,6 +137,9 @@ export default {
         minute: "2-digit",
       });
     },
+    closeMessage() {
+      this.showMessage = false;
+    },
   },
   mounted() {
     this.fetchTeam();
@@ -143,110 +149,136 @@ export default {
 </script>
 
 <style scoped>
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Roboto:wght@400;500&display=swap");
+
 .team-matches-page {
-  padding: 20px;
-  background-color: #f9f9f9;
+  padding: 40px;
+  background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
   min-height: 100vh;
+  font-family: "Roboto", sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Distribute space between button and title */
+  margin-bottom: 30px;
+}
+
+.back-button {
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.back-button i {
+  margin-right: 5px;
+}
+
+.back-button:hover {
+  background: #2980b9;
+  transform: scale(1.05);
 }
 
 .page-title {
   text-align: center;
-  font-size: 2rem;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.filter-options {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.filter-options label {
-  margin: 0 10px;
-  font-size: 1rem;
-  color: #555;
+  font-size: 2.5rem;
+  margin: 0;
+  color: #2c3e50;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+  flex-grow: 1; /* Allows the title to take up remaining space */
 }
 
 .matches-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  display: grid;
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .match-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background: #fff;
   padding: 20px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .match-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .match-content {
-  flex: 2;
-  padding-right: 15px;
+  padding: 0;
 }
 
 .match-content h4 {
-  margin: 0 0 5px;
-  font-size: 1.3rem;
-  color: #333;
+  margin: 0 0 10px;
+  font-size: 1.5rem;
+  color: #2c3e50;
+  font-family: "Montserrat", sans-serif;
 }
 
-.match-content p {
+.match-details {
+  margin-bottom: 10px;
+}
+
+.match-details p {
   margin: 5px 0;
   font-size: 1rem;
   color: #555;
 }
 
 .match-status {
-  flex: 0 0 120px;
-  text-align: center;
   padding: 10px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #333;
-  border: 1px solid #ddd;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
   border-radius: 6px;
-  background-color: #f9f9f9;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  text-align: center;
+  transition: background-color 0.3s ease;
 }
 
 .match-status.pending {
-  border-color: #ffc107;
-  color: #856404;
+  background-color: #3498db;
+  border: 1px solid #2980b9;
 }
 
 .match-status.victory {
-  border-color: #28a745;
-  color: #155724;
+  background-color: #2ecc71;
+  border: 1px solid #27ae60;
 }
 
 .match-status.defeat {
-  border-color: #dc3545;
-  color: #721c24;
+  background-color: #e74c3c;
+  border: 1px solid #c0392b;
 }
 
-/* FAB */
-.fab-container {
+.no-matches {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* FAB para agregar partido */
+.fab {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  z-index: 10;
-}
-
-.fab {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: #007bff;
   display: flex;
@@ -254,8 +286,9 @@ export default {
   justify-content: center;
   cursor: pointer;
   border: none;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.2s ease;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  z-index: 10;
 }
 
 .fab i {
@@ -265,45 +298,41 @@ export default {
 
 .fab:hover {
   background-color: #0056b3;
-}
-
-/* FAB Menu */
-.fab-menu {
-  position: absolute;
-  bottom: 80px;
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.fab-action {
-  background: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 15px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.fab-action:hover {
-  background: #f1f1f1;
+  transform: scale(1.1);
 }
 
 /* Responsividad */
 @media (max-width: 768px) {
-  .match-item {
+  .team-matches-page {
+    padding: 20px;
+  }
+  .header {
     flex-direction: column;
     align-items: flex-start;
   }
-  .match-content {
-    padding-right: 0;
+  .back-button {
+    margin-bottom: 15px;
+    margin-right: 0;
+  }
+  .page-title {
+    font-size: 2rem;
+    text-align: left;
+  }
+  .matches-list {
+    max-width: 100%;
+  }
+  .match-item {
+    padding: 15px;
+  }
+  .match-content h4 {
+    font-size: 1.3rem;
+  }
+  .match-details p {
+    font-size: 0.9rem;
   }
   .match-status {
-    margin-top: 10px;
-    width: 100%;
-    text-align: left;
+    font-size: 0.9rem;
+    padding: 8px;
   }
   .fab {
     width: 50px;

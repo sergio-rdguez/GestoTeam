@@ -4,11 +4,16 @@ import com.gestoteam.dto.request.MatchRequest;
 import com.gestoteam.dto.request.MatchUpdateRequest;
 import com.gestoteam.dto.response.MatchDetailsResponse;
 import com.gestoteam.dto.response.MatchResponse;
+import com.gestoteam.dto.response.PlayerMatchStatsResponse;
 import com.gestoteam.dto.response.TeamResponse;
 import com.gestoteam.exception.GestoServiceException;
 import com.gestoteam.model.Match;
+import com.gestoteam.model.Player;
+import com.gestoteam.model.PlayerMatchStats;
 import com.gestoteam.model.Team;
 import com.gestoteam.repository.MatchRepository;
+import com.gestoteam.repository.PlayerMatchStatsRepository;
+import com.gestoteam.repository.PlayerRepository;
 import com.gestoteam.repository.TeamRepository;
 import com.gestoteam.dto.Audit;
 import com.gestoteam.util.GlobalUtil;
@@ -21,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,9 +36,12 @@ public class MatchService {
 
     private final MatchRepository matchRepository;
     private final TeamRepository teamRepository;
+    private final PlayerRepository playerRepository;
+    private final PlayerMatchStatsRepository playerMatchStatsRepository;
     private final ModelMapper modelMapper;
     private final GlobalUtil globalUtil;
     private final ValidationUtil validationUtil;
+
 
     public MatchResponse createMatch(MatchRequest request, String audit) {
         Audit auditInfo = validationUtil.validateAudit(audit);
@@ -144,6 +153,7 @@ public class MatchService {
         Audit auditInfo = validationUtil.validateAudit(audit);
         log.info("Obteniendo detalles del partido con ID: {} por el usuario: {}", id, auditInfo.getUser());
 
+        // Obtener el partido y validar permisos
         Match match = matchRepository.findByIdAndDeletedFalse(id)
                 .filter(m -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(m.getTeam().getId(), auditInfo.getUser()))
                 .orElseThrow(() -> {
@@ -151,11 +161,47 @@ public class MatchService {
                     return new GestoServiceException("Partido no encontrado o no tienes permisos para acceder a él.");
                 });
 
+        // Obtener el equipo del partido
+        Team team = match.getTeam();
+
+        // Obtener todos los jugadores activos del equipo
+        List<Player> teamPlayers = playerRepository.findByTeamIdAndDeletedFalse(team.getId());
+
+        // Obtener las estadísticas existentes del partido
+        List<PlayerMatchStats> existingStats = match.getPlayerStats();
+
+        // Crear un conjunto de IDs de jugadores que ya tienen estadísticas
+        Set<Long> existingPlayerIds = existingStats.stream()
+                .map(stats -> stats.getPlayer().getId())
+                .collect(Collectors.toSet());
+
+        // Crear estadísticas para los jugadores que no tienen entrada
+        for (Player player : teamPlayers) {
+            if (!existingPlayerIds.contains(player.getId())) {
+                PlayerMatchStats newStats = new PlayerMatchStats();
+                newStats.setMatch(match);
+                newStats.setPlayer(player);
+                newStats.setGoals(0);
+                newStats.setMinutesPlayed(0);
+                newStats.setYellowCard(false);
+                newStats.setDoubleYellowCard(false);
+                newStats.setRedCard(false);
+                newStats.setGoalsConceded(0);
+                newStats.setOwnGoals(0);
+                newStats.setCalledUp(false);
+                newStats.setStarter(false);
+                existingStats.add(newStats);
+                // Guardar la nueva estadística en la base de datos
+                playerMatchStatsRepository.save(newStats);
+            }
+        }
+
+        // Mapear la respuesta
         MatchDetailsResponse response = modelMapper.map(match, MatchDetailsResponse.class);
-        TeamResponse teamResponse = modelMapper.map(match.getTeam(), TeamResponse.class);
+        TeamResponse teamResponse = modelMapper.map(team, TeamResponse.class);
         response.setTeam(teamResponse);
-        response.setPlayerStats(match.getPlayerStats().stream().map(stats -> {
-            var dto = modelMapper.map(stats, com.gestoteam.dto.response.PlayerMatchStatsResponse.class);
+        response.setPlayerStats(existingStats.stream().map(stats -> {
+            PlayerMatchStatsResponse dto = modelMapper.map(stats, PlayerMatchStatsResponse.class);
             dto.setPlayerId(stats.getPlayer().getId());
             dto.setPlayerFullName(stats.getPlayer().getFullName());
             return dto;

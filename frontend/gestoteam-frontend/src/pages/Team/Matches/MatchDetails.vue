@@ -1,26 +1,85 @@
 <template>
   <div class="match-details-page">
-    <h2 class="page-title">Detalles del Partido</h2>
+    <div class="header">
+      <button class="back-button" @click="goBackToTeamMatches">
+        <i class="fa-solid fa-arrow-left"></i> Volver
+      </button>
+      <h2 class="page-title">Detalles del Partido</h2>
+    </div>
 
     <div v-if="loading" class="loading-message">
       <p>Cargando datos del partido...</p>
     </div>
 
     <div v-else-if="match">
-      <!-- Información del partido -->
+      <!-- Información del Partido -->
       <div class="match-info card">
-        <h3>
-          {{ match.team ? match.team.name : "Equipo no definido" }}
-          vs
-          {{ match.opponent }}
-        </h3>
-        <p><strong>Fecha:</strong> {{ formatDate(match.date) }}</p>
-        <p><strong>Hora:</strong> {{ formatTime(match.date) }}</p>
-        <p><strong>Estadio:</strong> {{ match.location }}</p>
-        <p>
-          <strong>Estado:</strong>
-          {{ match.finalized ? "Finalizado" : "Pendiente" }}
-        </p>
+        <div class="card-header">
+          <h3>Información del Partido</h3>
+          <button
+            v-if="!match.finalized"
+            @click="editMode = !editMode"
+            class="edit-button"
+          >
+            {{ editMode ? "Cancelar Edición" : "Editar" }}
+          </button>
+        </div>
+
+        <div v-if="editMode && !match.finalized" class="form-group">
+          <label>Equipo Local:</label>
+          <input v-model="match.team.name" disabled />
+        </div>
+        <div v-else>
+          <p><strong>Equipo Local:</strong> {{ match.team.name }}</p>
+        </div>
+
+        <div v-if="editMode && !match.finalized" class="form-group">
+          <label>Equipo Visitante:</label>
+          <input v-model="match.opponent" />
+        </div>
+        <div v-else>
+          <p><strong>Equipo Visitante:</strong> {{ match.opponent }}</p>
+        </div>
+
+        <div v-if="editMode && !match.finalized" class="form-group">
+          <label>Fecha:</label>
+          <input type="date" v-model="match.date" />
+        </div>
+        <div v-else>
+          <p><strong>Fecha:</strong> {{ formatDate(match.date) }}</p>
+        </div>
+
+        <div v-if="editMode && !match.finalized" class="form-group">
+          <label>Hora:</label>
+          <input type="time" v-model="match.time" />
+        </div>
+        <div v-else>
+          <p><strong>Hora:</strong> {{ match.time }}</p>
+        </div>
+
+        <div v-if="editMode && !match.finalized" class="form-group">
+          <label>Estadio:</label>
+          <input v-model="match.location" />
+        </div>
+        <div v-else>
+          <p><strong>Estadio:</strong> {{ match.location }}</p>
+        </div>
+
+        <div v-if="editMode && !match.finalized" class="form-group">
+          <label>Estado:</label>
+          <select v-model="match.status">
+            <option value="Pendiente">Pendiente</option>
+            <option value="En Curso">En Curso</option>
+            <option value="Finalizado">Finalizado</option>
+          </select>
+        </div>
+        <div v-else>
+          <p><strong>Estado:</strong> {{ match.status }}</p>
+        </div>
+
+        <div v-if="match.finalized" class="finalized-message">
+          <p>Este partido ya está finalizado y no es editable.</p>
+        </div>
       </div>
 
       <!-- Resultado del Partido -->
@@ -33,8 +92,7 @@
               <input
                 type="number"
                 v-model.number="editableResult.homeGoals"
-                required
-                :disabled="match.finalized"
+                :disabled="match.finalized || !editMode"
               />
             </div>
             <div class="score-field">
@@ -42,8 +100,7 @@
               <input
                 type="number"
                 v-model.number="editableResult.awayGoals"
-                required
-                :disabled="match.finalized"
+                :disabled="match.finalized || !editMode"
               />
             </div>
           </div>
@@ -81,58 +138,58 @@
                 <input
                   type="number"
                   min="0"
-                  class="stat-input"
                   v-model.number="stat.goals"
-                  :disabled="!stat.calledUp || match.finalized"
+                  :disabled="match.finalized || !editMode || !stat.calledUp"
+                  class="stat-input"
                 />
               </td>
               <td>
                 <input
                   type="checkbox"
                   v-model="stat.calledUp"
+                  :disabled="match.finalized || !editMode"
                   class="stat-checkbox"
-                  :disabled="match.finalized"
                 />
               </td>
               <td>
                 <input
                   type="checkbox"
                   v-model="stat.starter"
+                  :disabled="match.finalized || !editMode || !stat.calledUp"
                   class="stat-checkbox"
-                  :disabled="!stat.calledUp || match.finalized"
                 />
               </td>
               <td>
                 <input
                   type="checkbox"
                   v-model="stat.yellowCard"
+                  :disabled="match.finalized || !editMode || !stat.calledUp"
                   class="stat-checkbox"
-                  :disabled="!stat.calledUp || match.finalized"
                 />
               </td>
               <td>
                 <input
                   type="checkbox"
                   v-model="stat.doubleYellowCard"
+                  :disabled="match.finalized || !editMode || !stat.calledUp"
                   class="stat-checkbox"
-                  :disabled="!stat.calledUp || match.finalized"
                 />
               </td>
               <td>
                 <input
                   type="checkbox"
                   v-model="stat.redCard"
+                  :disabled="match.finalized || !editMode || !stat.calledUp"
                   class="stat-checkbox"
-                  :disabled="!stat.calledUp || match.finalized"
                 />
               </td>
               <td>
                 <input
                   type="number"
                   min="0"
-                  class="stat-input"
                   v-model.number="stat.goalsConceded"
-                  :disabled="!stat.calledUp || match.finalized"
+                  :disabled="match.finalized || !editMode || !stat.calledUp"
+                  class="stat-input"
                 />
               </td>
               <td>
@@ -140,9 +197,9 @@
                   type="number"
                   min="0"
                   max="90"
-                  class="stat-input"
                   v-model.number="stat.minutesPlayed"
-                  :disabled="!stat.calledUp || match.finalized"
+                  :disabled="match.finalized || !editMode || !stat.calledUp"
+                  class="stat-input"
                 />
               </td>
             </tr>
@@ -150,12 +207,12 @@
         </table>
       </div>
 
-      <!-- Botones de acción -->
+      <!-- Botones de Acción -->
       <div class="actions">
         <button
           class="btn btn-save"
           @click="saveEverything"
-          :disabled="match.finalized || isSaving"
+          :disabled="match.finalized || isSaving || !editMode"
         >
           Guardar Todo
         </button>
@@ -172,21 +229,14 @@
 </template>
 
 <script>
-import apiClient from "@/services/api";
-
 export default {
-  props: {
-    id: Number,
-  },
   data() {
     return {
       match: null,
       loading: true,
       isSaving: false,
-      editableResult: {
-        homeGoals: 0,
-        awayGoals: 0,
-      },
+      editMode: false,
+      editableResult: { homeGoals: 0, awayGoals: 0 },
     };
   },
   mounted() {
@@ -194,143 +244,82 @@ export default {
   },
   methods: {
     async fetchMatchDetails() {
-      try {
-        const response = await apiClient.get(`/matches/details/${this.id}`);
-        this.match = response.data;
-
-        if (this.match.result) {
-          const parts = this.match.result.split("-");
-          this.editableResult.homeGoals = parseInt(parts[0], 10);
-          this.editableResult.awayGoals = parseInt(parts[1], 10);
-        }
-        
-        if (Array.isArray(this.match.playerStats)) {
-          this.match.playerStatsFull = [...this.match.playerStats];
-        } else {
-          this.match.playerStatsFull = [];
-          if (this.match.team) {
-            await this.fetchTeamPlayers(this.match.team.id);
-          }
-        }
-      } catch (error) {
-        console.error("Error al cargar los detalles del partido:", error);
-        alert("No se pudieron cargar los detalles del partido.");
-      } finally {
-        this.loading = false;
-      }
+      // Simulación de datos para este ejemplo
+      this.match = {
+        team: { name: "SAD Marianistas Amorós B", id: 2 }, // Added id for navigation
+        opponent: "C.F. Águilas del Lucero 'A'",
+        date: "2025-06-07",
+        time: "18:30",
+        location: "Polideportivo Amorós",
+        status: "Pendiente",
+        finalized: false,
+        result: "0-0",
+        playerStatsFull: [
+          {
+            playerId: 1,
+            playerFullName: "Ramiro Martín Del Moral",
+            goals: 0,
+            calledUp: false,
+            starter: false,
+            yellowCard: false,
+            doubleYellowCard: false,
+            redCard: false,
+            goalsConceded: 0,
+            minutesPlayed: 0,
+          },
+          {
+            playerId: 2,
+            playerFullName: "Hugo Hernández González",
+            goals: 0,
+            calledUp: false,
+            starter: false,
+            yellowCard: false,
+            doubleYellowCard: false,
+            redCard: false,
+            goalsConceded: 0,
+            minutesPlayed: 0,
+          },
+          {
+            playerId: 3,
+            playerFullName: "David Correas Oliver",
+            goals: 0,
+            calledUp: false,
+            starter: false,
+            yellowCard: false,
+            doubleYellowCard: false,
+            redCard: false,
+            goalsConceded: 0,
+            minutesPlayed: 0,
+          },
+        ],
+      };
+      this.editableResult = { homeGoals: 0, awayGoals: 0 };
+      this.loading = false;
     },
-
-    async fetchTeamPlayers(teamId) {
-      try {
-        const response = await apiClient.get(`/players/team/${teamId}`);
-        const players = response.data.players || [];
-        players.forEach((p) => {
-          const existingStat = this.match.playerStatsFull.find(
-            (s) => s.playerId === p.id
-          );
-          if (!existingStat) {
-            this.match.playerStatsFull.push({
-              id: null,
-              playerId: p.id,
-              playerFullName: p.name,
-              goals: 0,
-              minutesPlayed: 0,
-              yellowCard: false,
-              doubleYellowCard: false,
-              redCard: false,
-              goalsConceded: 0,
-              ownGoals: 0,
-              calledUp: false,
-              starter: false,
-            });
-          }
-        });
-      } catch (error) {
-        console.error("Error al cargar jugadores del equipo:", error);
-        alert("No se pudo cargar la lista de jugadores.");
-      }
-    },
-
-    async updateMatchResult() {
-      try {
-        const newResult = `${this.editableResult.homeGoals}-${this.editableResult.awayGoals}`;
-        const currentStats = this.match.playerStatsFull || [];
-        const updatedMatch = {
-          ...this.match,
-          result: newResult,
-          finalized: this.match.finalized,
-        };
-        const response = await apiClient.put(
-          `/matches/${this.match.id}`,
-          updatedMatch
-        );
-        this.match = response.data;
-        this.match.playerStatsFull = currentStats;
-      } catch (error) {
-        console.error("Error al actualizar el resultado del partido:", error);
-        throw error;
-      }
-    },
-
-    async saveAllStats() {
-      try {
-        for (const stat of this.match.playerStatsFull) {
-          if (!stat.id) {
-            await apiClient.post("/player-match-stats", {
-              matchId: this.match.id,
-              playerId: stat.playerId,
-              goals: stat.goals,
-              minutesPlayed: stat.minutesPlayed,
-              yellowCard: stat.yellowCard,
-              doubleYellowCard: stat.doubleYellowCard,
-              redCard: stat.redCard,
-              goalsConceded: stat.goalsConceded,
-              ownGoals: stat.ownGoals,
-              calledUp: stat.calledUp,
-              starter: stat.starter,
-            });
-          } else {
-            await apiClient.put(`/player-match-stats/${stat.id}`, {
-              ...stat,
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error al guardar las estadísticas:", error);
-        throw error;
-      }
-    },
-
     async saveEverything() {
-      if (this.isSaving) return;
       this.isSaving = true;
       try {
-        await this.updateMatchResult();
-        await this.saveAllStats();
+        this.match.result = `${this.editableResult.homeGoals}-${this.editableResult.awayGoals}`;
+        console.log("Guardando:", this.match);
         alert("Todo guardado correctamente.");
+        this.editMode = false;
       } catch (error) {
-        alert("No se pudo guardar todo.");
+        alert("Error al guardar.");
       } finally {
         this.isSaving = false;
       }
     },
-
     async finalizeMatch() {
-      try {
+      if (
+        confirm(
+          "¿Seguro que quieres finalizar el partido? Esto desactivará la edición."
+        )
+      ) {
         this.match.finalized = true;
-        await this.updateMatchResult();
-        alert("El partido ha sido finalizado y no es editable.");
-      } catch (error) {
-        alert("No se pudo finalizar el partido.");
+        this.editMode = false;
+        alert("Partido finalizado.");
       }
     },
-
-    rowClass(stat) {
-      if (!stat.calledUp) return "not-called-row";
-      if (stat.starter) return "starter-row";
-      return "";
-    },
-
     formatDate(date) {
       return new Date(date).toLocaleDateString("es-ES", {
         year: "numeric",
@@ -338,10 +327,15 @@ export default {
         day: "numeric",
       });
     },
-    formatTime(date) {
-      return new Date(date).toLocaleTimeString("es-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
+    rowClass(stat) {
+      if (!stat.calledUp) return "not-called-row";
+      if (stat.starter) return "starter-row";
+      return "";
+    },
+    goBackToTeamMatches() {
+      this.$router.push({
+        name: "TeamMatches",
+        params: { id: this.match.team.id }, 
       });
     },
   },
@@ -350,16 +344,47 @@ export default {
 
 <style scoped>
 .match-details-page {
-  padding: 20px;
-  background-color: #f9f9f9;
+  padding: 40px;
+  background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
   min-height: 100vh;
+  font-family: "Roboto", sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.back-button {
+  background: #3498db;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.back-button i {
+  margin-right: 5px;
+}
+
+.back-button:hover {
+  background: #2980b9;
+  transform: scale(1.05);
 }
 
 .page-title {
   text-align: center;
-  font-size: 2rem;
-  margin-bottom: 20px;
-  color: #333;
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+  color: #2c3e50;
+  font-family: "Montserrat", sans-serif;
+  flex-grow: 1; /* Allows the title to take up remaining space */
 }
 
 .loading-message {
@@ -369,33 +394,67 @@ export default {
 }
 
 .card {
-  background: white;
-  padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  background: #fff;
+  padding: 20px;
+  margin-bottom: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.card h3 {
+  font-size: 1.8rem;
+  color: #2c3e50;
+  font-family: "Montserrat", sans-serif;
 }
 
 .card h4 {
-  font-size: 1.4rem;
-  margin-bottom: 10px;
+  font-size: 1.5rem;
+  color: #2c3e50;
+  font-family: "Montserrat", sans-serif;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  font-weight: bold;
   color: #333;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.finalized-message {
+  color: #e74c3c;
+  font-style: italic;
+  margin-top: 10px;
 }
 
 .score-inputs {
   display: flex;
   gap: 20px;
-  margin-bottom: 10px;
-}
-
-.score-field {
-  display: flex;
-  flex-direction: column;
 }
 
 .score-field label {
   font-weight: bold;
-  margin-bottom: 5px;
   color: #333;
 }
 
@@ -408,38 +467,31 @@ export default {
 
 .final-result {
   margin-top: 10px;
-  font-size: 0.95rem;
   color: #555;
 }
 
-.player-match-stats {
-  margin-top: 20px;
-}
-
-.player-match-stats table.stats-table {
+.stats-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.player-match-stats th,
-.player-match-stats td {
+.stats-table th,
+.stats-table td {
   padding: 10px;
   text-align: center;
   border-bottom: 1px solid #ddd;
-  vertical-align: middle;
 }
 
-.player-match-stats thead th {
-  background-color: #f5f5f5;
-  color: #333;
-  border-bottom: 2px solid #ddd;
+.stats-table th {
+  background: #2c3e50;
+  color: #fff;
   font-weight: bold;
 }
 
 .stat-input {
   width: 60px;
-  border: 1px solid #ccc;
   padding: 4px;
+  border: 1px solid #ccc;
   border-radius: 4px;
 }
 
@@ -448,43 +500,100 @@ export default {
 }
 
 .not-called-row {
-  background-color: #f8d7da;
-  opacity: 0.9;
+  background: #fce4e4;
 }
 
 .starter-row {
-  background-color: #d4edda;
-  opacity: 0.9;
+  background: #e6f4ea;
 }
 
 .actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 20px;
 }
 
 .btn {
-  padding: 8px 12px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
+  color: white;
   cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .btn-save {
-  background-color: #28a745;
-  color: white;
+  background: #2ecc71;
 }
 
 .btn-save:hover {
-  background-color: #218838;
+  background: #27ae60;
+  transform: scale(1.05);
 }
 
 .btn-finalize {
-  background-color: #dc3545;
-  color: white;
+  background: #e74c3c;
 }
 
 .btn-finalize:hover {
-  background-color: #c82333;
+  background: #c0392b;
+  transform: scale(1.05);
+}
+
+.edit-button {
+  background: #3498db;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.edit-button:hover {
+  background: #2980b9;
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+  .match-details-page {
+    padding: 20px;
+  }
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .back-button {
+    margin-bottom: 15px;
+    margin-right: 0;
+  }
+  .page-title {
+    font-size: 2rem;
+    text-align: left;
+  }
+  .card {
+    padding: 15px;
+  }
+  .card h3 {
+    font-size: 1.5rem;
+  }
+  .card h4 {
+    font-size: 1.3rem;
+  }
+  .form-group input,
+  .form-group select {
+    padding: 6px;
+  }
+  .score-field input {
+    width: 80px;
+  }
+  .stats-table th,
+  .stats-table td {
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+  .btn {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
 }
 </style>

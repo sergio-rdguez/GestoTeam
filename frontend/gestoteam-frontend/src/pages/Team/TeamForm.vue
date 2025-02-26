@@ -94,13 +94,25 @@
         >
       </div>
     </form>
+
+    <!-- Componente MessageBox para mensajes -->
+    <MessageBox
+      v-if="showMessage"
+      :message="message"
+      :type="messageType"
+      @close="closeMessage"
+    />
   </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
+import MessageBox from "@/pages/utils/MessageBox.vue"; // Ajustada la ruta según tu estructura
 
 export default {
+  components: {
+    MessageBox,
+  },
   data() {
     return {
       team: {
@@ -114,6 +126,9 @@ export default {
       categories: [],
       errors: {},
       isEditMode: false, // Determina si estamos editando o añadiendo
+      showMessage: false,
+      message: "",
+      messageType: "info",
     };
   },
   created() {
@@ -126,51 +141,106 @@ export default {
   methods: {
     async fetchTeam() {
       try {
-        const teamId = this.$route.params.id;
-        const response = await apiClient.get(`/teams/${teamId}`);
+        console.log("Fetching team with ID:", this.$route.params.id);
+        const response = await apiClient.get(`/teams/${this.$route.params.id}`);
         this.team = {
           ...response.data,
           category: response.data.category.toUpperCase(), // Normaliza el valor de la categoría
         };
       } catch (error) {
-        console.error("Error al cargar el equipo:", error);
+        console.error("Error fetching team:", error.response || error);
+        this.message =
+          "No se pudo cargar el equipo: " +
+          (error.response?.data?.message ||
+            error.message ||
+            "Inténtelo de nuevo.");
+        this.messageType = "error";
+        this.showMessage = true;
       }
     },
     async fetchCategories() {
       try {
+        console.log("Fetching categories...");
         const response = await apiClient.get("/enums/categories");
         this.categories = response.data.map((category) => ({
           code: category.code,
           description: category.description,
         }));
       } catch (error) {
-        console.error("Error al cargar las categorías:", error);
+        console.error("Error fetching categories:", error.response || error);
+        this.message =
+          "No se pudieron cargar las categorías: " +
+          (error.response?.data?.message ||
+            error.message ||
+            "Inténtelo de nuevo.");
+        this.messageType = "error";
+        this.showMessage = true;
       }
     },
     async submitForm() {
       try {
+        console.log(
+          "Submitting team data:",
+          this.team,
+          "Edit mode:",
+          this.isEditMode
+        );
         if (this.isEditMode) {
           const teamId = this.$route.params.id;
-          await apiClient.put(`/teams/${teamId}`, this.team);
+          const response = await apiClient.put(`/teams/${teamId}`, this.team);
+          if (response.status === 200) {
+            this.message = "Equipo actualizado con éxito.";
+            this.messageType = "success";
+            this.showMessage = true;
+            setTimeout(() => {
+              this.$router.push("/teams");
+            }, 2000); // Espera 2 segundos para que el usuario vea el mensaje
+          } else {
+            throw new Error("Respuesta inesperada del servidor al actualizar.");
+          }
         } else {
-          await apiClient.post("/teams", this.team);
+          const response = await apiClient.post("/teams", this.team);
+          if (response.status === 200 || response.status === 201) {
+            // Aceptamos 201 (Created) también para POST
+            this.message = "Equipo creado con éxito.";
+            this.messageType = "success";
+            this.showMessage = true;
+            setTimeout(() => {
+              this.$router.push("/teams");
+            }, 2000); // Espera 2 segundos para que el usuario vea el mensaje
+          } else {
+            throw new Error("Respuesta inesperada del servidor al crear.");
+          }
         }
-        this.$router.push("/teams");
       } catch (error) {
+        console.error("Error submitting form:", error.response || error);
         if (
           error.response &&
           error.response.data &&
           error.response.data.errors
         ) {
           this.errors = error.response.data.errors;
+          this.message = "Errores en los datos ingresados: revisa los campos.";
+          this.messageType = "error";
         } else {
-          console.error("Error inesperado:", error);
+          this.message =
+            "No se pudo guardar el equipo: " +
+            (error.response?.data?.message ||
+              error.message ||
+              "Inténtelo de nuevo.");
+          this.messageType = "error";
         }
+        this.showMessage = true;
       }
+    },
+    closeMessage() {
+      this.showMessage = false;
+      console.log("MessageBox closed, showMessage:", this.showMessage);
     },
   },
 };
 </script>
+
 <style scoped>
 .team-form-page {
   padding: 20px;

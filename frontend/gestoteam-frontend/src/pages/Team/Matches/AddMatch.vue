@@ -33,13 +33,25 @@
         </div>
       </form>
     </div>
+
+    <!-- Componente MessageBox para mensajes -->
+    <MessageBox
+      v-if="showMessage"
+      :message="message"
+      :type="messageType"
+      @close="closeMessage"
+    />
   </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
+import MessageBox from "@/pages/utils/MessageBox.vue"; // Ajustada la ruta según tu estructura
 
 export default {
+  components: {
+    MessageBox,
+  },
   data() {
     return {
       newMatch: {
@@ -49,33 +61,60 @@ export default {
         venue: "",
       },
       opponents: [],
+      showMessage: false,
+      message: "",
+      messageType: "info",
     };
   },
   methods: {
     async fetchOpponents() {
       try {
+        console.log(
+          "Fetching opponents for team ID:",
+          this.$route.params.teamId
+        );
         const response = await apiClient.get(
           `/opponents/team/${this.$route.params.teamId}`
         );
         this.opponents = response.data;
+        console.log("Opponents loaded:", this.opponents);
       } catch (error) {
-        console.error("Error al cargar la lista de oponentes:", error);
-        alert("No se pudo cargar la lista de oponentes.");
+        console.error("Error fetching opponents:", error.response || error);
+        this.message =
+          "No se pudo cargar la lista de oponentes: " +
+          (error.response?.data?.message ||
+            error.message ||
+            "Inténtelo de nuevo.");
+        this.messageType = "error";
+        this.showMessage = true;
       }
     },
     async addMatch() {
-      try {
-        if (!this.newMatch.opponentId) {
-          alert("Debes seleccionar un oponente.");
-          return;
-        }
+      console.log("Attempting to add match with data:", this.newMatch);
+      if (!this.newMatch.opponentId) {
+        this.message = "Debes seleccionar un oponente.";
+        this.messageType = "warning";
+        this.showMessage = true;
+        console.log(
+          "ShowMessage after opponent validation:",
+          this.showMessage,
+          this.message,
+          this.messageType
+        );
+        return;
+      }
 
+      try {
         const dateTime = new Date(
           `${this.newMatch.date}T${this.newMatch.time}`
         );
         const selectedOpponent = this.opponents.find(
           (opp) => opp.id === this.newMatch.opponentId
         );
+
+        if (!selectedOpponent) {
+          throw new Error("Oponente no encontrado en la lista.");
+        }
 
         const matchPayload = {
           opponent: selectedOpponent.name,
@@ -86,16 +125,51 @@ export default {
           teamId: this.$route.params.teamId,
         };
 
-        await apiClient.post("/matches", matchPayload);
+        console.log("Sending match payload to backend:", matchPayload);
+        const response = await apiClient.post("/matches", matchPayload);
 
-        alert("Partido agregado con éxito.");
-        this.$router.push({
-          name: "TeamMatches",
-          params: { id: this.$route.params.teamId },
-        });
+        console.log(
+          "Match added successfully, response status:",
+          response.status,
+          "Response data:",
+          response.data
+        );
+        if (response.status === 200) {
+          this.message = "Partido agregado con éxito.";
+          this.messageType = "success";
+          this.showMessage = true;
+          console.log(
+            "ShowMessage after success:",
+            this.showMessage,
+            this.message,
+            this.messageType
+          );
+
+          setTimeout(() => {
+            this.$router.push({
+              name: "TeamMatches",
+              params: { id: this.$route.params.teamId },
+            });
+            console.log("Redirected to TeamMatches after showing message");
+          }, 2000); 
+        } else {
+          throw new Error("Respuesta inesperada del servidor.");
+        }
       } catch (error) {
-        console.error("Error al agregar el partido:", error);
-        alert("No se pudo agregar el partido.");
+        console.error("Error adding match:", error.response || error);
+        this.message =
+          "No se pudo agregar el partido: " +
+          (error.response?.data?.message ||
+            error.message ||
+            "Inténtelo de nuevo.");
+        this.messageType = "error";
+        this.showMessage = true;
+        console.log(
+          "ShowMessage after error:",
+          this.showMessage,
+          this.message,
+          this.messageType
+        );
       }
     },
     goBack() {
@@ -104,12 +178,29 @@ export default {
         params: { id: this.$route.params.teamId },
       });
     },
+    closeMessage() {
+      this.showMessage = false;
+      console.log("MessageBox closed, showMessage:", this.showMessage);
+    },
   },
   mounted() {
     this.fetchOpponents();
   },
+  watch: {
+    showMessage(newValue) {
+      console.log(
+        "showMessage changed to:",
+        newValue,
+        "Message:",
+        this.message,
+        "Type:",
+        this.messageType
+      );
+    },
+  },
 };
 </script>
+
 <style scoped>
 .add-match-page {
   display: flex;
