@@ -27,8 +27,10 @@ public class Player {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private String surnameFirst;
 
     private String surnameSecond;
@@ -57,6 +59,7 @@ public class Player {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
     private Boolean deleted = false;
 
     @Column(nullable = false)

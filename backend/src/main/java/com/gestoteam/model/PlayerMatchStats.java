@@ -1,20 +1,24 @@
 package com.gestoteam.model;
 
-import javax.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import javax.persistence.*;
 import javax.validation.constraints.Max;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"match_id", "player_id"})
-        }
-)
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"match_id", "player_id"})
+})
+@EntityListeners(AuditingEntityListener.class)
 public class PlayerMatchStats {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,22 +32,38 @@ public class PlayerMatchStats {
     @JoinColumn(name = "player_id", nullable = false)
     private Player player;
 
-    private int goals;
+    @Column(nullable = false)
+    private int goals = 0;
 
     @Max(90)
-    private int minutesPlayed;
+    @Column(nullable = false)
+    private int minutesPlayed = 0;
 
-    private boolean yellowCard;
+    @Column(nullable = false)
+    private boolean yellowCard = false;
 
-    private boolean doubleYellowCard;
+    @Column(nullable = false)
+    private boolean doubleYellowCard = false;
 
-    private boolean redCard;
+    @Column(nullable = false)
+    private boolean redCard = false;
 
-    private int goalsConceded;
+    @Column(nullable = false)
+    private int goalsConceded = 0;
 
-    private int ownGoals;
+    @Column(nullable = false)
+    private int ownGoals = 0;
 
-    private boolean calledUp;
+    @Column(nullable = false)
+    private boolean calledUp = false;
 
-    private boolean starter;
+    @Column(nullable = false)
+    private boolean starter = false;
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
 }

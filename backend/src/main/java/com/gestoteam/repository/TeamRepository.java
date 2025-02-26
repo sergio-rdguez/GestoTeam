@@ -10,4 +10,5 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     List<Team> findByOwnerIdAndDeletedFalse(String ownerId);
     Optional<Team> findByIdAndOwnerIdAndDeletedFalse(Long id, String ownerId);
     Optional<Team> findByIdAndOwnerId(Long id, String ownerId);
+    boolean existsByIdAndOwnerIdAndDeletedFalse(Long id, String ownerId);
 }
