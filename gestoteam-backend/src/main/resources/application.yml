@@ -4,7 +4,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/gestoteam
+    url: jdbc:postgresql://SERGIO-PC:5432/gestoteam
     driver-class-name: org.postgresql.Driver
     username: postgres
     password: admin
