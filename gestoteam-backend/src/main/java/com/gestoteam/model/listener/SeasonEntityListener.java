@@ -4,8 +4,8 @@ import com.gestoteam.model.Season;
 import com.gestoteam.repository.SeasonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import java.util.List;
 import java.util.stream.Collectors;
 

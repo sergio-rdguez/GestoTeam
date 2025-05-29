@@ -3,7 +3,7 @@ package com.gestoteam.model;
 import com.gestoteam.enums.PlayerStatus;
 import com.gestoteam.enums.Position;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;

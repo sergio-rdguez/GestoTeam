@@ -1,6 +1,6 @@
 package com.gestoteam.model;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import com.gestoteam.model.listener.SeasonEntityListener;
 import lombok.Data;
