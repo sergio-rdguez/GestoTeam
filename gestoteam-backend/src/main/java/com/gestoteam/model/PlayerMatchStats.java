@@ -7,8 +7,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.*;
-import javax.validation.constraints.Max;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
 import java.time.LocalDateTime;
 
 @Data

@@ -1,6 +1,6 @@
 package com.gestoteam.model;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import com.gestoteam.enums.Category;
 import lombok.Data;
