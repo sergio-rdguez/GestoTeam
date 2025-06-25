@@ -19,6 +19,9 @@
           Partidos
         </router-link>
         <!--
+        <router-link :to="{ name: 'RivalsDetails', params: { id: team.id } }" class="nav-item">
+          Rivales  
+        </router-link>
         <router-link :to="{ name: 'TeamStatistics', params: { id: team.id } }" class="nav-item">
           Estadísticas
         </router-link>

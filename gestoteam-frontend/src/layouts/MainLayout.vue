@@ -3,10 +3,21 @@
     <header class="app-header">
       <h1>GestoTeam</h1>
       <div class="header-buttons">
-        <router-link to="/settings" class="settings-button" aria-label="Configuración">
+        <router-link to="/teams" class="home-button" aria-label="Inicio">
+          <i class="fas fa-home"></i>
+        </router-link>
+        <router-link
+          to="/settings"
+          class="settings-button"
+          aria-label="Configuración"
+        >
           <i class="fas fa-cog"></i>
         </router-link>
-        <button class="logout-button" @click="logout" aria-label="Cerrar sesión">
+        <button
+          class="logout-button"
+          @click="logout"
+          aria-label="Cerrar sesión"
+        >
           <i class="fas fa-sign-out-alt"></i>
         </button>
       </div>
@@ -128,6 +139,33 @@ export default {
   font-size: 1.2rem;
 }
 
+/* Botón de inicio */
+.home-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: white;
+  border-radius: 50%;
+  color: #007bff;
+  font-size: 1.2rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.home-button:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.home-button i {
+  font-size: 1.2rem;
+}
+
+
 /* Ajustes para dispositivos móviles */
 @media (max-width: 768px) {
   .app-header {
@@ -143,6 +181,7 @@ export default {
   }
 
   .settings-button,
+  .home-button,
   .logout-button {
     width: 36px;
     height: 36px;

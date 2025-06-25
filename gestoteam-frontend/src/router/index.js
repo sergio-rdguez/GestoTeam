@@ -14,6 +14,7 @@ import AddMatch from "@/pages/Team/Matches/AddMatch.vue";
 import MatchDetails from '@/pages/Team/Matches/MatchDetails.vue';
 import TeamNotifications from "@/pages/Team/TeamNotifications.vue";
 import TeamTrainings from "@/pages/Team/TeamTrainings.vue";
+import RivalsDetails from "@/pages/Team/Rivals/RivalsDetails.vue";
 import LoginPage from '@/pages/auth/LoginPage.vue';
 
 
@@ -34,14 +35,15 @@ const routes = [
       { path: "/teams/:id/statistics", name: "TeamStatistics", component: TeamStatistics },
       { path: "/teams/:id/matches", name: "TeamMatches", component: TeamMatches },
       { path: "/teams/:teamId/add-match", name: "AddMatch", component: AddMatch },
-      { path: "/matches/:id",name: "MatchDetails", component: MatchDetails, props: true,},
+      { path: '/teams/add', name: 'AddTeam', component: TeamForm },
+      { path: '/teams/:id/edit', name: 'EditTeam', component: TeamForm },
       { path: "/teams/:id/notifications", name: "TeamNotifications", component: TeamNotifications },
       { path: "/teams/:id/trainings", name: "TeamTrainings", component: TeamTrainings },
       { path: '/teams/:teamId/add-player', name: 'AddPlayer', component: PlayerForm },
+      { path: '/rivals/:teamId', name: 'RivalDetails', component: RivalsDetails},
+      { path: "/matches/:id",name: "MatchDetails", component: MatchDetails, props: true,},
       { path: '/players/:id', name: 'PlayerDetails', component: PlayerDetails },
       { path: '/players/:id/edit', name: 'EditPlayer', component: PlayerForm },
-      { path: '/teams/add', name: 'AddTeam', component: TeamForm },
-      { path: '/teams/:id/edit', name: 'EditTeam', component: TeamForm },
       { path: '/settings', name: 'UserSettings', component: UserSettings },
     ],
   },
