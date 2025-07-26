@@ -3,7 +3,12 @@ package com.gestoteam.service;
 import com.gestoteam.exception.GestoServiceException;
 import com.gestoteam.model.User;
 import com.gestoteam.repository.UserRepository;
+import com.gestoteam.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +21,9 @@ public class AuthService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final UserSettingsService userSettingsService;
+    private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
+    private final UserDetailsService userDetailsService;
 
     public void register(String username, String rawPassword) {
         if (userRepository.existsByUsername(username)) {
@@ -29,12 +37,14 @@ public class AuthService {
         userSettingsService.createDefaultSettings(username);
     }
 
-    public void login(String username, String rawPassword) {
-        User user = userRepository.findByUsernameAndDeletedFalse(username)
-                .orElseThrow(() -> new GestoServiceException("Usuario no encontrado o marcado como eliminado"));
-
-        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new GestoServiceException("Contraseña incorrecta");
+    public String login(String username, String rawPassword) {
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, rawPassword));
+        } catch (Exception e) {
+            throw new GestoServiceException("Usuario o contraseña incorrectos");
         }
+
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        return jwtUtil.generateToken(userDetails);
     }
 }

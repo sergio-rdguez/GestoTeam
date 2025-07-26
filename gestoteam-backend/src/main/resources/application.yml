@@ -31,4 +31,7 @@ swagger:
 
 audit:
   secret-key: "b7E3aX8Zp4Q2r9Wc"
+jwt:
+  secret: "unaClaveSecretaLargaYUnicaParaGestoTeamQueSeaDificilDeAdivinar" # Cambia esto por una clave segura
+  expiration: 86400
 

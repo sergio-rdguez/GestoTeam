@@ -16,12 +16,12 @@ public class OpponentController {
     private final OpponentService opponentService;
 
     @PostMapping
-    public OpponentResponse createOpponent(@RequestBody OpponentRequest request, @RequestHeader("Audit") String audit) {
-        return opponentService.createOpponent(request, audit);
+    public OpponentResponse createOpponent(@RequestBody OpponentRequest request) {
+        return opponentService.createOpponent(request);
     }
 
     @GetMapping("/team/{teamId}")
-    public List<OpponentResponse> getOpponentsByTeam(@PathVariable Long teamId, @RequestHeader("Audit") String audit) {
-        return opponentService.getOpponentsByTeam(teamId, audit);
+    public List<OpponentResponse> getOpponentsByTeam(@PathVariable Long teamId) {
+        return opponentService.getOpponentsByTeam(teamId);
     }
 }

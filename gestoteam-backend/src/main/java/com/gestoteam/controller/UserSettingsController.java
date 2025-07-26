@@ -12,12 +12,12 @@ public class UserSettingsController {
     private UserSettingsService userSettingsService;
 
     @GetMapping
-    public UserSettings getSettings(@RequestHeader("audit") String audit) {
-        return userSettingsService.getSettings(audit);
+    public UserSettings getSettings() {
+        return userSettingsService.getSettings();
     }
 
     @PutMapping
-    public UserSettings updateSettings(@RequestHeader("audit") String audit, @RequestBody UserSettings updatedSettings) {
-        return userSettingsService.updateSettings(audit, updatedSettings);
+    public UserSettings updateSettings(@RequestBody UserSettings updatedSettings) {
+        return userSettingsService.updateSettings(updatedSettings);
     }
 }

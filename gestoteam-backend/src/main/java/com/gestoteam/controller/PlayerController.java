@@ -19,39 +19,37 @@ public class PlayerController {
     private final PlayerService playerService;
 
     @GetMapping
-    public ResponseEntity<List<PlayerResponse>> getAllPlayers(@RequestHeader String audit) {
-        return ResponseEntity.ok(playerService.getAllPlayers(audit));
+    public ResponseEntity<List<PlayerResponse>> getAllPlayers() {
+        return ResponseEntity.ok(playerService.getAllPlayers());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PlayerResponse> getPlayerById(@PathVariable Long id, @RequestHeader String audit) {
-        return playerService.getPlayerById(id, audit)
+    public ResponseEntity<PlayerResponse> getPlayerById(@PathVariable Long id) {
+        return playerService.getPlayerById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void createPlayer(@RequestBody PlayerRequest playerRequest, @RequestHeader String audit) {
-        playerService.createPlayer(playerRequest, audit);
+    public void createPlayer(@RequestBody PlayerRequest playerRequest) {
+        playerService.createPlayer(playerRequest);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updatePlayer(@PathVariable Long id, @RequestBody PlayerRequest playerRequest, @RequestHeader String audit) {
-        playerService.updatePlayer(id, playerRequest, audit);
+    public void updatePlayer(@PathVariable Long id, @RequestBody PlayerRequest playerRequest) {
+        playerService.updatePlayer(id, playerRequest);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletePlayer(@PathVariable Long id, @RequestHeader String audit) {
-        playerService.deletePlayer(id, audit);
+    public void deletePlayer(@PathVariable Long id) {
+        playerService.deletePlayer(id);
     }
 
     @GetMapping("/team/{teamId}")
-    public TeamPlayerSummaryResponse getPlayersByTeamId(@PathVariable Long teamId,
-                                                        @RequestHeader("audit") String audit) {
-        return playerService.getPlayersByTeamId(teamId, audit);
+    public TeamPlayerSummaryResponse getPlayersByTeamId(@PathVariable Long teamId) {
+        return playerService.getPlayersByTeamId(teamId);
     }
-
 }

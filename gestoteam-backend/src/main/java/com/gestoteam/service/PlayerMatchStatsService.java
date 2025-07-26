@@ -10,11 +10,10 @@ import com.gestoteam.repository.MatchRepository;
 import com.gestoteam.repository.PlayerMatchStatsRepository;
 import com.gestoteam.repository.PlayerRepository;
 import com.gestoteam.repository.TeamRepository;
-import com.gestoteam.dto.Audit;
-import com.gestoteam.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,34 +26,58 @@ public class PlayerMatchStatsService {
     private final MatchRepository matchRepository;
     private final TeamRepository teamRepository;
     private final ModelMapper modelMapper;
-    private final ValidationUtil validationUtil;
 
-    public PlayerMatchStatsResponse getPlayerMatchStatsById(Long id, String audit) {
-        Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Obteniendo estadísticas de jugador para el partido con ID: {} por el usuario: {}", id, auditInfo.getUser());
-
-        PlayerMatchStats playerMatchStats = playerMatchStatsRepository.findById(id)
-                .filter(stats -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(stats.getMatch().getTeam().getId(), auditInfo.getUser()))
-                .orElseThrow(() -> {
-                    log.warn("Estadísticas con ID: {} no encontradas o no pertenecen al usuario: {}", id, auditInfo.getUser());
-                    return new GestoServiceException("Estadísticas no encontradas o no tienes permisos para acceder a ellas.");
-                });
-
-        log.info("Estadísticas con ID: {} obtenidas correctamente para el usuario: {}", id, auditInfo.getUser());
-        return modelMapper.map(playerMatchStats, PlayerMatchStatsResponse.class);
+    private String getCurrentUsername() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
-    public PlayerMatchStatsResponse updatePlayerMatchStats(Long id, PlayerMatchStatsRequest request, String audit) {
-        Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Actualizando estadísticas de jugador con ID: {} por el usuario: {}", id, auditInfo.getUser());
+    public PlayerMatchStatsResponse getPlayerMatchStatsById(Long id) {
+        String username = getCurrentUsername();
+        log.info("Obteniendo estadísticas de jugador-partido con ID: {} por el usuario: {}", id, username);
+
+        PlayerMatchStats stats = playerMatchStatsRepository.findById(id)
+                .filter(s -> s.getMatch().getTeam().getOwnerId().equals(username))
+                .orElseThrow(() -> new GestoServiceException("Estadísticas no encontradas o no tienes permisos para acceder a ellas."));
+
+        return modelMapper.map(stats, PlayerMatchStatsResponse.class);
+    }
+
+    public PlayerMatchStatsResponse createPlayerMatchStats(PlayerMatchStatsRequest request) {
+        String username = getCurrentUsername();
+        log.info("Creando estadísticas para el partido ID: {} y jugador ID: {} por el usuario: {}",
+                request.getMatchId(), request.getPlayerId(), username);
+
+        Match match = matchRepository.findByIdAndDeletedFalse(request.getMatchId())
+                .filter(m -> m.getTeam().getOwnerId().equals(username))
+                .orElseThrow(() -> new GestoServiceException("Partido no encontrado o no tienes permisos para acceder a él."));
+
+        Player player = playerRepository.findByIdAndDeletedFalse(request.getPlayerId())
+                .filter(p -> p.getTeam().getOwnerId().equals(username))
+                .orElseThrow(() -> new GestoServiceException("Jugador no encontrado o no tienes permisos para acceder a él."));
+
+        PlayerMatchStats stats = modelMapper.map(request, PlayerMatchStats.class);
+        stats.setMatch(match);
+        stats.setPlayer(player);
+
+        try {
+            PlayerMatchStats savedStats = playerMatchStatsRepository.save(stats);
+            log.info("Estadísticas creadas con ID: {}", savedStats.getId());
+            return modelMapper.map(savedStats, PlayerMatchStatsResponse.class);
+        } catch (Exception e) {
+            log.error("Error al crear las estadísticas: {}", e.getMessage());
+            throw new GestoServiceException("Error al crear las estadísticas. Por favor, inténtelo más tarde.");
+        }
+    }
+
+    public PlayerMatchStatsResponse updatePlayerMatchStats(Long id, PlayerMatchStatsRequest request) {
+        String username = getCurrentUsername();
+        log.info("Actualizando estadísticas de jugador con ID: {} por el usuario: {}", id, username);
 
         PlayerMatchStats existingStats = playerMatchStatsRepository.findById(id)
-                .filter(stats -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(stats.getMatch().getTeam().getId(), auditInfo.getUser()))
-                .orElseThrow(() -> {
-                    log.warn("Estadísticas con ID: {} no encontradas o no pertenecen al usuario: {}", id, auditInfo.getUser());
-                    return new GestoServiceException("Estadísticas no encontradas o no tienes permisos para acceder a ellas.");
-                });
+                .filter(stats -> stats.getMatch().getTeam().getOwnerId().equals(username))
+                .orElseThrow(() -> new GestoServiceException("Estadísticas no encontradas o no tienes permisos para acceder a ellas."));
 
+        // Actualizamos los campos necesarios. ModelMapper podría usarse aquí también.
         existingStats.setGoals(request.getGoals());
         existingStats.setMinutesPlayed(request.getMinutesPlayed());
         existingStats.setYellowCard(request.isYellowCard());
@@ -67,55 +90,11 @@ public class PlayerMatchStatsService {
 
         try {
             PlayerMatchStats savedStats = playerMatchStatsRepository.save(existingStats);
-            log.info("Estadísticas con ID: {} actualizadas correctamente por el usuario: {}", id, auditInfo.getUser());
+            log.info("Estadísticas con ID: {} actualizadas correctamente por el usuario: {}", id, username);
             return modelMapper.map(savedStats, PlayerMatchStatsResponse.class);
         } catch (Exception e) {
-            log.error("Error al actualizar las estadísticas con ID: {} por el usuario: {}", id, auditInfo.getUser(), e);
+            log.error("Error al actualizar las estadísticas con ID: {} por el usuario: {}", id, username, e);
             throw new GestoServiceException("Error al actualizar las estadísticas. Por favor, inténtelo más tarde.");
-        }
-    }
-
-    public PlayerMatchStatsResponse createPlayerMatchStats(PlayerMatchStatsRequest request, String audit) {
-        Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Creando estadísticas de jugador para el partido con ID: {} y jugador con ID: {} por el usuario: {}",
-                request.getMatchId(), request.getPlayerId(), auditInfo.getUser());
-
-        Match match = matchRepository.findByIdAndDeletedFalse(request.getMatchId())
-                .filter(m -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(m.getTeam().getId(), auditInfo.getUser()))
-                .orElseThrow(() -> {
-                    log.warn("Partido con ID: {} no encontrado o no pertenece al usuario: {}", request.getMatchId(), auditInfo.getUser());
-                    return new GestoServiceException("Partido no encontrado o no tienes permisos para acceder a él.");
-                });
-
-        Player player = playerRepository.findById(request.getPlayerId())
-                .filter(p -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(p.getTeam().getId(), auditInfo.getUser()))
-                .orElseThrow(() -> {
-                    log.warn("Jugador con ID: {} no encontrado o no pertenece al usuario: {}", request.getPlayerId(), auditInfo.getUser());
-                    return new GestoServiceException("Jugador no encontrado o no tienes permisos para acceder a él.");
-                });
-
-        PlayerMatchStats stats = new PlayerMatchStats();
-        stats.setGoals(request.getGoals());
-        stats.setMinutesPlayed(request.getMinutesPlayed());
-        stats.setYellowCard(request.isYellowCard());
-        stats.setDoubleYellowCard(request.isDoubleYellowCard());
-        stats.setRedCard(request.isRedCard());
-        stats.setGoalsConceded(request.getGoalsConceded());
-        stats.setOwnGoals(request.getOwnGoals());
-        stats.setCalledUp(request.isCalledUp());
-        stats.setStarter(request.isStarter());
-        stats.setMatch(match);
-        stats.setPlayer(player);
-
-        try {
-            PlayerMatchStats savedStats = playerMatchStatsRepository.save(stats);
-            log.info("Estadísticas creadas con ID: {} para el partido: {} y jugador: {} por el usuario: {}",
-                    savedStats.getId(), match.getId(), player.getId(), auditInfo.getUser());
-            return modelMapper.map(savedStats, PlayerMatchStatsResponse.class);
-        } catch (Exception e) {
-            log.error("Error al crear las estadísticas para el partido: {} y jugador: {} por el usuario: {}",
-                    request.getMatchId(), request.getPlayerId(), auditInfo.getUser(), e);
-            throw new GestoServiceException("Error al crear las estadísticas. Por favor, inténtelo más tarde.");
         }
     }
 }

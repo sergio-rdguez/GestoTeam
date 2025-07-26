@@ -15,12 +15,11 @@ import com.gestoteam.repository.MatchRepository;
 import com.gestoteam.repository.PlayerMatchStatsRepository;
 import com.gestoteam.repository.PlayerRepository;
 import com.gestoteam.repository.TeamRepository;
-import com.gestoteam.dto.Audit;
 import com.gestoteam.util.GlobalUtil;
-import com.gestoteam.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -40,166 +39,129 @@ public class MatchService {
     private final PlayerMatchStatsRepository playerMatchStatsRepository;
     private final ModelMapper modelMapper;
     private final GlobalUtil globalUtil;
-    private final ValidationUtil validationUtil;
 
+    private String getCurrentUsername() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
 
-    public MatchResponse createMatch(MatchRequest request, String audit) {
-        Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Creando un partido para el equipo con ID: {} por el usuario: {}", request.getTeamId(), auditInfo.getUser());
+    public MatchResponse createMatch(MatchRequest request) {
+        String username = getCurrentUsername();
+        log.info("Creando un partido para el equipo con ID: {} por el usuario: {}", request.getTeamId(), username);
 
-        Team team = teamRepository.findByIdAndOwnerIdAndDeletedFalse(request.getTeamId(), auditInfo.getUser())
+        Team team = teamRepository.findByIdAndOwnerIdAndDeletedFalse(request.getTeamId(), username)
                 .orElseThrow(() -> {
-                    log.warn("Equipo con ID: {} no encontrado o no pertenece al usuario: {}", request.getTeamId(), auditInfo.getUser());
+                    log.warn("Equipo con ID: {} no encontrado o no pertenece al usuario: {}", request.getTeamId(), username);
                     return new GestoServiceException("Equipo no encontrado o no tienes permisos para acceder a él.");
                 });
 
         Match match = modelMapper.map(request, Match.class);
         match.setId(null);
-        if (match.getPlayerStats() == null) {
-            match.setPlayerStats(new ArrayList<>());
-        }
+        match.setPlayerStats(new ArrayList<>());
         match.setTeam(team);
         match.setSeason(globalUtil.getCurrentSeason());
-        match.setDeleted(false); // Aseguramos que se cree como no eliminado
+        match.setDeleted(false);
 
         try {
             Match savedMatch = matchRepository.save(match);
-            log.info("Partido creado con ID: {} para el equipo: {} por el usuario: {}", savedMatch.getId(), team.getId(), auditInfo.getUser());
+            log.info("Partido creado con ID: {} para el equipo: {} por el usuario: {}", savedMatch.getId(), team.getId(), username);
             return modelMapper.map(savedMatch, MatchResponse.class);
         } catch (Exception e) {
-            log.error("Error al crear el partido para el equipo: {} por el usuario: {}", team.getId(), auditInfo.getUser(), e);
+            log.error("Error al crear el partido para el equipo: {} por el usuario: {}", team.getId(), username, e);
             throw new GestoServiceException("Error al crear el partido. Por favor, inténtelo más tarde.");
         }
     }
 
-    public List<MatchResponse> getMatchesByTeam(Long teamId, String audit) {
-        Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Obteniendo partidos para el equipo con ID: {} por el usuario: {}", teamId, auditInfo.getUser());
+    public List<MatchResponse> getMatchesByTeam(Long teamId) {
+        String username = getCurrentUsername();
+        log.info("Obteniendo partidos para el equipo con ID: {} por el usuario: {}", teamId, username);
 
-        if (!teamRepository.existsByIdAndOwnerIdAndDeletedFalse(teamId, auditInfo.getUser())) {
-            log.warn("Equipo con ID: {} no encontrado o no pertenece al usuario: {}", teamId, auditInfo.getUser());
+        if (!teamRepository.existsByIdAndOwnerIdAndDeletedFalse(teamId, username)) {
+            log.warn("Equipo con ID: {} no encontrado o no pertenece al usuario: {}", teamId, username);
             throw new GestoServiceException("Equipo no encontrado o no tienes permisos para acceder a él.");
         }
 
         List<Match> matches = matchRepository.findByTeamIdAndSeason_IdAndDeletedFalse(
                 teamId, globalUtil.getCurrentSeason().getId());
 
-        List<MatchResponse> response = matches.stream()
+        return matches.stream()
                 .sorted(Comparator.comparing(Match::getDate, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(match -> modelMapper.map(match, MatchResponse.class))
                 .collect(Collectors.toList());
-
-        log.info("Se encontraron {} partidos para el equipo: {} y usuario: {}", response.size(), teamId, auditInfo.getUser());
-        return response;
     }
 
-    public MatchResponse updateMatch(Long id, MatchUpdateRequest request, String audit) {
-        Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Actualizando el partido con ID: {} por el usuario: {}", id, auditInfo.getUser());
+    public MatchResponse updateMatch(Long id, MatchUpdateRequest request) {
+        String username = getCurrentUsername();
+        log.info("Actualizando el partido con ID: {} por el usuario: {}", id, username);
 
         Match existingMatch = matchRepository.findByIdAndDeletedFalse(id)
-                .filter(m -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(m.getTeam().getId(), auditInfo.getUser()))
+                .filter(m -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(m.getTeam().getId(), username))
                 .orElseThrow(() -> {
-                    log.warn("Partido con ID: {} no encontrado o no pertenece al usuario: {}", id, auditInfo.getUser());
+                    log.warn("Partido con ID: {} no encontrado o no pertenece al usuario: {}", id, username);
                     return new GestoServiceException("Partido no encontrado o no tienes permisos para acceder a él.");
                 });
 
-        if (request.getDate() != null) {
-            existingMatch.setDate(request.getDate());
-        }
-        if (request.getOpponent() != null) {
-            existingMatch.setOpponent(request.getOpponent());
-        }
-        if (request.getLocation() != null) {
-            existingMatch.setLocation(request.getLocation());
-        }
-        if (request.getResult() != null) {
-            existingMatch.setResult(request.getResult());
-        }
-        existingMatch.setWon(request.isWon());
+        modelMapper.map(request, existingMatch);
 
         try {
             Match savedMatch = matchRepository.save(existingMatch);
-            log.info("Partido con ID: {} actualizado correctamente por el usuario: {}", id, auditInfo.getUser());
+            log.info("Partido con ID: {} actualizado correctamente por el usuario: {}", id, username);
             return modelMapper.map(savedMatch, MatchResponse.class);
         } catch (Exception e) {
-            log.error("Error al actualizar el partido con ID: {} por el usuario: {}", id, auditInfo.getUser(), e);
+            log.error("Error al actualizar el partido con ID: {} por el usuario: {}", id, username, e);
             throw new GestoServiceException("Error al actualizar el partido. Por favor, inténtelo más tarde.");
         }
     }
 
-    public void deleteMatch(Long id, String audit) {
-        Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Eliminando el partido con ID: {} por el usuario: {}", id, auditInfo.getUser());
+    public void deleteMatch(Long id) {
+        String username = getCurrentUsername();
+        log.info("Eliminando el partido con ID: {} por el usuario: {}", id, username);
 
         Match existingMatch = matchRepository.findByIdAndDeletedFalse(id)
-                .filter(m -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(m.getTeam().getId(), auditInfo.getUser()))
+                .filter(m -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(m.getTeam().getId(), username))
                 .orElseThrow(() -> {
-                    log.warn("Partido con ID: {} no encontrado o no pertenece al usuario: {}", id, auditInfo.getUser());
+                    log.warn("Partido con ID: {} no encontrado o no pertenece al usuario: {}", id, username);
                     return new GestoServiceException("Partido no encontrado o no tienes permisos para acceder a él.");
                 });
 
         existingMatch.setDeleted(true);
         try {
             matchRepository.save(existingMatch);
-            log.info("Partido con ID: {} eliminado correctamente por el usuario: {}", id, auditInfo.getUser());
+            log.info("Partido con ID: {} eliminado correctamente por el usuario: {}", id, username);
         } catch (Exception e) {
-            log.error("Error al eliminar el partido con ID: {} por el usuario: {}", id, auditInfo.getUser(), e);
+            log.error("Error al eliminar el partido con ID: {} por el usuario: {}", id, username, e);
             throw new GestoServiceException("Error al eliminar el partido. Por favor, inténtelo más tarde.");
         }
     }
 
-    public MatchDetailsResponse getMatchDetailsById(Long id, String audit) {
-        Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Obteniendo detalles del partido con ID: {} por el usuario: {}", id, auditInfo.getUser());
+    public MatchDetailsResponse getMatchDetailsById(Long id) {
+        String username = getCurrentUsername();
+        log.info("Obteniendo detalles del partido con ID: {} por el usuario: {}", id, username);
 
-        // Obtener el partido y validar permisos
         Match match = matchRepository.findByIdAndDeletedFalse(id)
-                .filter(m -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(m.getTeam().getId(), auditInfo.getUser()))
+                .filter(m -> teamRepository.existsByIdAndOwnerIdAndDeletedFalse(m.getTeam().getId(), username))
                 .orElseThrow(() -> {
-                    log.warn("Partido con ID: {} no encontrado o no pertenece al usuario: {}", id, auditInfo.getUser());
+                    log.warn("Partido con ID: {} no encontrado o no pertenece al usuario: {}", id, username);
                     return new GestoServiceException("Partido no encontrado o no tienes permisos para acceder a él.");
                 });
 
-        // Obtener el equipo del partido
         Team team = match.getTeam();
-
-        // Obtener todos los jugadores activos del equipo
         List<Player> teamPlayers = playerRepository.findByTeamIdAndDeletedFalse(team.getId());
-
-        // Obtener las estadísticas existentes del partido
         List<PlayerMatchStats> existingStats = match.getPlayerStats();
-
-        // Crear un conjunto de IDs de jugadores que ya tienen estadísticas
         Set<Long> existingPlayerIds = existingStats.stream()
                 .map(stats -> stats.getPlayer().getId())
                 .collect(Collectors.toSet());
 
-        // Crear estadísticas para los jugadores que no tienen entrada
         for (Player player : teamPlayers) {
             if (!existingPlayerIds.contains(player.getId())) {
                 PlayerMatchStats newStats = new PlayerMatchStats();
                 newStats.setMatch(match);
                 newStats.setPlayer(player);
-                newStats.setGoals(0);
-                newStats.setMinutesPlayed(0);
-                newStats.setYellowCard(false);
-                newStats.setDoubleYellowCard(false);
-                newStats.setRedCard(false);
-                newStats.setGoalsConceded(0);
-                newStats.setOwnGoals(0);
-                newStats.setCalledUp(false);
-                newStats.setStarter(false);
-                existingStats.add(newStats);
-                // Guardar la nueva estadística en la base de datos
-                playerMatchStatsRepository.save(newStats);
+                existingStats.add(playerMatchStatsRepository.save(newStats));
             }
         }
 
-        // Mapear la respuesta
         MatchDetailsResponse response = modelMapper.map(match, MatchDetailsResponse.class);
-        TeamResponse teamResponse = modelMapper.map(team, TeamResponse.class);
-        response.setTeam(teamResponse);
+        response.setTeam(modelMapper.map(team, TeamResponse.class));
         response.setPlayerStats(existingStats.stream().map(stats -> {
             PlayerMatchStatsResponse dto = modelMapper.map(stats, PlayerMatchStatsResponse.class);
             dto.setPlayerId(stats.getPlayer().getId());
@@ -207,7 +169,7 @@ public class MatchService {
             return dto;
         }).collect(Collectors.toList()));
 
-        log.info("Detalles del partido con ID: {} obtenidos correctamente para el usuario: {}", id, auditInfo.getUser());
+        log.info("Detalles del partido con ID: {} obtenidos correctamente para el usuario: {}", id, username);
         return response;
     }
 }

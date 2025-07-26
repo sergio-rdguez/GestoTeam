@@ -1,6 +1,7 @@
 package com.gestoteam.controller;
 
 import com.gestoteam.dto.request.AuthRequest;
+import com.gestoteam.dto.response.AuthResponse;
 import com.gestoteam.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,8 +23,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@Valid @RequestBody AuthRequest request) {
-        authService.login(request.getUsername(), request.getPassword());
-        return ResponseEntity.ok().build();
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
+        String token = authService.login(request.getUsername(), request.getPassword());
+        return ResponseEntity.ok(new AuthResponse(token));
     }
 }

@@ -18,27 +18,27 @@ public class MatchController {
     private final MatchService matchService;
 
     @PostMapping
-    public MatchResponse createMatch(@RequestBody MatchRequest matchRequest,@RequestHeader String audit) {
-        return matchService.createMatch(matchRequest,audit);
+    public MatchResponse createMatch(@RequestBody MatchRequest matchRequest) {
+        return matchService.createMatch(matchRequest);
     }
 
     @GetMapping("/team/{teamId}")
-    public List<MatchResponse> getMatchesByTeam(@PathVariable Long teamId,@RequestHeader String audit) {
-        return matchService.getMatchesByTeam(teamId,audit);
+    public List<MatchResponse> getMatchesByTeam(@PathVariable Long teamId) {
+        return matchService.getMatchesByTeam(teamId);
     }
 
     @GetMapping("/details/{id}")
-    public MatchDetailsResponse getMatchDetailsById(@PathVariable Long id,@RequestHeader String audit) {
-        return matchService.getMatchDetailsById(id,audit);
+    public MatchDetailsResponse getMatchDetailsById(@PathVariable Long id) {
+        return matchService.getMatchDetailsById(id);
     }
 
     @PutMapping("/{id}")
-    public MatchResponse updateMatch(@PathVariable Long id, @RequestBody MatchUpdateRequest matchRequest,@RequestHeader String audit) {
-        return matchService.updateMatch(id, matchRequest,audit);
+    public MatchResponse updateMatch(@PathVariable Long id, @RequestBody MatchUpdateRequest matchRequest) {
+        return matchService.updateMatch(id, matchRequest);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteMatch(@PathVariable Long id,@RequestHeader String audit) {
-        matchService.deleteMatch(id,audit);
+    public void deleteMatch(@PathVariable Long id) {
+        matchService.deleteMatch(id);
     }
 }

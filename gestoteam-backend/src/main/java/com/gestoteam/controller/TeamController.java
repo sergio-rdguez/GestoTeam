@@ -18,31 +18,31 @@ public class TeamController {
     private final TeamService teamService;
 
     @GetMapping
-    public ResponseEntity<List<TeamResponse>> getAllTeams(@RequestHeader String audit) {
-        return ResponseEntity.ok(teamService.getAllTeams(audit));
+    public ResponseEntity<List<TeamResponse>> getAllTeams() {
+        return ResponseEntity.ok(teamService.getAllTeams());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TeamResponse> getTeamById(@PathVariable Long id, @RequestHeader String audit) {
-        return teamService.getTeamById(id, audit)
+    public ResponseEntity<TeamResponse> getTeamById(@PathVariable Long id) {
+        return teamService.getTeamById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<TeamResponse> createTeam(@Valid @RequestBody TeamRequest teamRequest, @RequestHeader String audit) {
-        return ResponseEntity.ok(teamService.createTeam(teamRequest, audit));
+    public ResponseEntity<TeamResponse> createTeam(@Valid @RequestBody TeamRequest teamRequest) {
+        return ResponseEntity.ok(teamService.createTeam(teamRequest));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<TeamResponse> updateTeam(
-            @PathVariable Long id, @RequestBody TeamRequest teamRequest, @RequestHeader String audit) {
-        return ResponseEntity.ok(teamService.updateTeam(id, teamRequest, audit));
+            @PathVariable Long id, @RequestBody TeamRequest teamRequest) {
+        return ResponseEntity.ok(teamService.updateTeam(id, teamRequest));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTeam(@PathVariable Long id, @RequestHeader String audit) {
-        teamService.deleteTeam(id, audit);
+    public ResponseEntity<Void> deleteTeam(@PathVariable Long id) {
+        teamService.deleteTeam(id);
         return ResponseEntity.noContent().build();
     }
 }

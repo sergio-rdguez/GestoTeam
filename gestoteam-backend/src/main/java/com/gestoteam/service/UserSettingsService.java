@@ -1,12 +1,11 @@
 package com.gestoteam.service;
 
-import com.gestoteam.dto.Audit;
 import com.gestoteam.exception.GestoServiceException;
 import com.gestoteam.model.UserSettings;
 import com.gestoteam.repository.UserSettingsRepository;
-import com.gestoteam.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,21 +14,47 @@ import org.springframework.stereotype.Service;
 public class UserSettingsService {
 
     private final UserSettingsRepository userSettingsRepository;
-    private final ValidationUtil validationUtil;
 
-    public UserSettings getSettings(String audit) {
-        Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Obteniendo configuraciones para el usuario: {}", auditInfo.getUser());
+    private String getCurrentUsername() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
+
+    public UserSettings getSettings() {
+        String username = getCurrentUsername();
+        log.info("Obteniendo configuraciones para el usuario: {}", username);
 
         try {
-            return userSettingsRepository.findByUserId(auditInfo.getUser())
+            return userSettingsRepository.findByUserId(username)
                     .orElseGet(() -> {
-                        log.info("No se encontraron configuraciones para el usuario: {}. Creando configuraciones por defecto.", auditInfo.getUser());
-                        return createDefaultSettings(auditInfo.getUser());
+                        log.info("No se encontraron configuraciones para {}. Creando por defecto.", username);
+                        return createDefaultSettings(username);
                     });
         } catch (Exception e) {
-            log.error("Error al obtener configuraciones para el usuario: {}", auditInfo.getUser(), e);
+            log.error("Error al obtener configuraciones para el usuario: {}", username, e);
             throw new GestoServiceException("Error al obtener las configuraciones del usuario.");
+        }
+    }
+
+    public UserSettings updateSettings(UserSettings updatedSettings) {
+        String username = getCurrentUsername();
+        log.info("Actualizando configuraciones para el usuario: {}", username);
+
+        try {
+            UserSettings settings = getSettings(); // getSettings ya usa el usuario correcto
+
+            settings.setMaxPlayersPerTeam(updatedSettings.getMaxPlayersPerTeam());
+            settings.setMaxPlayersPerMatch(updatedSettings.getMaxPlayersPerMatch());
+            settings.setYellowCardsForSuspension(updatedSettings.getYellowCardsForSuspension());
+            settings.setMaxTrainingsPerWeek(updatedSettings.getMaxTrainingsPerWeek());
+            settings.setNotifyBeforeMatch(updatedSettings.getNotifyBeforeMatch());
+            settings.setNotifyBeforeTraining(updatedSettings.getNotifyBeforeTraining());
+
+            UserSettings savedSettings = userSettingsRepository.save(settings);
+            log.info("Configuraciones actualizadas correctamente para el usuario: {}", username);
+            return savedSettings;
+        } catch (Exception e) {
+            log.error("Error al actualizar configuraciones para el usuario: {}", username, e);
+            throw new GestoServiceException("Error al actualizar las configuraciones del usuario.");
         }
     }
 
@@ -52,29 +77,6 @@ public class UserSettingsService {
         } catch (Exception e) {
             log.error("Error al crear configuraciones por defecto para el usuario: {}", userId, e);
             throw new GestoServiceException("Error al crear configuraciones por defecto.");
-        }
-    }
-
-    public UserSettings updateSettings(String audit, UserSettings updatedSettings) {
-        Audit auditInfo = validationUtil.validateAudit(audit);
-        log.info("Actualizando configuraciones para el usuario: {}", auditInfo.getUser());
-
-        try {
-            UserSettings settings = getSettings(audit);
-
-            settings.setMaxPlayersPerTeam(updatedSettings.getMaxPlayersPerTeam());
-            settings.setMaxPlayersPerMatch(updatedSettings.getMaxPlayersPerMatch());
-            settings.setYellowCardsForSuspension(updatedSettings.getYellowCardsForSuspension());
-            settings.setMaxTrainingsPerWeek(updatedSettings.getMaxTrainingsPerWeek());
-            settings.setNotifyBeforeMatch(updatedSettings.getNotifyBeforeMatch());
-            settings.setNotifyBeforeTraining(updatedSettings.getNotifyBeforeTraining());
-
-            UserSettings savedSettings = userSettingsRepository.save(settings);
-            log.info("Configuraciones actualizadas correctamente para el usuario: {}", auditInfo.getUser());
-            return savedSettings;
-        } catch (Exception e) {
-            log.error("Error al actualizar configuraciones para el usuario: {}", auditInfo.getUser(), e);
-            throw new GestoServiceException("Error al actualizar las configuraciones del usuario.");
         }
     }
 }
