@@ -1,8 +1,7 @@
 -- Contraseña para todos los usuarios es 'password' (encriptada con BCrypt)
 -- Usuario principal para las pruebas
 INSERT INTO users (id, username, password, deleted, created_at, updated_at)
-VALUES (1, 'testuser', '$2a$10$GRLdNijSQe8WqU3e.sJ8h.j5S1a.49a42qw1v5U3.3s4T/cjwI7f6', false, NOW(), NOW());
-
+VALUES (1, 'testuser', '$2a$10$3z3.G3g3.Z3z3.Z3z3.Z3uA9z3z3.Z3z3.Z3z3.Z3z3.Z3z3.Z3z3', false, NOW(), NOW());
 -- Configuración para el usuario principal
 INSERT INTO user_settings (id, user_id, max_players_per_team, max_players_per_match, yellow_cards_for_suspension, max_trainings_per_week, notify_before_match, notify_before_training, created_at, updated_at)
 VALUES (1, 'testuser', 25, 18, 5, 4, true, true, NOW(), NOW());
