@@ -1,5 +1,4 @@
 import axios from "axios";
-import { getAudit } from "./audit";
 import { EventBus } from "@/utils/EventBus";
 
 const apiClient = axios.create({
@@ -9,10 +8,14 @@ const apiClient = axios.create({
   },
 });
 
-// Interceptor para incluir el Audit
+// Interceptor para incluir el Token JWT en cada petición
 apiClient.interceptors.request.use((config) => {
-  const audit = getAudit();
-  config.headers["Audit"] = audit; 
+  const token = localStorage.getItem('jwt_token');
+  
+  if (token) {
+    config.headers["Authorization"] = `Bearer ${token}`; 
+  }
+  
   return config;
 });
 

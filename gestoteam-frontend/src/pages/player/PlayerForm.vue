@@ -2,37 +2,31 @@
     <div class="player-form-page">
         <h2>{{ isEditMode ? "Editar Jugador" : "Añadir Jugador" }}</h2>
         <form @submit.prevent="submitForm">
-            <!-- Nombre -->
             <div class="form-group">
                 <label for="name">Nombre</label>
                 <input type="text" v-model="player.name" id="name" required />
             </div>
 
-            <!-- Primer Apellido -->
             <div class="form-group">
                 <label for="surnameFirst">Primer Apellido</label>
                 <input type="text" v-model="player.surnameFirst" id="surnameFirst" required />
             </div>
 
-            <!-- Segundo Apellido -->
             <div class="form-group">
                 <label for="surnameSecond">Segundo Apellido</label>
                 <input type="text" v-model="player.surnameSecond" id="surnameSecond" required />
             </div>
 
-            <!-- Fecha de Nacimiento -->
             <div class="form-group">
                 <label for="birthDate">Fecha de Nacimiento</label>
                 <input type="date" v-model="player.birthDate" id="birthDate" required />
             </div>
 
-            <!-- Número -->
             <div class="form-group">
                 <label for="number">Número</label>
                 <input type="number" v-model="player.number" id="number" min="1" max="99" required />
             </div>
 
-            <!-- Posición -->
             <div class="form-group">
                 <label for="position">Posición</label>
                 <select v-model="player.position" id="position" required>
@@ -43,7 +37,6 @@
                 </select>
             </div>
 
-            <!-- Estado -->
             <div class="form-group">
                 <label for="status">Estado</label>
                 <select v-model="player.status" id="status" required>
@@ -54,15 +47,15 @@
                 </select>
             </div>
 
-            <!-- Botones -->
             <button type="submit" class="btn btn-primary">{{ isEditMode ? "Guardar Cambios" : "Guardar" }}</button>
             <button type="button" @click="cancel" class="btn btn-secondary">Cancelar</button>
         </form>
     </div>
 </template>
+
 <script>
 import apiClient from "@/services/api";
-import { getAudit } from "@/services/audit";
+// ELIMINAMOS: import { getAudit } from "@/services/audit";
 
 export default {
     data() {
@@ -78,13 +71,13 @@ export default {
                 status: "",
                 teamId: this.$route.params.teamId,
             },
-            positions: [], // Lista de posiciones desde el backend
-            statuses: [], // Lista de estados desde el backend
-            isEditMode: false, // Determina si estamos en modo edición
+            positions: [],
+            statuses: [],
+            isEditMode: false,
         };
     },
     created() {
-        this.isEditMode = !!this.$route.params.id; // Detecta si estamos editando basado en el ID
+        this.isEditMode = !!this.$route.params.id;
         this.fetchEnums();
         if (this.isEditMode) {
             this.fetchPlayer();
@@ -116,12 +109,11 @@ export default {
         },
         async submitForm() {
             try {
-                const audit = getAudit();
                 if (this.isEditMode) {
-                    await apiClient.put(`/players/${this.player.id}`, this.player, { headers: { audit } });
+                    await apiClient.put(`/players/${this.player.id}`, this.player);
                     this.$router.push({ name: "PlayerDetails", params: { id: this.player.id } });
                 } else {
-                    await apiClient.post("/players", this.player, { headers: { audit } });
+                    await apiClient.post("/players", this.player);
                     this.$router.push({ name: "TeamPlayers", params: { id: this.player.teamId } });
                 }
             } catch (error) {
@@ -129,12 +121,16 @@ export default {
             }
         },
         cancel() {
-            this.$router.push({ name: "TeamDetails", params: { id: this.player.teamId } });
+            // Navegamos de vuelta a la lista de jugadores del equipo correcto
+            const teamId = this.isEditMode ? this.player.team.id : this.player.teamId;
+            this.$router.push({ name: "TeamPlayers", params: { id: teamId } });
         },
     },
 };
 </script>
+
 <style scoped>
+/* Los estilos se mantienen igual */
 .player-form-page {
     padding: 20px;
     font-family: 'Arial', sans-serif;

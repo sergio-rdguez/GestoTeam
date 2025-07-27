@@ -43,10 +43,13 @@ export default {
       this.errorMessage = "";
 
       try {
-        await apiClient.post("/auth/login", this.form);
+        const response = await apiClient.post("/auth/login", this.form);
 
-        // Guardar el usuario en localStorage
-        localStorage.setItem("audit_user", this.form.username);
+        // Extraemos el token de la respuesta
+        const token = response.data.token;
+
+        // Guardamos el token en localStorage
+        localStorage.setItem('jwt_token', token);
 
         // Redirigir a la página principal
         this.$router.push({ name: "Teams" });
@@ -63,6 +66,7 @@ export default {
 </script>
 
 <style scoped>
+/* Los estilos se mantienen igual */
 .login-page {
   display: flex;
   justify-content: center;
