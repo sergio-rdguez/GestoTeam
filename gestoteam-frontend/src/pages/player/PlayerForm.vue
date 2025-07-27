@@ -1,63 +1,47 @@
 <template>
-    <div class="player-form-page">
-        <h2>{{ isEditMode ? "Editar Jugador" : "Añadir Jugador" }}</h2>
-        <form @submit.prevent="submitForm">
-            <div class="form-group">
-                <label for="name">Nombre</label>
-                <input type="text" v-model="player.name" id="name" required />
-            </div>
-
-            <div class="form-group">
-                <label for="surnameFirst">Primer Apellido</label>
-                <input type="text" v-model="player.surnameFirst" id="surnameFirst" required />
-            </div>
-
-            <div class="form-group">
-                <label for="surnameSecond">Segundo Apellido</label>
-                <input type="text" v-model="player.surnameSecond" id="surnameSecond" required />
-            </div>
-
-            <div class="form-group">
-                <label for="birthDate">Fecha de Nacimiento</label>
-                <input type="date" v-model="player.birthDate" id="birthDate" required />
-            </div>
-
-            <div class="form-group">
-                <label for="number">Número</label>
-                <input type="number" v-model="player.number" id="number" min="1" max="99" required />
-            </div>
-
-            <div class="form-group">
-                <label for="position">Posición</label>
-                <select v-model="player.position" id="position" required>
-                    <option value="" disabled>Selecciona una posición</option>
-                    <option v-for="pos in positions" :key="pos.code" :value="pos.code">
-                        {{ pos.description }}
-                    </option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="status">Estado</label>
-                <select v-model="player.status" id="status" required>
-                    <option value="" disabled>Selecciona un estado</option>
-                    <option v-for="status in statuses" :key="status.code" :value="status.code">
-                        {{ status.description }}
-                    </option>
-                </select>
-            </div>
-
-            <button type="submit" class="btn btn-primary">{{ isEditMode ? "Guardar Cambios" : "Guardar" }}</button>
-            <button type="button" @click="cancel" class="btn btn-secondary">Cancelar</button>
-        </form>
+    <div class="form-page">
+        <PageHeader 
+            :title="isEditMode ? 'Editar Jugador' : 'Añadir Jugador'" 
+            show-back-button 
+            @back="cancel" 
+        />
+        <BaseCard>
+            <form @submit.prevent="submitForm">
+                <div class="form-grid">
+                    <BaseInput v-model="player.name" label="Nombre" id="name" required />
+                    <BaseInput v-model="player.surnameFirst" label="Primer Apellido" id="surnameFirst" required />
+                    <BaseInput v-model="player.surnameSecond" label="Segundo Apellido" id="surnameSecond" />
+                    <BaseInput v-model="player.birthDate" label="Fecha de Nacimiento" id="birthDate" type="date" required />
+                    <BaseInput v-model="player.number" label="Número" id="number" type="number" min="1" max="99" required />
+                    <BaseSelect v-model="player.position" label="Posición" id="position" :options="positionOptions" required />
+                    <BaseSelect v-model="player.status" label="Estado" id="status" :options="statusOptions" required />
+                </div>
+                <div class="form-actions">
+                    <BaseButton type="submit" :loading="isSaving" variant="primary">
+                        {{ isSaving ? "Guardando..." : (isEditMode ? "Guardar Cambios" : "Guardar Jugador") }}
+                    </BaseButton>
+                </div>
+            </form>
+        </BaseCard>
     </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
-// ELIMINAMOS: import { getAudit } from "@/services/audit";
+import PageHeader from "@/components/layout/PageHeader.vue";
+import BaseCard from "@/components/base/BaseCard.vue";
+import BaseInput from "@/components/base/BaseInput.vue";
+import BaseSelect from "@/components/base/BaseSelect.vue";
+import BaseButton from "@/components/base/BaseButton.vue";
 
 export default {
+    components: {
+        PageHeader,
+        BaseCard,
+        BaseInput,
+        BaseSelect,
+        BaseButton,
+    },
     data() {
         return {
             player: {
@@ -74,7 +58,16 @@ export default {
             positions: [],
             statuses: [],
             isEditMode: false,
+            isSaving: false,
         };
+    },
+    computed: {
+        positionOptions() {
+            return this.positions.map(p => ({ value: p.code, text: p.description }));
+        },
+        statusOptions() {
+            return this.statuses.map(s => ({ value: s.code, text: s.description }));
+        }
     },
     created() {
         this.isEditMode = !!this.$route.params.id;
@@ -94,7 +87,6 @@ export default {
                 this.statuses = statusesResponse.data;
             } catch (error) {
                 console.error("Error al cargar enums:", error);
-                alert("No se pudieron cargar las posiciones o estados. Intenta recargar la página.");
             }
         },
         async fetchPlayer() {
@@ -104,10 +96,10 @@ export default {
                 this.player = { ...response.data, teamId: response.data.team?.id || this.player.teamId };
             } catch (error) {
                 console.error("Error al cargar el jugador:", error);
-                alert("No se pudo cargar el jugador. Intenta recargar la página.");
             }
         },
         async submitForm() {
+            this.isSaving = true;
             try {
                 if (this.isEditMode) {
                     await apiClient.put(`/players/${this.player.id}`, this.player);
@@ -118,10 +110,11 @@ export default {
                 }
             } catch (error) {
                 console.error("Error al guardar el jugador:", error);
+            } finally {
+                this.isSaving = false;
             }
         },
         cancel() {
-            // Navegamos de vuelta a la lista de jugadores del equipo correcto
             const teamId = this.isEditMode ? this.player.team.id : this.player.teamId;
             this.$router.push({ name: "TeamPlayers", params: { id: teamId } });
         },
@@ -130,65 +123,17 @@ export default {
 </script>
 
 <style scoped>
-/* Los estilos se mantienen igual */
-.player-form-page {
-    padding: 20px;
-    font-family: 'Arial', sans-serif;
-    background: #f9f9f9;
-    min-height: 100vh;
+.form-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
 }
-
-h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #333;
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
 }
-
-form {
-    max-width: 500px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #666;
-}
-
-input,
-select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 1rem;
-}
-
-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    margin-right: 10px;
-}
-
-button.btn-primary {
-    background-color: #007bff;
-    color: white;
-}
-
-button.btn-secondary {
-    background-color: #6c757d;
-    color: white;
+.form-actions {
+  margin-top: 2rem;
 }
 </style>

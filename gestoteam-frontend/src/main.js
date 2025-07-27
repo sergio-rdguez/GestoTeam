@@ -2,24 +2,20 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
 
-// Bootstrap primero
-import 'bootstrap/dist/css/bootstrap.min.css';
+// 1. Importa nuestro sistema de diseño global
+import '@/assets/styles/main.css';
 
-// Font Awesome después
+// 2. Importa librerías de terceros
+import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.css';
 
-// Vue Final Modal
+// 3. Importa plugins de Vue
 import { createVfm } from 'vue-final-modal';
 
-// Crear la instancia de Vue Final Modal
 const vfm = createVfm();
-
-// Crear la aplicación
 const app = createApp(App);
 
-// Usar el enrutador y Vue Final Modal
 app.use(router);
 app.use(vfm);
 
-// Montar la aplicación
 app.mount('#app');

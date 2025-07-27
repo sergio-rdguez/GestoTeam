@@ -1,182 +1,90 @@
 <template>
-    <div class="team-players-page">
-        <h2 class="page-title">{{ team.name }}</h2>
-        <div v-if="loading" class="loading-message">
-            <p>Cargando jugadores...</p>
-        </div>
-        <div v-else>
-            <!-- Contador de jugadores totales -->
-            <div class="total-players">
-                <p>Total de Jugadores: <strong>{{ totalPlayers }}</strong></p>
-            </div>
+  <div class="team-players-page">
+    <h2 class="page-title">{{ teamName || 'Jugadores' }}</h2>
+    
+    <DataTable
+      :items="players"
+      :columns="columns"
+      :loading="loading"
+      default-sort-key="fullName"
+      @row-click="viewPlayerDetails"
+    >
+      <template #cell-status="{ item }">
+        <span class="player-status" :class="item.status.toLowerCase()">
+          {{ item.status }}
+        </span>
+      </template>
+    </DataTable>
 
-            <!-- Lista de jugadores -->
-            <div v-if="players.length > 0" class="player-list">
-                <div v-for="player in players" :key="player.id" class="player-card"
-                    @click="viewPlayerDetails(player.id)">
-                    <div class="player-info">
-                        <h4 class="player-name">{{ player.fullName }}</h4>
-                        <p class="player-details">{{ player.position }} | #{{ player.number }}</p>
-                    </div>
-                    <span class="player-status" :class="player.status.toLowerCase()">
-                        {{ player.status }}
-                    </span>
-                </div>
-            </div>
-            <p v-else class="no-players-message">No hay jugadores en este equipo.</p>
-        </div>
-
-        <!-- FAB Actions -->
-        <div class="fab-container">
-            <button class="fab" @click="toggleFabMenu">
-                <i class="fa-solid fa-bars"></i>
-            </button>
-            <div v-if="showFabMenu" class="fab-actions">
-                <button @click="goBack" class="fab-action">Volver</button>
-                <button @click="addPlayer" class="fab-action">Añadir Jugador</button>
-            </div>
-        </div>
-    </div>
+    <FabMenu :actions="fabActions" @action-clicked="addPlayer" />
+  </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
+import DataTable from "@/components/common/DataTable.vue";
+import FabMenu from "@/components/common/FabMenu.vue";
 
 export default {
-    data() {
-        return {
-            team: [],
-            players: [],
-            loading: true,
-            totalPlayers: 0,
-            showFabMenu: false,
-        };
-    },
-    methods: {
-        async fetchPlayers() {
-            try {
-                const teamId = this.$route.params.id;
-                const response = await apiClient.get(`/players/team/${teamId}`);
+  components: {
+    DataTable,
+    FabMenu,
+  },
+  data() {
+    return {
+      teamId: this.$route.params.id,
+      teamName: '',
+      players: [],
+      loading: true,
+      columns: [
+        { key: 'fullName', label: 'Nombre', sortable: true },
+        { key: 'position', label: 'Posición', sortable: true, sortOn: 'positionOrder' },
+        { key: 'number', label: 'Dorsal', sortable: true },
+        { key: 'status', label: 'Estado', sortable: true },
+      ],
+      fabActions: [
+        { label: 'Añadir Jugador', event: 'add-player' }
+      ],
+    };
+  },
+  methods: {
+    async fetchPlayers() {
+      this.loading = true;
+      try {
+        const teamResponse = await apiClient.get(`/teams/${this.teamId}`);
+        this.teamName = teamResponse.data.name;
 
-                this.players = response.data.players.map((player) => ({
-                    id: player.id,
-                    fullName: player.name,
-                    number: player.number,
-                    position: player.position,
-                    status: player.status,
-                }));
-
-                this.team = {
-                    id: response.data.teamId,
-                    name: response.data.teamName,
-                };
-                this.totalPlayers = response.data.totalPlayers;
-            } catch (error) {
-                console.error("Error al cargar los jugadores:", error);
-            } finally {
-                this.loading = false;
-            }
-        },
-        toggleFabMenu() {
-            this.showFabMenu = !this.showFabMenu;
-        },
-        goBack() {
-            this.$router.push({ name: "TeamDetails", params: { id: this.team.id } });
-        },
-        addPlayer() {
-            this.$router.push({ name: "AddPlayer", params: { teamId: this.team.id } });
-        },
-        viewPlayerDetails(playerId) {
-            this.$router.push({ name: "PlayerDetails", params: { id: playerId } });
-        },
+        const playersResponse = await apiClient.get(`/players/team/${this.teamId}`);
+        this.players = playersResponse.data.players;
+      } catch (error) {
+        console.error("Error al cargar los jugadores:", error);
+      } finally {
+        this.loading = false;
+      }
     },
-    mounted() {
-        this.fetchPlayers();
+    viewPlayerDetails(player) {
+      this.$router.push({ name: 'PlayerDetails', params: { id: player.id } });
     },
+    addPlayer() {
+      this.$router.push({ name: 'AddPlayer', params: { teamId: this.teamId } });
+    },
+  },
+  mounted() {
+    this.fetchPlayers();
+  }
 };
 </script>
 
 <style scoped>
-/* General */
 .team-players-page {
-    padding: 20px;
-    font-family: 'Arial', sans-serif;
-    background-color: #f9f9f9;
-    min-height: 100vh;
+  padding: 2rem;
 }
-
 .page-title {
-    text-align: center;
-    font-size: 2rem;
-    color: #333;
-    margin-bottom: 20px;
+  text-align: center;
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 2rem;
 }
-
-/* Total Players */
-.total-players {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 1.2rem;
-    color: #555;
-}
-
-.total-players strong {
-    font-size: 1.5rem;
-    color: #007bff;
-}
-
-/* Loading */
-.loading-message {
-    text-align: center;
-    font-size: 1.2rem;
-    color: #666;
-}
-
-/* Player List */
-.player-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.player-card {
-    flex: 1 1 calc(48% - 15px);
-    background: white;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.player-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Player Info */
-.player-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.player-name {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #222;
-    margin: 0;
-}
-
-.player-details {
-    font-size: 0.9rem;
-    color: #666;
-    margin: 0;
-}
-
-/* Player Status */
 .player-status {
     font-size: 0.9rem;
     font-weight: bold;
@@ -185,79 +93,7 @@ export default {
     text-transform: capitalize;
     color: white;
 }
-
-.player-status.activo {
-    background-color: #28a745;
-}
-
-.player-status.lesionado {
-    background-color: #dc3545;
-}
-
-.player-status.suspendido {
-    background-color: #ffc107;
-}
-
-/* No Players */
-.no-players-message {
-    text-align: center;
-    color: #666;
-    font-size: 1rem;
-    margin-top: 15px;
-}
-
-/* FAB Actions */
-.fab-container {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    flex-direction: column-reverse;
-    align-items: flex-end;
-}
-
-.fab {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: #007bff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-.fab i {
-    font-size: 1.5em;
-    color: white;
-}
-
-.fab-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.fab-action {
-    background: white;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 15px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
-}
-
-.fab-action:hover {
-    background: #f1f1f1;
-}
-
-/* Responsiveness */
-@media (min-width: 768px) {
-    .player-card {
-        flex: 1 1 calc(31% - 15px);
-    }
-}
+.player-status.activo { background-color: #28a745; }
+.player-status.lesionado { background-color: #dc3545; }
+.player-status.suspendido { background-color: #ffc107; }
 </style>

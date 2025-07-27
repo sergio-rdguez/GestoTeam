@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { authService } from '@/services/auth';
-import MainLayout from '@/layouts/MainLayout.vue';
+import MainLayout from '@/components/layout/MainLayout.vue';
 import TeamsPage from '@/pages/Team/TeamsPage.vue';
 import PlayerDetails from '@/pages/player/PlayerDetails.vue';
 import PlayerForm from '@/pages/player/PlayerForm.vue';

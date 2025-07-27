@@ -7,41 +7,32 @@
       <h2 class="page-title">Partidos de {{ teamName }}</h2>
     </div>
 
-    <div class="matches-list">
-      <div
-        v-for="match in sortedMatches"
-        :key="match.id"
-        class="match-item"
-        @click="goToMatchDetails(match.id)"
-      >
-        <div class="match-content">
-          <h4>{{ match.opponent }}</h4>
-          <div class="match-details">
-            <p><strong>Fecha:</strong> {{ formatDate(match.date) }}</p>
-            <p><strong>Hora:</strong> {{ formatTime(match.date) }}</p>
-            <p><strong>Estadio:</strong> {{ match.location }}</p>
-          </div>
-          <div
-            class="match-status"
-            :class="{
-              victory: match.finalized && match.won,
-              defeat: match.finalized && !match.won,
-              pending: !match.finalized,
-            }"
-          >
-            {{ match.finalized ? match.result : "Pendiente" }}
-          </div>
+    <DataTable
+      :items="matches"
+      :columns="columns"
+      :loading="loading"
+      default-sort-key="date"
+      @row-click="goToMatchDetails"
+    >
+      <template #cell-date="{ value }">
+        {{ formatDate(value) }}
+      </template>
+      <template #cell-status="{ item }">
+        <div
+          class="match-status"
+          :class="{
+            victory: item.finalized && item.won,
+            defeat: item.finalized && !item.won,
+            pending: !item.finalized,
+          }"
+        >
+          {{ item.finalized ? item.result : "Pendiente" }}
         </div>
-      </div>
-      <div v-if="!sortedMatches.length && !loading" class="no-matches">
-        <p>Aún no hay partidos para este equipo.</p>
-      </div>
-    </div>
+      </template>
+    </DataTable>
 
-    <button class="fab" @click="goToAddMatch">
-      <i class="fa-solid fa-plus"></i>
-    </button>
-
+    <FabMenu :actions="fabActions" @action-clicked="goToAddMatch" />
+    
     <MessageBox
       v-if="showMessage"
       :message="message"
@@ -54,10 +45,14 @@
 <script>
 import apiClient from "@/services/api";
 import MessageBox from "@/pages/utils/MessageBox.vue";
+import DataTable from "@/components/common/DataTable.vue";
+import FabMenu from "@/components/common/FabMenu.vue";
 
 export default {
   components: {
     MessageBox,
+    DataTable,
+    FabMenu,
   },
   data() {
     return {
@@ -67,26 +62,25 @@ export default {
       showMessage: false,
       message: "",
       messageType: "info",
+      columns: [
+        { key: 'opponent', label: 'Rival', sortable: true },
+        { key: 'date', label: 'Fecha', sortable: true },
+        { key: 'location', label: 'Estadio', sortable: true },
+        { key: 'status', label: 'Resultado', sortable: false }, // Columna custom para el estado
+      ],
+      fabActions: [
+          { label: "Añadir Partido", event: "add-match" }
+      ]
     };
-  },
-  computed: {
-    sortedMatches() {
-      // Ordena los partidos por fecha, de más reciente a más antiguo
-      return [...this.matches].sort(
-        (a, b) => new Date(b.date) - new Date(a.date)
-      );
-    },
   },
   methods: {
     async fetchMatches() {
       this.loading = true;
       try {
         const teamId = this.$route.params.id;
-        // Primero obtenemos los datos del equipo para tener el nombre
         const teamResponse = await apiClient.get(`/teams/${teamId}`);
         this.teamName = teamResponse.data.name;
 
-        // Luego obtenemos los partidos
         const matchesResponse = await apiClient.get(`/matches/team/${teamId}`);
         this.matches = matchesResponse.data;
       } catch (error) {
@@ -109,21 +103,12 @@ export default {
         params: { teamId: this.$route.params.id },
       });
     },
-    goToMatchDetails(matchId) {
-      this.$router.push({ name: "MatchDetails", params: { id: matchId } });
+    goToMatchDetails(match) {
+      this.$router.push({ name: "MatchDetails", params: { id: match.id } });
     },
     formatDate(date) {
-      return new Date(date).toLocaleDateString("es-ES", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    },
-    formatTime(date) {
-      return new Date(date).toLocaleTimeString("es-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+        const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+        return new Date(date).toLocaleString("es-ES", options);
     },
     closeMessage() {
       this.showMessage = false;
@@ -136,12 +121,11 @@ export default {
 </script>
 
 <style scoped>
-/* Estilos sin cambios */
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Roboto:wght@400;500&display=swap");
 
 .team-matches-page {
-  padding: 40px;
-  background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
+  padding: 2rem;
+  background: #f9fafb;
   min-height: 100vh;
   font-family: "Roboto", sans-serif;
 }
@@ -149,12 +133,12 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 30px;
+  margin-bottom: 2rem;
 }
 .back-button {
-  background: #3498db;
-  color: #fff;
-  border: none;
+  background: white;
+  color: #333;
+  border: 1px solid #ddd;
   border-radius: 6px;
   padding: 8px 16px;
   cursor: pointer;
@@ -166,87 +150,28 @@ export default {
   margin-right: 5px;
 }
 .back-button:hover {
-  background: #2980b9;
+  background: #f0f0f0;
   transform: scale(1.05);
 }
 .page-title {
   text-align: center;
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   margin: 0;
   color: #2c3e50;
   font-family: "Montserrat", sans-serif;
   font-weight: 600;
   flex-grow: 1;
 }
-.matches-list {
-  display: grid;
-  gap: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-}
-.match-item {
-  background: #fff;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.match-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
-.match-content h4 {
-  margin: 0 0 10px;
-  font-size: 1.5rem;
-  color: #2c3e50;
-  font-family: "Montserrat", sans-serif;
-}
-.match-details p {
-  margin: 5px 0;
-  font-size: 1rem;
-  color: #555;
-}
 .match-status {
-  padding: 10px;
-  font-size: 1rem;
+  padding: 5px 12px;
+  font-size: 0.9rem;
   font-weight: 500;
   color: #fff;
-  border-radius: 6px;
+  border-radius: 15px;
   text-align: center;
+  display: inline-block;
 }
 .match-status.pending { background-color: #3498db; }
 .match-status.victory { background-color: #2ecc71; }
 .match-status.defeat { background-color: #e74c3c; }
-.no-matches {
-  text-align: center;
-  color: #666;
-  padding: 20px;
-  background: #fff;
-  border-radius: 12px;
-}
-.fab {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: #007bff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-  z-index: 10;
-}
-.fab i {
-  font-size: 1.5em;
-  color: white;
-}
-.fab:hover {
-  background-color: #0056b3;
-  transform: scale(1.1);
-}
 </style>

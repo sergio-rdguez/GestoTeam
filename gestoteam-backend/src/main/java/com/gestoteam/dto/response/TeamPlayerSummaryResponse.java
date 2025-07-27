@@ -17,9 +17,10 @@ public class TeamPlayerSummaryResponse {
     @Data
     public static class PlayerSummary {
         private long id;
-        private String name;
+        private String fullName;
         private int number;
         private String position;
+        private int positionOrder;
         private PlayerStatus status;
     }
 }
