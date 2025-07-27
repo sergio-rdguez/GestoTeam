@@ -11,6 +11,7 @@ import '@fortawesome/fontawesome-free/css/all.css';
 
 // 3. Importa plugins de Vue
 import { createVfm } from 'vue-final-modal';
+import 'vue-final-modal/style.css'
 
 const vfm = createVfm();
 const app = createApp(App);

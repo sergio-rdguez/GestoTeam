@@ -1,26 +1,64 @@
-export const authService = {
+import { reactive, readonly } from 'vue';
+import api from './api';
+import router from '@/router';
+
+// Estado reactivo y privado para la autenticación
+const state = reactive({
+  user: null,
+  token: localStorage.getItem('authToken') || null,
+  isAuthenticated: false,
+});
+
+// Servicio de autenticación refactorizado
+const authService = {
+  // Exponemos el estado como de solo lectura para los componentes
+  state: readonly(state),
+
   /**
-   * Cierra la sesión del usuario eliminando el token.
+   * Intenta autenticar al usuario al iniciar la aplicación
+   * si existe un token.
    */
-  logout: () => {
-    localStorage.removeItem('jwt_token');
+  async checkAuth() {
+    if (state.token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
+      try {
+        const response = await api.get('/auth/profile'); 
+        state.user = response.data;
+        state.isAuthenticated = true;
+      } catch (error) {
+        console.error("Fallo de auto-login:", error);
+        this.logout();
+      }
+    }
   },
 
   /**
-   * Comprueba si el usuario está autenticado.
-   * @returns {boolean} - True si existe un token, false en caso contrario.
+   * Inicia sesión, guarda el token y actualiza el estado.
+   * @param {object} credentials - { email, password }
    */
-  isAuthenticated: () => {
-    const token = localStorage.getItem('jwt_token');
-    return !!token; 
+  async login(credentials) {
+  const response = await api.post('/auth/login', credentials);
+  const { token } = response.data;
+
+  localStorage.setItem('authToken', token);
+  state.token = token;
+  
+  await this.checkAuth();
   },
 
   /**
-   * Obtiene el token JWT del almacenamiento.
-   * @returns {string|null} - El token o null si no existe.
+   * Cierra la sesión, limpia todo y redirige.
    */
-  getToken: () => {
-    return localStorage.getItem('jwt_token');
+  logout() {
+    localStorage.removeItem('authToken');
+    delete api.defaults.headers.common['Authorization'];
+    
+    state.token = null;
+    state.user = null;
+    state.isAuthenticated = false;
+    
+    // Usamos el router para una navegación más limpia
+    router.push({ name: 'Login' });
   },
 };
 

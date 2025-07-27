@@ -2,6 +2,9 @@ package com.gestoteam.controller;
 
 import com.gestoteam.dto.request.AuthRequest;
 import com.gestoteam.dto.response.AuthResponse;
+import com.gestoteam.dto.response.UserResponse;
+import com.gestoteam.model.User;
+import com.gestoteam.repository.UserRepository;
 import com.gestoteam.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -9,6 +12,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserRepository userRepository;
 
     @PostMapping("/register")
     @Operation(summary = "Registrar un nuevo usuario", description = "Crea una nueva cuenta de usuario en el sistema.")
@@ -35,5 +42,24 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
         String token = authService.login(request.getUsername(), request.getPassword());
         return ResponseEntity.ok(new AuthResponse(token));
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<UserResponse> getUserProfile(Authentication authentication) {
+        // Obtenemos los detalles del usuario a partir del token JWT procesado por Spring Security.
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername();
+
+        // Usamos el servicio para obtener la entidad completa.
+        User user = userRepository.findByUsername(username).
+                orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));;
+
+        // Mapeamos a un DTO seguro para no exponer la contraseña ni otros datos sensibles.
+        UserResponse userResponse = new UserResponse(
+                user.getId(),
+                user.getUsername()
+        );
+
+        return ResponseEntity.ok(userResponse);
     }
 }

@@ -27,6 +27,7 @@
 </template>
 
 <script>
+import { notificationService } from '@/services/notificationService';
 import apiClient from "@/services/api";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
@@ -108,6 +109,7 @@ export default {
                     await apiClient.post("/players", this.player);
                     this.$router.push({ name: "TeamPlayers", params: { id: this.player.teamId } });
                 }
+                notificationService.showSuccess('Jugador guardado con éxito');
             } catch (error) {
                 console.error("Error al guardar el jugador:", error);
             } finally {

@@ -1,13 +1,10 @@
 <template>
-  <div id="app">
-    <router-view />
-  </div>
+  <router-view />
+  <NotificationContainer />
 </template>
 
-<script>
-export default {
-  name: "App",
-};
+<script setup>
+import NotificationContainer from '@/components/common/NotificationContainer.vue';
 </script>
 
 <style>

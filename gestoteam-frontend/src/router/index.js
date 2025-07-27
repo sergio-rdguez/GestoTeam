@@ -1,74 +1,120 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { authService } from '@/services/auth';
+import authService from '@/services/auth'; // <-- CORRECCIÓN 1: Importación por defecto
 import MainLayout from '@/components/layout/MainLayout.vue';
-import TeamsPage from '@/pages/Team/TeamsPage.vue';
-import PlayerDetails from '@/pages/player/PlayerDetails.vue';
-import PlayerForm from '@/pages/player/PlayerForm.vue';
-import TeamForm from '@/pages/Team/TeamForm.vue';
-import UserSettings from '@/pages/settings/UserSettings.vue';
-import TeamDetails from "@/pages/Team/TeamDetails.vue";
-import TeamPlayers from "@/pages/Team/TeamPlayers.vue";
-import TeamStatistics from "@/pages/Team/TeamStatistics.vue";
-import TeamMatches from "@/pages/Team/Matches/TeamMatches.vue";
-import AddMatch from "@/pages/Team/Matches/AddMatch.vue";
-import MatchDetails from '@/pages/Team/Matches/MatchDetails.vue';
-import TeamNotifications from "@/pages/Team/TeamNotifications.vue";
-import TeamTrainings from "@/pages/Team/TeamTrainings.vue";
-import RivalsDetails from "@/pages/Team/Rivals/RivalsDetails.vue";
-import LoginPage from '@/pages/auth/LoginPage.vue';
-
 
 const routes = [
   {
     path: '/login',
-    name: 'LoginPage',
-    component: LoginPage,
+    name: 'Login',
+    component: () => import('@/pages/auth/LoginPage.vue'),
+    meta: { requiresAuth: false }
   },
   {
     path: '/',
     component: MainLayout,
+    meta: { requiresAuth: true }, // Proteger todo el layout
     children: [
       { path: '', redirect: '/teams' },
-      { path: '/teams', name: 'Teams', component: TeamsPage },
-      { path: '/teams/:id', name: 'TeamDetails', component: TeamDetails },
-      { path: "/teams/:id/players", name: "TeamPlayers", component: TeamPlayers },
-      { path: "/teams/:id/statistics", name: "TeamStatistics", component: TeamStatistics },
-      { path: "/teams/:id/matches", name: "TeamMatches", component: TeamMatches },
-      { path: "/teams/:teamId/add-match", name: "AddMatch", component: AddMatch },
-      { path: '/teams/add', name: 'AddTeam', component: TeamForm },
-      { path: '/teams/:id/edit', name: 'EditTeam', component: TeamForm },
-      { path: "/teams/:id/notifications", name: "TeamNotifications", component: TeamNotifications },
-      { path: "/teams/:id/trainings", name: "TeamTrainings", component: TeamTrainings },
-      { path: '/teams/:teamId/add-player', name: 'AddPlayer', component: PlayerForm },
-      { path: '/rivals/:teamId', name: 'RivalDetails', component: RivalsDetails},
-      { path: "/matches/:id",name: "MatchDetails", component: MatchDetails, props: true,},
-      { path: '/players/:id', name: 'PlayerDetails', component: PlayerDetails },
-      { path: '/players/:id/edit', name: 'EditPlayer', component: PlayerForm },
-      { path: '/settings', name: 'UserSettings', component: UserSettings },
+      { 
+        path: '/teams', 
+        name: 'Teams', 
+        component: () => import('@/pages/Team/TeamsPage.vue') 
+      },
+      { 
+        path: '/teams/add', 
+        name: 'AddTeam', 
+        component: () => import('@/pages/Team/TeamForm.vue') 
+      },
+      { 
+        path: '/teams/:id', 
+        name: 'TeamDetails', 
+        component: () => import('@/pages/Team/TeamDetails.vue') 
+      },
+      { 
+        path: '/teams/:id/edit', 
+        name: 'EditTeam', 
+        component: () => import('@/pages/Team/TeamForm.vue') 
+      },
+      { 
+        path: "/teams/:id/players", 
+        name: "TeamPlayers", 
+        component: () => import("@/pages/Team/TeamPlayers.vue") 
+      },
+      { 
+        path: "/teams/:id/statistics", 
+        name: "TeamStatistics", 
+        component: () => import("@/pages/Team/TeamStatistics.vue") 
+      },
+      { 
+        path: "/teams/:id/matches", 
+        name: "TeamMatches", 
+        component: () => import("@/pages/Team/Matches/TeamMatches.vue") 
+      },
+      { 
+        path: "/teams/:id/notifications", 
+        name: "TeamNotifications", 
+        component: () => import("@/pages/Team/TeamNotifications.vue") 
+      },
+      { 
+        path: "/teams/:id/trainings", 
+        name: "TeamTrainings", 
+        component: () => import("@/pages/Team/TeamTrainings.vue") 
+      },
+      { 
+        path: "/teams/:teamId/add-match", 
+        name: "AddMatch", 
+        component: () => import("@/pages/Team/Matches/AddMatch.vue") 
+      },
+      { 
+        path: '/teams/:teamId/add-player', 
+        name: 'AddPlayer', 
+        component: () => import('@/pages/player/PlayerForm.vue') 
+      },
+      { 
+        path: "/matches/:id",
+        name: "MatchDetails", 
+        component: () => import('@/pages/Team/Matches/MatchDetails.vue'), 
+        props: true
+      },
+      { 
+        path: '/players/:id', 
+        name: 'PlayerDetails', 
+        component: () => import('@/pages/player/PlayerDetails.vue') 
+      },
+      { 
+        path: '/players/:id/edit', 
+        name: 'EditPlayer', 
+        component: () => import('@/pages/player/PlayerForm.vue') 
+      },
+      { 
+        path: '/rivals/:teamId', 
+        name: 'RivalDetails', 
+        component: () => import('@/pages/Team/Rivals/RivalsDetails.vue')
+      },
+      { 
+        path: '/settings', 
+        name: 'UserSettings', 
+        component: () => import('@/pages/settings/UserSettings.vue') 
+      },
     ],
   },
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
-  routes,
+    history: createWebHistory(process.env.BASE_URL),
+    routes,
 });
 
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = authService.isAuthenticated();
-  // Permitir acceso a Swagger sin autenticación
-  if (to.path.startsWith('/swagger-ui') || to.path.startsWith('/v3/api-docs')) {
-    next(); // Permitir acceso
-    return;
-  }
+    const isAuthenticated = authService.state.isAuthenticated;
 
-  if (!isAuthenticated && to.name !== 'LoginPage') {
-    next({ name: 'LoginPage' });
-  } else if (isAuthenticated && to.name === 'LoginPage') {
-    next({ name: 'Teams' });
-  } else {
-    next();
-  }
+    if (to.meta.requiresAuth && !isAuthenticated) {
+        next({ name: 'Login' });
+    } else if (to.name === 'Login' && isAuthenticated) {
+        next({ name: 'Teams' }); 
+    } else {
+        next();
+    }
 });
 
 export default router;

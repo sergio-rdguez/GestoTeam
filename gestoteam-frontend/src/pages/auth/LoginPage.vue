@@ -1,79 +1,57 @@
+<script setup>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import authService from '@/services/auth';
+import BaseInput from '@/components/base/BaseInput.vue';
+import BaseButton from '@/components/base/BaseButton.vue';
+import BaseCard from '@/components/base/BaseCard.vue';
+
+const router = useRouter();
+const credentials = ref({
+  username: '',
+  password: '',
+});
+const isLoading = ref(false);
+
+const handleLogin = async () => {
+  isLoading.value = true;
+  try {
+    await authService.login(credentials.value);
+    await router.replace({ name: 'Teams' });
+
+  } catch (error) {
+    console.error("Error en el login desde la página:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+</script>
+
 <template>
   <div class="login-page">
-    <BaseCard class="login-container" title="Iniciar Sesión">
-      <div v-if="loading" class="loading-overlay">
-        <LoadingSpinner />
-      </div>
-      <form @submit.prevent="handleLogin" class="login-form">
-        <BaseInput
-          v-model="form.username"
-          label="Usuario"
-          id="username"
-          placeholder="Introduce tu usuario"
-          required
-        />
-        <BaseInput
-          v-model="form.password"
-          label="Contraseña"
-          id="password"
-          type="password"
-          placeholder="Introduce tu contraseña"
-          required
-        />
-        <div class="form-actions">
-            <BaseButton type="submit" variant="primary" :loading="isLoggingIn">
-                Iniciar Sesión
-            </BaseButton>
-        </div>
-      </form>
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <BaseCard class="login-card">
+      <template #header>
+        <h2 class="text-center">Iniciar Sesión en GestoTeam</h2>
+      </template>
+      <template #default>
+        <form @submit.prevent="handleLogin">
+          <div class="form-group">
+            <label for="username">Usuario</label>
+            <BaseInput id="username" type="text" v-model="credentials.username" placeholder="Tu nombre de usuario"
+              required />
+          </div>
+          <div class="form-group">
+            <label for="password">Contraseña</label>
+            <BaseInput id="password" type="password" v-model="credentials.password" placeholder="••••••••" required />
+          </div>
+          <BaseButton type="submit" class="w-100" :is-loading="isLoading" primary>
+            Entrar
+          </BaseButton>
+        </form>
+      </template>
     </BaseCard>
   </div>
 </template>
-
-<script>
-import apiClient from "@/services/api";
-import BaseCard from "@/components/base/BaseCard.vue";
-import BaseInput from "@/components/base/BaseInput.vue";
-import BaseButton from "@/components/base/BaseButton.vue";
-import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
-
-export default {
-    components: {
-        BaseCard,
-        BaseInput,
-        BaseButton,
-        LoadingSpinner,
-    },
-    data() {
-        return {
-            form: {
-                username: "",
-                password: "",
-            },
-            isLoggingIn: false,
-            loading: false, // Para un estado de carga inicial si fuera necesario
-            errorMessage: "",
-        };
-    },
-    methods: {
-        async handleLogin() {
-            this.isLoggingIn = true;
-            this.errorMessage = "";
-            try {
-                const response = await apiClient.post("/auth/login", this.form);
-                const token = response.data.token;
-                localStorage.setItem('jwt_token', token);
-                this.$router.push({ name: "Teams" });
-            } catch (error) {
-                this.errorMessage = error.response?.data?.message || "Error inesperado. Inténtalo de nuevo.";
-            } finally {
-                this.isLoggingIn = false;
-            }
-        },
-    },
-};
-</script>
 
 <style scoped>
 .login-page {
@@ -81,43 +59,23 @@ export default {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: var(--color-background-light);
+  background-color: var(--color-background-soft);
 }
 
-.login-container {
+.login-card {
   width: 100%;
-  max-width: 420px;
-  position: relative;
+  max-width: 400px;
 }
 
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-  border-radius: 12px; /* Heredar el borde de la tarjeta */
+.form-group {
+  margin-bottom: var(--spacing-4);
 }
 
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.w-100 {
+  width: 100%;
 }
 
-.form-actions {
-  margin-top: 1rem;
-}
-
-.error-message {
-  color: var(--color-danger);
-  font-size: var(--font-size-sm);
+.text-center {
   text-align: center;
-  margin-top: 1.5rem;
 }
 </style>
