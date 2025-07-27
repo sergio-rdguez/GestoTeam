@@ -1,11 +1,12 @@
 package com.gestoteam.model;
 
-import jakarta.persistence.*;
-
 import com.gestoteam.enums.Category;
+import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -29,11 +30,8 @@ public class Team {
     private String name;
 
     private String location;
-
     private String field;
-
     private String division;
-
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -41,7 +39,19 @@ public class Team {
     private Category category;
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<Player> players = new ArrayList<>();
+
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Match> matches = new ArrayList<>();
+
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Opponent> opponents = new ArrayList<>();
 
     @CreatedDate
     @Column(updatable = false)

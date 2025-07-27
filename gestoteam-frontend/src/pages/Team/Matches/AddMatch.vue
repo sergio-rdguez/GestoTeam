@@ -22,8 +22,8 @@
           <input v-model="newMatch.time" type="time" id="time" required />
         </div>
         <div class="form-group">
-          <label for="venue">Estadio</label>
-          <input v-model="newMatch.venue" type="text" id="venue" required />
+          <label for="location">Estadio</label>
+          <input v-model="newMatch.location" type="text" id="location" required />
         </div>
         <div class="form-actions">
           <button type="submit" class="btn primary">Guardar Partido</button>
@@ -34,7 +34,6 @@
       </form>
     </div>
 
-    <!-- Componente MessageBox para mensajes -->
     <MessageBox
       v-if="showMessage"
       :message="message"
@@ -46,7 +45,7 @@
 
 <script>
 import apiClient from "@/services/api";
-import MessageBox from "@/pages/utils/MessageBox.vue"; // Ajustada la ruta según tu estructura
+import MessageBox from "@/pages/utils/MessageBox.vue";
 
 export default {
   components: {
@@ -58,7 +57,7 @@ export default {
         opponentId: "",
         date: "",
         time: "",
-        venue: "",
+        location: "",
       },
       opponents: [],
       showMessage: false,
@@ -69,107 +68,47 @@ export default {
   methods: {
     async fetchOpponents() {
       try {
-        console.log(
-          "Fetching opponents for team ID:",
-          this.$route.params.teamId
-        );
-        const response = await apiClient.get(
-          `/opponents/team/${this.$route.params.teamId}`
-        );
+        const teamId = this.$route.params.teamId;
+        const response = await apiClient.get(`/opponents/team/${teamId}`);
         this.opponents = response.data;
-        console.log("Opponents loaded:", this.opponents);
       } catch (error) {
-        console.error("Error fetching opponents:", error.response || error);
-        this.message =
-          "No se pudo cargar la lista de oponentes: " +
-          (error.response?.data?.message ||
-            error.message ||
-            "Inténtelo de nuevo.");
+        this.message = "No se pudo cargar la lista de oponentes.";
         this.messageType = "error";
         this.showMessage = true;
       }
     },
     async addMatch() {
-      console.log("Attempting to add match with data:", this.newMatch);
       if (!this.newMatch.opponentId) {
         this.message = "Debes seleccionar un oponente.";
         this.messageType = "warning";
         this.showMessage = true;
-        console.log(
-          "ShowMessage after opponent validation:",
-          this.showMessage,
-          this.message,
-          this.messageType
-        );
         return;
       }
 
       try {
-        const dateTime = new Date(
-          `${this.newMatch.date}T${this.newMatch.time}`
-        );
-        const selectedOpponent = this.opponents.find(
-          (opp) => opp.id === this.newMatch.opponentId
-        );
-
-        if (!selectedOpponent) {
-          throw new Error("Oponente no encontrado en la lista.");
-        }
+        const dateTime = `${this.newMatch.date}T${this.newMatch.time}`;
 
         const matchPayload = {
-          opponent: selectedOpponent.name,
-          date: dateTime.toISOString(),
-          location: this.newMatch.venue,
-          result: "",
-          finalized: dateTime < new Date(),
+          opponentId: this.newMatch.opponentId,
+          date: dateTime,
+          location: this.newMatch.location,
           teamId: this.$route.params.teamId,
         };
 
-        console.log("Sending match payload to backend:", matchPayload);
-        const response = await apiClient.post("/matches", matchPayload);
+        await apiClient.post("/matches", matchPayload);
 
-        console.log(
-          "Match added successfully, response status:",
-          response.status,
-          "Response data:",
-          response.data
-        );
-        if (response.status === 200) {
-          this.message = "Partido agregado con éxito.";
-          this.messageType = "success";
-          this.showMessage = true;
-          console.log(
-            "ShowMessage after success:",
-            this.showMessage,
-            this.message,
-            this.messageType
-          );
+        this.message = "Partido agregado con éxito.";
+        this.messageType = "success";
+        this.showMessage = true;
 
-          setTimeout(() => {
-            this.$router.push({
-              name: "TeamMatches",
-              params: { id: this.$route.params.teamId },
-            });
-            console.log("Redirected to TeamMatches after showing message");
-          }, 2000); 
-        } else {
-          throw new Error("Respuesta inesperada del servidor.");
-        }
+        setTimeout(() => {
+          this.goBack();
+        }, 1500);
+
       } catch (error) {
-        console.error("Error adding match:", error.response || error);
-        this.message =
-          "No se pudo agregar el partido: " +
-          (error.response?.data?.message ||
-            error.message ||
-            "Inténtelo de nuevo.");
+        this.message = "No se pudo agregar el partido: " + (error.response?.data?.message || "Inténtelo de nuevo.");
         this.messageType = "error";
         this.showMessage = true;
-        console.log(
-          "ShowMessage after error:",
-          this.showMessage,
-          this.message,
-          this.messageType
-        );
       }
     },
     goBack() {
@@ -180,23 +119,10 @@ export default {
     },
     closeMessage() {
       this.showMessage = false;
-      console.log("MessageBox closed, showMessage:", this.showMessage);
     },
   },
   mounted() {
     this.fetchOpponents();
-  },
-  watch: {
-    showMessage(newValue) {
-      console.log(
-        "showMessage changed to:",
-        newValue,
-        "Message:",
-        this.message,
-        "Type:",
-        this.messageType
-      );
-    },
   },
 };
 </script>
@@ -277,16 +203,5 @@ export default {
 
 .btn.secondary:hover {
   background-color: #565e64;
-}
-
-/* Responsividad */
-@media (max-width: 480px) {
-  .form-card {
-    padding: 15px;
-  }
-  .btn {
-    padding: 8px 16px;
-    font-size: 0.9rem;
-  }
 }
 </style>

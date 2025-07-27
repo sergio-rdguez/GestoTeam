@@ -2,11 +2,8 @@ package com.gestoteam.model;
 
 import com.gestoteam.enums.PlayerStatus;
 import com.gestoteam.enums.Position;
-
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -65,11 +62,15 @@ public class Player {
     @Column(nullable = false)
     private LocalDate birthDate;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Team team;
 
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<PlayerMatchStats> matchStats;
 
     @PostLoad

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -51,8 +52,9 @@ public class MatchController {
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Eliminar un partido (borrado lógico)")
-    @ApiResponse(responseCode = "200", description = "Partido eliminado")
+    @ApiResponse(responseCode = "204", description = "Partido eliminado")
     @ApiResponse(responseCode = "404", description = "Partido no encontrado")
     public void deleteMatch(@PathVariable Long id) {
         matchService.deleteMatch(id);

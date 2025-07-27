@@ -9,6 +9,7 @@ public class MatchDetailsResponse {
     private Long id;
     private LocalDateTime date;
     private String opponent;
+    private Long opponentId;
     private String location;
     private String result;
     private boolean won;

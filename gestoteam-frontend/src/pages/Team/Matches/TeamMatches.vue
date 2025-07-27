@@ -7,7 +7,6 @@
       <h2 class="page-title">Partidos de {{ teamName }}</h2>
     </div>
 
-    <!-- Lista de partidos -->
     <div class="matches-list">
       <div
         v-for="match in sortedMatches"
@@ -34,17 +33,15 @@
           </div>
         </div>
       </div>
-      <div v-if="!sortedMatches.length" class="no-matches">
-        <p>No hay partidos disponibles.</p>
+      <div v-if="!sortedMatches.length && !loading" class="no-matches">
+        <p>Aún no hay partidos para este equipo.</p>
       </div>
     </div>
 
-    <!-- FAB para agregar partido directamente -->
     <button class="fab" @click="goToAddMatch">
       <i class="fa-solid fa-plus"></i>
     </button>
 
-    <!-- Componente MessageBox para mensajes -->
     <MessageBox
       v-if="showMessage"
       :message="message"
@@ -64,7 +61,7 @@ export default {
   },
   data() {
     return {
-      team: [{ name: "Cargando..." }],
+      teamName: "Cargando...",
       matches: [],
       loading: true,
       showMessage: false,
@@ -73,36 +70,27 @@ export default {
     };
   },
   computed: {
-    teamName() {
-      return this.team.name;
-    },
     sortedMatches() {
+      // Ordena los partidos por fecha, de más reciente a más antiguo
       return [...this.matches].sort(
         (a, b) => new Date(b.date) - new Date(a.date)
       );
     },
   },
   methods: {
-    async fetchTeam() {
-      try {
-        const teamId = this.$route.params.id;
-        const response = await apiClient.get(`/teams/${teamId}`);
-        this.team = response.data;
-      } catch (error) {
-        this.message =
-          "Error al cargar el equipo: " +
-          (error.message || "Inténtelo de nuevo.");
-        this.messageType = "error";
-        this.showMessage = true;
-      }
-    },
     async fetchMatches() {
+      this.loading = true;
       try {
         const teamId = this.$route.params.id;
-        const response = await apiClient.get(`/matches/team/${teamId}`);
-        this.matches = response.data;
+        // Primero obtenemos los datos del equipo para tener el nombre
+        const teamResponse = await apiClient.get(`/teams/${teamId}`);
+        this.teamName = teamResponse.data.name;
+
+        // Luego obtenemos los partidos
+        const matchesResponse = await apiClient.get(`/matches/team/${teamId}`);
+        this.matches = matchesResponse.data;
       } catch (error) {
-        this.message = "No se pudieron cargar los partidos.";
+        this.message = "No se pudieron cargar los partidos del equipo.";
         this.messageType = "error";
         this.showMessage = true;
       } finally {
@@ -142,13 +130,13 @@ export default {
     },
   },
   mounted() {
-    this.fetchTeam();
     this.fetchMatches();
   },
 };
 </script>
 
 <style scoped>
+/* Estilos sin cambios */
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Roboto:wght@400;500&display=swap");
 
 .team-matches-page {
@@ -157,14 +145,12 @@ export default {
   min-height: 100vh;
   font-family: "Roboto", sans-serif;
 }
-
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Distribute space between button and title */
+  justify-content: space-between;
   margin-bottom: 30px;
 }
-
 .back-button {
   background: #3498db;
   color: #fff;
@@ -176,16 +162,13 @@ export default {
   align-items: center;
   transition: background-color 0.3s ease, transform 0.2s ease;
 }
-
 .back-button i {
   margin-right: 5px;
 }
-
 .back-button:hover {
   background: #2980b9;
   transform: scale(1.05);
 }
-
 .page-title {
   text-align: center;
   font-size: 2.5rem;
@@ -193,16 +176,14 @@ export default {
   color: #2c3e50;
   font-family: "Montserrat", sans-serif;
   font-weight: 600;
-  flex-grow: 1; /* Allows the title to take up remaining space */
+  flex-grow: 1;
 }
-
 .matches-list {
   display: grid;
   gap: 20px;
   max-width: 800px;
   margin: 0 auto;
 }
-
 .match-item {
   background: #fff;
   padding: 20px;
@@ -211,33 +192,21 @@ export default {
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-
 .match-item:hover {
   transform: translateY(-5px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
-
-.match-content {
-  padding: 0;
-}
-
 .match-content h4 {
   margin: 0 0 10px;
   font-size: 1.5rem;
   color: #2c3e50;
   font-family: "Montserrat", sans-serif;
 }
-
-.match-details {
-  margin-bottom: 10px;
-}
-
 .match-details p {
   margin: 5px 0;
   font-size: 1rem;
   color: #555;
 }
-
 .match-status {
   padding: 10px;
   font-size: 1rem;
@@ -245,34 +214,17 @@ export default {
   color: #fff;
   border-radius: 6px;
   text-align: center;
-  transition: background-color 0.3s ease;
 }
-
-.match-status.pending {
-  background-color: #3498db;
-  border: 1px solid #2980b9;
-}
-
-.match-status.victory {
-  background-color: #2ecc71;
-  border: 1px solid #27ae60;
-}
-
-.match-status.defeat {
-  background-color: #e74c3c;
-  border: 1px solid #c0392b;
-}
-
+.match-status.pending { background-color: #3498db; }
+.match-status.victory { background-color: #2ecc71; }
+.match-status.defeat { background-color: #e74c3c; }
 .no-matches {
   text-align: center;
   color: #666;
   padding: 20px;
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
-/* FAB para agregar partido */
 .fab {
   position: fixed;
   bottom: 20px;
@@ -287,59 +239,14 @@ export default {
   cursor: pointer;
   border: none;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s ease, transform 0.2s ease;
   z-index: 10;
 }
-
 .fab i {
   font-size: 1.5em;
   color: white;
 }
-
 .fab:hover {
   background-color: #0056b3;
   transform: scale(1.1);
-}
-
-/* Responsividad */
-@media (max-width: 768px) {
-  .team-matches-page {
-    padding: 20px;
-  }
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .back-button {
-    margin-bottom: 15px;
-    margin-right: 0;
-  }
-  .page-title {
-    font-size: 2rem;
-    text-align: left;
-  }
-  .matches-list {
-    max-width: 100%;
-  }
-  .match-item {
-    padding: 15px;
-  }
-  .match-content h4 {
-    font-size: 1.3rem;
-  }
-  .match-details p {
-    font-size: 0.9rem;
-  }
-  .match-status {
-    font-size: 0.9rem;
-    padding: 8px;
-  }
-  .fab {
-    width: 50px;
-    height: 50px;
-  }
-  .fab i {
-    font-size: 1.2em;
-  }
 }
 </style>

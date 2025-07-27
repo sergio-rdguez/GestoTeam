@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 @Data
 public class MatchUpdateRequest {
     private LocalDateTime date;
-    private String opponent;
+    private Long opponentId;
     private String location;
     private String result;
     private boolean finalized;

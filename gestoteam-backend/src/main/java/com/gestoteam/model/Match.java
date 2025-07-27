@@ -1,13 +1,11 @@
 package com.gestoteam.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Table(name = "matches")
 @EntityListeners(AuditingEntityListener.class)
 public class Match {
     @Id
@@ -25,11 +24,13 @@ public class Match {
     @Column(nullable = false)
     private LocalDateTime date;
 
-    @Column(nullable = false)
-    private String opponent;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "opponent_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Opponent opponent;
 
     private String location;
-
     private String result;
 
     @Column(nullable = false)
@@ -42,14 +43,20 @@ public class Match {
     private boolean finalized = false;
 
     @OneToMany(mappedBy = "match", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<PlayerMatchStats> playerStats = new ArrayList<>();
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "season_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Season season;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Team team;
 
     @CreatedDate

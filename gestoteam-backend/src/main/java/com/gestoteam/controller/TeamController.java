@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -40,10 +43,16 @@ public class TeamController {
 
     @PostMapping
     @Operation(summary = "Crear un nuevo equipo", description = "Crea un nuevo equipo y lo asocia al usuario autenticado.")
-    @ApiResponse(responseCode = "200", description = "Equipo creado con éxito")
+    @ApiResponse(responseCode = "201", description = "Equipo creado con éxito")
     @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
     public ResponseEntity<TeamResponse> createTeam(@Valid @RequestBody TeamRequest teamRequest) {
-        return ResponseEntity.ok(teamService.createTeam(teamRequest));
+        TeamResponse createdTeam = teamService.createTeam(teamRequest);
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(createdTeam.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(createdTeam);
     }
 
     @PutMapping("/{id}")
