@@ -8,6 +8,7 @@ import com.gestoteam.repository.UserRepository;
 import com.gestoteam.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final UserRepository userRepository;
 
     @PostMapping("/register")
     @Operation(summary = "Registrar un nuevo usuario", description = "Crea una nueva cuenta de usuario en el sistema.")
@@ -45,21 +45,15 @@ public class AuthController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<UserResponse> getUserProfile(Authentication authentication) {
-        // Obtenemos los detalles del usuario a partir del token JWT procesado por Spring Security.
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String username = userDetails.getUsername();
-
-        // Usamos el servicio para obtener la entidad completa.
-        User user = userRepository.findByUsername(username).
-                orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));;
-
-        // Mapeamos a un DTO seguro para no exponer la contraseña ni otros datos sensibles.
-        UserResponse userResponse = new UserResponse(
-                user.getId(),
-                user.getUsername()
-        );
-
-        return ResponseEntity.ok(userResponse);
+    @Operation(
+            summary = "Obtener el perfil del usuario autenticado",
+            description = "Devuelve la información del perfil del usuario que realiza la petición, basado en su token JWT."
+    )
+    @ApiResponse(responseCode = "200", description = "Perfil del usuario obtenido con éxito")
+    @ApiResponse(responseCode = "401", description = "No autorizado, el token no es válido o no se ha proporcionado")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<UserResponse> getUserProfile() {
+        UserResponse userProfile = authService.getUserProfile();
+        return ResponseEntity.ok(userProfile);
     }
 }

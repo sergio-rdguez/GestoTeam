@@ -1,5 +1,6 @@
 package com.gestoteam.service;
 
+import com.gestoteam.dto.response.UserResponse;
 import com.gestoteam.exception.GestoServiceException;
 import com.gestoteam.model.User;
 import com.gestoteam.repository.UserRepository;
@@ -8,10 +9,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
@@ -62,5 +65,15 @@ public class AuthService {
         log.info("Autenticación exitosa para {}. Generando token.", username);
         final UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         return jwtUtil.generateToken(userDetails);
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getUserProfile() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new GestoServiceException("Usuario no encontrado: " + username));
+
+        return new UserResponse(user.getId(),user.getUsername());
     }
 }

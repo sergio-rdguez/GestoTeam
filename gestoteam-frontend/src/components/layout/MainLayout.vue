@@ -1,6 +1,6 @@
 <template>
   <div class="main-layout">
-    <PageHeader @logout="handleLogout" />
+    <AppHeader @logout="handleLogout" />
     <main class="main-content">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-import PageHeader from './PageHeader.vue';
+import AppHeader from './AppHeader.vue';
 import authService from '@/services/auth';
 
 const handleLogout = () => {
@@ -25,7 +25,7 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--color-background-soft);
+  background-color: var(--color-background-light);
 }
 
 .main-content {
@@ -33,7 +33,6 @@ const handleLogout = () => {
   padding: var(--spacing-5);
 }
 
-/* Transición suave entre páginas */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;

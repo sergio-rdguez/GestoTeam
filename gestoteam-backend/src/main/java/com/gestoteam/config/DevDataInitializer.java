@@ -30,7 +30,7 @@ public class DevDataInitializer {
     private final SeasonRepository seasonRepository;
     private final MatchRepository matchRepository;
     private final PlayerMatchStatsRepository playerMatchStatsRepository;
-    private final OpponentRepository opponentRepository; // Repositorio añadido
+    private final OpponentRepository opponentRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Bean
@@ -72,33 +72,137 @@ public class DevDataInitializer {
             team2.setOwnerId("testuser");
             teamRepository.save(team2);
 
-            createPlayersForTeam1(team1);
-
-            createOpponentsAndMatchesForTeam1(team1, season);
+            List<Player> playersTeam1 = createPlayersForTeam1(team1);
+            createOpponentsAndMatchesForTeam1(team1, season, playersTeam1);
 
             log.info("Base de datos de prueba poblada con éxito.");
         };
     }
 
-    private void createPlayersForTeam1(Team team) {
-        playerRepository.saveAll(List.of(
-                new Player(null, "Alejandro", "García", "López", "", Position.POR, 1, 0, PlayerStatus.ACTIVO, null, null, false, LocalDate.of(1995, 3, 12), team, null),
-                new Player(null, "Javier", "Sánchez", "Gómez", "", Position.DFC, 4, 0, PlayerStatus.ACTIVO, null, null, false, LocalDate.of(1994, 11, 5), team, null),
-                new Player(null, "David", "Fernández", "Pérez", "", Position.DFC, 5, 0, PlayerStatus.ACTIVO, null, null, false, LocalDate.of(1993, 2, 18), team, null),
-                new Player(null, "Adrián", "Jiménez", "Ortega", "", Position.LTD, 2, 0, PlayerStatus.ACTIVO, null, null, false, LocalDate.of(1996, 6, 30), team, null),
-                new Player(null, "Mario", "Moreno", "Serrano", "", Position.LTI, 3, 0, PlayerStatus.ACTIVO, null, null, false, LocalDate.of(1997, 1, 25), team, null),
-                new Player(null, "Carlos", "Romero", "Vázquez", "", Position.MCD, 6, 0, PlayerStatus.LESIONADO, null, null, false, LocalDate.of(1995, 9, 14), team, null),
-                new Player(null, "Pablo", "Álvarez", "Castro", "", Position.MC, 8, 0, PlayerStatus.ACTIVO, null, null, false, LocalDate.of(1996, 4, 22), team, null),
-                new Player(null, "Jorge", "Domínguez", "Ramos", "", Position.MCO, 10, 0, PlayerStatus.ACTIVO, null, null, false, LocalDate.of(1994, 12, 10), team, null),
-                new Player(null, "Ignacio", "Vidal", "Castillo", "", Position.ED, 7, 0, PlayerStatus.SUSPENDIDO, null, null, false, LocalDate.of(1997, 5, 16), team, null),
-                new Player(null, "Álvaro", "Molina", "Iglesias", "", Position.EI, 11, 0, PlayerStatus.ACTIVO, null, null, false, LocalDate.of(1998, 10, 3), team, null),
-                new Player(null, "Rubén", "Ortega", "Garrido", "", Position.DC, 9, 0, PlayerStatus.ACTIVO, null, null, false, LocalDate.of(1993, 7, 8), team, null)
-        ));
+    private List<Player> createPlayersForTeam1(Team team) {
+        Player p1 = new Player();
+        p1.setName("Alejandro");
+        p1.setSurnameFirst("García");
+        p1.setSurnameSecond("López");
+        p1.setPosition(Position.POR);
+        p1.setNumber(1);
+        p1.setStatus(PlayerStatus.ACTIVO);
+        p1.setBirthDate(LocalDate.of(1995, 3, 12));
+        p1.setTeam(team);
+
+        Player p2 = new Player();
+        p2.setName("Javier");
+        p2.setSurnameFirst("Sánchez");
+        p2.setSurnameSecond("Gómez");
+        p2.setPosition(Position.DFC);
+        p2.setNumber(4);
+        p2.setStatus(PlayerStatus.ACTIVO);
+        p2.setBirthDate(LocalDate.of(1994, 11, 5));
+        p2.setTeam(team);
+
+        Player p3 = new Player();
+        p3.setName("David");
+        p3.setSurnameFirst("Fernández");
+        p3.setSurnameSecond("Pérez");
+        p3.setPosition(Position.DFC);
+        p3.setNumber(5);
+        p3.setStatus(PlayerStatus.ACTIVO);
+        p3.setBirthDate(LocalDate.of(1993, 2, 18));
+        p3.setTeam(team);
+
+        Player p4 = new Player();
+        p4.setName("Adrián");
+        p4.setSurnameFirst("Jiménez");
+        p4.setSurnameSecond("Ortega");
+        p4.setPosition(Position.LTD);
+        p4.setNumber(2);
+        p4.setStatus(PlayerStatus.ACTIVO);
+        p4.setBirthDate(LocalDate.of(1996, 6, 30));
+        p4.setTeam(team);
+
+        Player p5 = new Player();
+        p5.setName("Mario");
+        p5.setSurnameFirst("Moreno");
+        p5.setSurnameSecond("Serrano");
+        p5.setPosition(Position.LTI);
+        p5.setNumber(3);
+        p5.setStatus(PlayerStatus.ACTIVO);
+        p5.setBirthDate(LocalDate.of(1997, 1, 25));
+        p5.setTeam(team);
+
+        Player p6 = new Player();
+        p6.setName("Carlos");
+        p6.setSurnameFirst("Romero");
+        p6.setSurnameSecond("Vázquez");
+        p6.setPosition(Position.MCD);
+        p6.setNumber(6);
+        p6.setStatus(PlayerStatus.LESIONADO);
+        p6.setBirthDate(LocalDate.of(1995, 9, 14));
+        p6.setTeam(team);
+
+        Player p7 = new Player();
+        p7.setName("Pablo");
+        p7.setSurnameFirst("Álvarez");
+        p7.setSurnameSecond("Castro");
+        p7.setPosition(Position.MC);
+        p7.setNumber(8);
+        p7.setStatus(PlayerStatus.ACTIVO);
+        p7.setBirthDate(LocalDate.of(1996, 4, 22));
+        p7.setTeam(team);
+
+        Player p8 = new Player();
+        p8.setName("Jorge");
+        p8.setSurnameFirst("Domínguez");
+        p8.setSurnameSecond("Ramos");
+        p8.setPosition(Position.MCO);
+        p8.setNumber(10);
+        p8.setStatus(PlayerStatus.ACTIVO);
+        p8.setBirthDate(LocalDate.of(1994, 12, 10));
+        p8.setTeam(team);
+
+        Player p9 = new Player();
+        p9.setName("Ignacio");
+        p9.setSurnameFirst("Vidal");
+        p9.setSurnameSecond("Castillo");
+        p9.setPosition(Position.ED);
+        p9.setNumber(7);
+        p9.setStatus(PlayerStatus.SUSPENDIDO);
+        p9.setBirthDate(LocalDate.of(1997, 5, 16));
+        p9.setTeam(team);
+
+        Player p10 = new Player();
+        p10.setName("Álvaro");
+        p10.setSurnameFirst("Molina");
+        p10.setSurnameSecond("Iglesias");
+        p10.setPosition(Position.EI);
+        p10.setNumber(11);
+        p10.setStatus(PlayerStatus.ACTIVO);
+        p10.setBirthDate(LocalDate.of(1998, 10, 3));
+        p10.setTeam(team);
+
+        Player p11 = new Player();
+        p11.setName("Rubén");
+        p11.setSurnameFirst("Ortega");
+        p11.setSurnameSecond("Garrido");
+        p11.setPosition(Position.DC);
+        p11.setNumber(9);
+        p11.setStatus(PlayerStatus.ACTIVO);
+        p11.setBirthDate(LocalDate.of(1993, 7, 8));
+        p11.setTeam(team);
+
+        return playerRepository.saveAll(List.of(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11));
     }
 
-    private void createOpponentsAndMatchesForTeam1(Team team, Season season) {
-        Opponent opponent1 = new Opponent(null, "CD La Elipa", "Equipo correoso, buen contraataque.", team, null, null);
-        Opponent opponent2 = new Opponent(null, "Sporting de Hortaleza", "Defensa muy sólida.", team, null, null);
+    private void createOpponentsAndMatchesForTeam1(Team team, Season season, List<Player> players) {
+        Opponent opponent1 = new Opponent();
+        opponent1.setName("CD La Elipa");
+        opponent1.setObservations("Equipo correoso, buen contraataque.");
+        opponent1.setTeam(team);
+
+        Opponent opponent2 = new Opponent();
+        opponent2.setName("Sporting de Hortaleza");
+        opponent2.setObservations("Defensa muy sólida.");
+        opponent2.setTeam(team);
         opponentRepository.saveAll(List.of(opponent1, opponent2));
 
         Match match1 = new Match();
@@ -112,8 +216,8 @@ public class DevDataInitializer {
         match1.setSeason(season);
         matchRepository.save(match1);
 
-        Player javier = playerRepository.findByName("Javier").get(0);
-        Player david = playerRepository.findByName("David").get(0);
+        Player javier = players.stream().filter(p -> p.getName().equals("Javier")).findFirst().orElseThrow();
+        Player david = players.stream().filter(p -> p.getName().equals("David")).findFirst().orElseThrow();
 
         PlayerMatchStats stats1 = new PlayerMatchStats();
         stats1.setMatch(match1);
