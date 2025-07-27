@@ -20,38 +20,14 @@
 export default {
   name: "BaseInput",
   props: {
-    modelValue: {
-      type: [String, Number],
-      default: '',
-    },
-    label: {
-      type: String,
-      default: '',
-    },
-    id: {
-      type: String,
-      default: () => `input-${Math.random().toString(36).substr(2, 9)}`,
-    },
-    type: {
-      type: String,
-      default: 'text',
-    },
-    placeholder: {
-      type: String,
-      default: '',
-    },
-    required: {
-      type: Boolean,
-      default: false,
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-    error: {
-      type: String,
-      default: '',
-    },
+    modelValue: { type: [String, Number], default: '' },
+    label: { type: String, default: '' },
+    id: { type: String, default: () => `input-${Math.random().toString(36).substr(2, 9)}` },
+    type: { type: String, default: 'text' },
+    placeholder: { type: String, default: '' },
+    required: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false },
+    error: { type: String, default: '' },
   },
   emits: ['update:modelValue'],
 };
@@ -63,35 +39,32 @@ export default {
   flex-direction: column;
   width: 100%;
 }
-
 label {
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #333;
+  margin-bottom: var(--spacing-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
-
 .base-input {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-background-white);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-
 .base-input:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25); /* Sombra de color primario con opacidad */
 }
-
 .base-input.has-error {
-  border-color: #dc3545;
+  border-color: var(--color-danger);
 }
-
 .error-message {
-  color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-1);
 }
 </style>

@@ -1,54 +1,91 @@
 <template>
-    <div class="user-settings-page">
-        <h1>Configuración de Usuario</h1>
+    <div class="form-page">
+        <PageHeader title="Configuración de Usuario" show-back-button @back="cancel" />
 
-        <!-- Formulario de Configuración -->
-        <form @submit.prevent="updateSettings">
-            <div class="form-group">
-                <label for="maxPlayersPerTeam">Máximo de jugadores en plantilla</label>
-                <input type="number" id="maxPlayersPerTeam" v-model="settings.maxPlayersPerTeam" min="1" required />
-            </div>
+        <BaseCard>
+            <form @submit.prevent="updateSettings" v-if="!loading">
+                <div class="form-grid">
+                    <BaseInput
+                        v-model.number="settings.maxPlayersPerTeam"
+                        label="Máximo de jugadores en plantilla"
+                        type="number"
+                        id="maxPlayersPerTeam"
+                        min="1"
+                        required
+                    />
+                    <BaseInput
+                        v-model.number="settings.maxPlayersPerMatch"
+                        label="Máximo de jugadores convocados"
+                        type="number"
+                        id="maxPlayersPerMatch"
+                        min="1"
+                        required
+                    />
+                    <BaseInput
+                        v-model.number="settings.yellowCardsForSuspension"
+                        label="Tarjetas amarillas para sanción"
+                        type="number"
+                        id="yellowCardsForSuspension"
+                        min="1"
+                        required
+                    />
+                     <BaseInput
+                        v-model.number="settings.maxTrainingsPerWeek"
+                        label="Máximo de entrenamientos por semana"
+                        type="number"
+                        id="maxTrainingsPerWeek"
+                        min="1"
+                        required
+                    />
+                </div>
+                <div class="checkbox-grid">
+                    <BaseCheckbox
+                        v-model="settings.notifyBeforeMatch"
+                        label="Notificar antes de un partido"
+                        id="notifyBeforeMatch"
+                    />
+                    <BaseCheckbox
+                        v-model="settings.notifyBeforeTraining"
+                        label="Notificar antes de un entrenamiento"
+                        id="notifyBeforeTraining"
+                    />
+                </div>
 
-            <div class="form-group">
-                <label for="maxPlayersPerMatch">Máximo de jugadores convocados</label>
-                <input type="number" id="maxPlayersPerMatch" v-model="settings.maxPlayersPerMatch" min="1" required />
+                <div class="form-actions">
+                    <BaseButton type="submit" variant="primary" :loading="isSaving">
+                        Guardar Configuración
+                    </BaseButton>
+                </div>
+            </form>
+             <div v-else class="loading-container">
+                <LoadingSpinner message="Cargando configuración..." />
             </div>
-
-            <div class="form-group">
-                <label for="yellowCardsForSuspension">Tarjetas amarillas para sanción</label>
-                <input type="number" id="yellowCardsForSuspension" v-model="settings.yellowCardsForSuspension" min="1"
-                    required />
-            </div>
-
-            <div class="form-group">
-                <label for="maxTrainingsPerWeek">Máximo de entrenamientos por semana</label>
-                <input type="number" id="maxTrainingsPerWeek" v-model="settings.maxTrainingsPerWeek" min="1" required />
-            </div>
-
-            <div class="form-group">
-                <label for="notifyBeforeMatch">Notificar antes de un partido</label>
-                <input type="checkbox" id="notifyBeforeMatch" v-model="settings.notifyBeforeMatch" />
-            </div>
-
-            <div class="form-group">
-                <label for="notifyBeforeTraining">Notificar antes de un entrenamiento</label>
-                <input type="checkbox" id="notifyBeforeTraining" v-model="settings.notifyBeforeTraining" />
-            </div>
-
-            <div class="buttons">
-                <button type="submit" class="btn-save">Guardar Configuración</button>
-                <button type="button" class="btn-cancel" @click="cancel">Cancelar</button>
-            </div>
-        </form>
+        </BaseCard>
     </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
+import PageHeader from "@/components/layout/PageHeader.vue";
+import BaseCard from "@/components/base/BaseCard.vue";
+import BaseInput from "@/components/base/BaseInput.vue";
+import BaseButton from "@/components/base/BaseButton.vue";
+import BaseCheckbox from "@/components/base/BaseCheckbox.vue";
+import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
 
 export default {
+    components: {
+        PageHeader,
+        BaseCard,
+        BaseInput,
+        BaseButton,
+        BaseCheckbox,
+        LoadingSpinner,
+    },
     data() {
         return {
+            loading: true,
+            isSaving: false,
             settings: {
                 maxPlayersPerTeam: 25,
                 maxPlayersPerMatch: 18,
@@ -61,22 +98,26 @@ export default {
     },
     methods: {
         async fetchSettings() {
+            this.loading = true;
             try {
                 const response = await apiClient.get("/user-settings");
                 this.settings = response.data;
             } catch (error) {
                 console.error("Error al obtener configuraciones:", error);
-                alert("No se pudieron cargar las configuraciones. Intente nuevamente.");
+            } finally {
+                this.loading = false;
             }
         },
         async updateSettings() {
+            this.isSaving = true;
             try {
                 await apiClient.put("/user-settings", this.settings);
-                alert("Configuraciones guardadas correctamente.");
+                // Idealmente, aquí mostraríamos un toast/snackbar de éxito
                 this.$router.go(-1);
             } catch (error) {
                 console.error("Error al guardar configuraciones:", error);
-                alert("Error al guardar configuraciones. Intente nuevamente.");
+            } finally {
+                this.isSaving = false;
             }
         },
         cancel() {
@@ -90,83 +131,35 @@ export default {
 </script>
 
 <style scoped>
-.user-settings-page {
-    padding: 20px;
-    max-width: 600px;
-    margin: auto;
-    font-family: Arial, sans-serif;
-    background: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.form-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
 }
-
-h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 20px;
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
-
-.form-group {
-    margin-bottom: 15px;
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
-
-label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
-    color: #555;
+.form-actions {
+  margin-top: 1.5rem;
 }
-
-input[type="number"],
-input[type="checkbox"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 1rem;
-}
-
-input[type="checkbox"] {
-    width: auto;
-    display: inline-block;
-    margin-right: 10px;
-}
-
-.buttons {
+.loading-container {
+    min-height: 200px;
     display: flex;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: center;
+    align-items: center;
 }
-
-.btn-save,
-.btn-cancel {
-    flex: 1;
-}
-
-.btn-save {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    font-size: 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.btn-cancel {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    font-size: 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.btn-cancel:hover {
-    background-color: #c82333;
+@media (max-width: 768px) {
+    .form-grid, .checkbox-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

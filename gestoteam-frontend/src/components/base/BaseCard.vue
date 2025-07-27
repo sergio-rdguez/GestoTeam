@@ -26,33 +26,31 @@ export default {
 
 <style scoped>
 .base-card {
-  background: #fff;
+  background: var(--color-background-white);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
   overflow: hidden;
 }
-
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 1rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid #eee;
+  padding-bottom: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border);
 }
-
 .card-title {
   font-family: "Montserrat", sans-serif;
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: #2c3e50;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
   margin: 0;
 }
-
 .card-content {
-  font-size: 1rem;
-  color: #333;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
 }
 </style>

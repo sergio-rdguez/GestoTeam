@@ -12,34 +12,15 @@
 export default {
   name: "BaseButton",
   props: {
-    type: {
-      type: String,
-      default: 'button',
-    },
-    variant: {
-      type: String,
-      default: 'primary', // primary, secondary, danger
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-    loading: {
-      type: Boolean,
-      default: false,
-    },
-    icon: {
-      type: String,
-      default: '',
-    },
+    type: { type: String, default: 'button' },
+    variant: { type: String, default: 'primary' },
+    disabled: { type: Boolean, default: false },
+    loading: { type: Boolean, default: false },
+    icon: { type: String, default: '' },
   },
   computed: {
     buttonClass() {
-      return [
-        'btn',
-        `btn-${this.variant}`,
-        { 'loading': this.loading }
-      ];
+      return ['btn', `btn-${this.variant}`, { 'loading': this.loading }];
     }
   }
 };
@@ -50,9 +31,9 @@ export default {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   border-radius: 8px;
   border: none;
   cursor: pointer;
@@ -60,59 +41,48 @@ export default {
   white-space: nowrap;
   user-select: none;
 }
-
 .btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-
 .btn:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: none;
 }
-
 .btn:disabled {
   background-color: #c0c0c0;
   color: #888;
   cursor: not-allowed;
 }
-
-/* Variants */
 .btn-primary {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--color-primary);
+  color: var(--color-background-white);
 }
 .btn-primary:hover:not(:disabled) {
-  background-color: #0069d9;
+  background-color: var(--color-primary-dark);
 }
-
 .btn-secondary {
-  background-color: #6c757d;
-  color: white;
+  background-color: var(--color-text-secondary);
+  color: var(--color-background-white);
 }
 .btn-secondary:hover:not(:disabled) {
-  background-color: #5a6268;
+  background-color: #5a6268; /* Considerar añadir un --color-secondary-dark */
 }
-
 .btn-danger {
-  background-color: #dc3545;
-  color: white;
+  background-color: var(--color-danger);
+  color: var(--color-background-white);
 }
 .btn-danger:hover:not(:disabled) {
-  background-color: #c82333;
+  background-color: #c82333; /* Considerar añadir un --color-danger-dark */
 }
-
-/* Icon and Content */
 .icon {
-  margin-right: 0.5rem;
+  margin-right: var(--spacing-2);
 }
 .content {
   display: inherit;
   align-items: inherit;
   justify-content: inherit;
 }
-
-/* Loading State */
 .btn.loading .content, .btn.loading .icon {
   visibility: hidden;
 }
@@ -125,10 +95,7 @@ export default {
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
 }
-
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 </style>

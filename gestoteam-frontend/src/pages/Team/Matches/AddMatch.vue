@@ -1,38 +1,51 @@
 <template>
-  <div class="add-match-page">
-    <h2 class="page-title">Agregar Partido</h2>
+  <div class="form-page">
+    <PageHeader 
+      title="Agregar Partido" 
+      show-back-button 
+      @back="goBack"
+    />
 
-    <div class="form-card">
+    <BaseCard>
       <form @submit.prevent="addMatch">
-        <div class="form-group">
-          <label for="opponent">Oponente</label>
-          <select v-model="newMatch.opponentId" id="opponent" required>
-            <option disabled value="">Seleccione un oponente</option>
-            <option v-for="opp in opponents" :key="opp.id" :value="opp.id">
-              {{ opp.name }}
-            </option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="date">Fecha</label>
-          <input v-model="newMatch.date" type="date" id="date" required />
-        </div>
-        <div class="form-group">
-          <label for="time">Hora</label>
-          <input v-model="newMatch.time" type="time" id="time" required />
-        </div>
-        <div class="form-group">
-          <label for="location">Estadio</label>
-          <input v-model="newMatch.location" type="text" id="location" required />
+        <div class="form-grid">
+          <BaseSelect
+            v-model="newMatch.opponentId"
+            label="Oponente"
+            id="opponent"
+            :options="opponentOptions"
+            placeholder="Seleccione un oponente"
+            required
+          />
+          <BaseInput
+            v-model="newMatch.location"
+            label="Estadio"
+            id="location"
+            type="text"
+            required
+          />
+          <BaseInput
+            v-model="newMatch.date"
+            label="Fecha"
+            id="date"
+            type="date"
+            required
+          />
+          <BaseInput
+            v-model="newMatch.time"
+            label="Hora"
+            id="time"
+            type="time"
+            required
+          />
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn primary">Guardar Partido</button>
-          <button type="button" class="btn secondary" @click="goBack">
-            Cancelar
-          </button>
+            <BaseButton type="submit" variant="primary" :loading="isSaving">
+                {{ isSaving ? "Guardando..." : "Guardar Partido" }}
+            </BaseButton>
         </div>
       </form>
-    </div>
+    </BaseCard>
 
     <MessageBox
       v-if="showMessage"
@@ -46,10 +59,21 @@
 <script>
 import apiClient from "@/services/api";
 import MessageBox from "@/pages/utils/MessageBox.vue";
+import PageHeader from "@/components/layout/PageHeader.vue";
+import BaseCard from "@/components/base/BaseCard.vue";
+import BaseInput from "@/components/base/BaseInput.vue";
+import BaseSelect from "@/components/base/BaseSelect.vue";
+import BaseButton from "@/components/base/BaseButton.vue";
+
 
 export default {
   components: {
     MessageBox,
+    PageHeader,
+    BaseCard,
+    BaseInput,
+    BaseSelect,
+    BaseButton,
   },
   data() {
     return {
@@ -60,10 +84,16 @@ export default {
         location: "",
       },
       opponents: [],
+      isSaving: false,
       showMessage: false,
       message: "",
       messageType: "info",
     };
+  },
+  computed: {
+    opponentOptions() {
+      return this.opponents.map(opp => ({ value: opp.id, text: opp.name }));
+    }
   },
   methods: {
     async fetchOpponents() {
@@ -85,9 +115,9 @@ export default {
         return;
       }
 
+      this.isSaving = true;
       try {
         const dateTime = `${this.newMatch.date}T${this.newMatch.time}`;
-
         const matchPayload = {
           opponentId: this.newMatch.opponentId,
           date: dateTime,
@@ -101,14 +131,14 @@ export default {
         this.messageType = "success";
         this.showMessage = true;
 
-        setTimeout(() => {
-          this.goBack();
-        }, 1500);
+        setTimeout(() => this.goBack(), 1500);
 
       } catch (error) {
         this.message = "No se pudo agregar el partido: " + (error.response?.data?.message || "Inténtelo de nuevo.");
         this.messageType = "error";
         this.showMessage = true;
+      } finally {
+          this.isSaving = false;
       }
     },
     goBack() {
@@ -128,80 +158,22 @@ export default {
 </script>
 
 <style scoped>
-.add-match-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px;
-  background-color: #f2f2f2;
-  min-height: 100vh;
+.form-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
 }
-
-.page-title {
-  font-size: 2rem;
-  color: #333;
-  margin-bottom: 20px;
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
 }
-
-.form-card {
-  background-color: #fff;
-  width: 100%;
-  max-width: 500px;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.form-group {
-  margin-bottom: 15px;
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group label {
-  font-weight: bold;
-  margin-bottom: 5px;
-  color: #555;
-}
-
-.form-group input,
-.form-group select {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
 .form-actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
+  margin-top: 1.5rem;
 }
-
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.btn.primary {
-  background-color: #007bff;
-  color: #fff;
-}
-
-.btn.primary:hover {
-  background-color: #0056b3;
-}
-
-.btn.secondary {
-  background-color: #6c757d;
-  color: #fff;
-}
-
-.btn.secondary:hover {
-  background-color: #565e64;
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
