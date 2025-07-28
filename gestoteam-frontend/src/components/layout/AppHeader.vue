@@ -12,7 +12,7 @@
         <router-link to="/settings" class="action-button" aria-label="Configuración">
           <i class="fas fa-cog"></i>
         </router-link>
-        <button @click="logout" class="logout-button">
+        <button @click="handleLogout" class="logout-button">
           <i class="fa-solid fa-right-from-bracket"></i>
           <span class="logout-text">Cerrar Sesión</span>
         </button>
@@ -22,19 +22,17 @@
 </template>
 
 <script setup>
-import { defineEmits } from 'vue';
+import authService from '@/services/auth';
 
-const emit = defineEmits(['logout']);
-
-const logout = () => {
-  emit('logout');
+const handleLogout = () => {
+  authService.logout();
 };
 </script>
 
 <style scoped>
 .app-header {
-  background-color: var(--color-background-white);
-  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-primary);
+  color: var(--color-white);
   padding: 0 var(--spacing-5);
   box-shadow: var(--shadow-md);
   position: sticky;
@@ -44,98 +42,69 @@ const logout = () => {
   display: flex;
   align-items: center;
 }
-
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
 }
-
 .logo-container {
   display: flex;
   align-items: center;
   text-decoration: none;
   color: inherit;
 }
-
 .logo {
-  height: 40px;
+  height: 36px;
   width: auto;
   margin-right: var(--spacing-3);
   transition: transform 0.3s ease;
 }
-
 .logo-container:hover .logo {
   transform: rotate(-10deg) scale(1.1);
 }
-
 .app-title {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
-  font-family: 'Montserrat', sans-serif;
-  color: var(--color-text-primary);
+  font-family: var(--font-family-headings);
   margin: 0;
 }
-
 .header-actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
 }
-
-.action-button {
+.action-button, .logout-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  color: var(--color-text-secondary);
+  color: var(--color-white);
   background-color: transparent;
   border: none;
-  border-radius: var(--border-radius-lg);
-  font-size: var(--font-size-lg);
+  border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: all 0.2s ease-in-out;
 }
-
-.action-button:hover {
-  color: var(--color-primary);
-  background-color: var(--color-primary-light);
+.action-button {
+  width: 40px;
+  height: 40px;
+  font-size: var(--font-size-lg);
 }
-
 .logout-button {
-  display: flex;
-  align-items: center;
   gap: var(--spacing-2);
-  background-color: transparent;
-  color: var(--color-text-secondary);
-  border: 1px solid transparent;
-  border-radius: var(--border-radius-lg);
   padding: var(--spacing-2) var(--spacing-3);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
 }
-
-.logout-button:hover {
-  color: var(--color-primary);
-  background-color: var(--color-primary-light);
-  border-color: var(--color-primary-light);
+.action-button:hover, .logout-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
-
 @media (max-width: 768px) {
-  .app-title {
+  .app-title, .logout-text {
     display: none;
   }
-
-  .logout-text {
-    display: none;
-  }
-
   .logout-button {
     width: 40px;
     height: 40px;

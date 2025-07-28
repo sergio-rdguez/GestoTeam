@@ -1,9 +1,12 @@
 <template>
   <div class="page-header">
-    <button v-if="showBackButton" class="back-button" @click="$emit('back')">
-      <i class="fa-solid fa-arrow-left"></i> Volver
-    </button>
-    <h2 class="page-title">{{ title }}</h2>
+    <div class="header-main">
+      <button v-if="showBackButton" class="back-button" @click="$emit('back')">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span class="back-button-text">Volver</span>
+      </button>
+      <h2 class="page-title">{{ title }}</h2>
+    </div>
     <div class="header-actions">
       <slot></slot>
     </div>
@@ -28,53 +31,60 @@ export default {
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Roboto:wght@400;500&display=swap");
-
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: var(--spacing-8);
+  padding-bottom: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border);
+  gap: var(--spacing-4);
 }
-
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
 .page-title {
-  text-align: center;
-  font-size: 2.2rem;
-  margin: 0;
-  color: #2c3e50;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 600;
-  flex-grow: 1;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
 }
-
 .back-button {
   background: transparent;
-  color: #333;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 8px 16px;
+  color: var(--color-text-secondary);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-2) var(--spacing-3);
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-size: 1rem;
-  transition: background-color 0.2s ease, color 0.2s ease;
-  margin-right: 1rem; /* Espacio para que el título se centre bien */
+  gap: var(--spacing-2);
+  font-size: var(--font-size-base);
+  transition: all 0.2s ease;
 }
-
 .back-button:hover {
-  background-color: #f0f0f0;
+  background-color: var(--color-background-white);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
 }
-
 .back-button i {
-  margin-right: 8px;
+  font-size: 1.1em;
 }
-
-/* Contenedor para acciones, asegura alineación correcta */
 .header-actions {
-  min-width: 100px; /* Ajusta según el tamaño de tu botón de volver */
   display: flex;
-  justify-content: flex-end;
+  gap: var(--spacing-3);
+}
+@media (max-width: 640px) {
+  .page-title {
+    font-size: var(--font-size-2xl);
+  }
+  .back-button-text {
+    display: none;
+  }
+  .back-button {
+    padding: var(--spacing-2);
+  }
 }
 </style>

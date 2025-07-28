@@ -1,48 +1,80 @@
 <template>
   <div class="team-details-page">
-    <div v-if="loading" class="loading-message">
-      <p>Cargando detalles del equipo...</p>
+    <div v-if="loading">
+      <LoadingSpinner message="Cargando equipo..." />
     </div>
-    <div v-else>
-      <div class="team-header">
-        <h2 class="team-name">{{ team.name }}</h2>
-        <p class="team-division">División: <strong>{{ team.division }}</strong></p>
-      </div>
+    <div v-else-if="team">
+      <PageHeader :title="team.name" show-back-button @back="goBack">
+        <BaseButton @click="editTeam">
+          <i class="fa-solid fa-pencil"></i> Editar Equipo
+        </BaseButton>
+      </PageHeader>
 
-      <div class="team-navigation">
-        <router-link :to="{ name: 'TeamPlayers', params: { id: team.id } }" class="nav-item">
-          Jugadores
-        </router-link>
-        <router-link :to="{ name: 'TeamMatches', params: { id: team.id } }" class="nav-item">
-          Partidos
-        </router-link>
-      </div>
+      <div class="details-grid">
+        <BaseCard title="Información General" class="info-card">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Categoría</span>
+              <span class="info-value">{{ team.category }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">División</span>
+              <span class="info-value">{{ team.division }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Campo</span>
+              <span class="info-value">{{ team.field }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Ubicación</span>
+              <span class="info-value">{{ team.location }}</span>
+            </div>
+          </div>
+          <div v-if="team.description" class="description">
+            <p>{{ team.description }}</p>
+          </div>
+        </BaseCard>
 
-      <FabMenu :actions="fabActions" @action-clicked="handleFabAction" />
+        <div class="navigation-cards">
+          <router-link :to="{ name: 'TeamPlayers', params: { id: team.id } }" class="nav-card">
+            <i class="fa-solid fa-users nav-icon"></i>
+            <span class="nav-title">Jugadores</span>
+            <p class="nav-description">Gestiona tu plantilla</p>
+          </router-link>
+          <router-link :to="{ name: 'TeamMatches', params: { id: team.id } }" class="nav-card">
+            <i class="fa-solid fa-trophy nav-icon"></i>
+            <span class="nav-title">Partidos</span>
+            <p class="nav-description">Consulta el calendario y resultados</p>
+          </router-link>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
-import FabMenu from "@/components/common/FabMenu.vue";
+import PageHeader from "@/components/layout/PageHeader.vue";
+import BaseCard from "@/components/base/BaseCard.vue";
+import BaseButton from "@/components/base/BaseButton.vue";
+import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
 
 export default {
   components: {
-    FabMenu,
+    PageHeader,
+    BaseCard,
+    BaseButton,
+    LoadingSpinner,
   },
   data() {
     return {
       team: null,
       loading: true,
-      fabActions: [
-          { label: "Volver", event: "go-back" },
-          { label: "Editar Equipo", event: "edit-team" }
-      ]
     };
   },
   methods: {
     async fetchTeamDetails() {
+      this.loading = true;
       try {
         const teamId = this.$route.params.id;
         const response = await apiClient.get(`/teams/${teamId}`);
@@ -52,13 +84,6 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-    handleFabAction(event) {
-        if (event === 'go-back') {
-            this.goBack();
-        } else if (event === 'edit-team') {
-            this.editTeam();
-        }
     },
     goBack() {
       this.$router.push({ name: "Teams" });
@@ -74,71 +99,83 @@ export default {
 </script>
 
 <style scoped>
-.team-details-page {
-  padding: 20px;
-  font-family: 'Arial', sans-serif;
-  background-color: #f9f9f9;
-  min-height: 100vh;
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-6);
 }
-
-.loading-message {
-  text-align: center;
-  font-size: 1.2rem;
-  color: #666;
+.info-card .card-content {
+  padding-top: 0;
 }
-
-.team-header {
-  text-align: center;
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-5);
+  padding-top: var(--spacing-4);
 }
-
-.team-name {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #333;
-}
-
-.team-division {
-  font-size: 1rem;
-  color: #666;
-}
-
-.team-navigation {
+.info-item {
   display: flex;
   flex-direction: column;
-  gap: 15px;
 }
-
-.nav-item {
-  text-decoration: none;
-  padding: 12px;
-  background-color: #007bff;
-  color: white;
-  border-radius: 8px;
+.info-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-1);
+}
+.info-value {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+.description {
+  margin-top: var(--spacing-5);
+  padding-top: var(--spacing-5);
+  border-top: 1px solid var(--color-border);
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+.navigation-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-6);
+}
+.nav-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  font-size: 1rem;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  padding: var(--spacing-8);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--color-background-white);
+  border: 1px solid var(--color-border);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
-
-.nav-item:hover {
-  background-color: #0056b3;
-  transform: scale(1.05);
+.nav-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
-
-@media (min-width: 768px) {
-  .team-navigation {
-    flex-direction: row;
-    justify-content: center;
-    gap: 20px;
-  }
-
-  .nav-item {
-    flex: 1 1 auto;
-    max-width: 200px;
+.nav-icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-4);
+  color: var(--color-primary);
+}
+.nav-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+.nav-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-1);
+}
+@media (max-width: 768px) {
+  .details-grid, .navigation-cards {
+    grid-template-columns: 1fr;
   }
 }
 </style>

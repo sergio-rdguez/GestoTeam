@@ -1,5 +1,4 @@
 /* GestoTeam Design System */
-/* assets/styles/main.css */
 
 :root {
   /* ------------------------- */
@@ -8,7 +7,7 @@
 
   /* Primarios */
   --color-primary: #3B82F6;        /* Azul principal para botones y elementos interactivos */
-  --color-primary-light: #60A5FA;   /* Para fondos sutiles y estados hover */
+  --color-primary-light: #EFF6FF;   /* Para fondos sutiles y estados hover */
   --color-primary-dark: #2563EB;    /* Para estados :hover y :active */
 
   /* Acento */
@@ -25,12 +24,14 @@
   --color-success: #22C55E; /* Verde para mensajes de éxito */
   --color-warning: #F59E0B; /* Ámbar para advertencias */
   --color-danger: #EF4444;  /* Rojo para errores y acciones destructivas */
-  
+  --color-white: #FFFFFF;
+
   /* ------------------- */
   /* --- Tipografía --- */
   /* ------------------- */
 
   --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-family-headings: "Montserrat", var(--font-family-sans);
   
   --font-size-xs: 0.75rem;   /* 12px */
   --font-size-sm: 0.875rem;  /* 14px */
@@ -58,13 +59,24 @@
   --spacing-5: 1.25rem; /* 20px */
   --spacing-6: 1.5rem;  /* 24px */
   --spacing-8: 2rem;    /* 32px */
-  --spacing-10: 2.5rem; /* 40px */
-  --spacing-12: 3rem;   /* 48px */
+
+  /* ------------------------- */
+  /* --- Otros --- */
+  /* ------------------------- */
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
 /* -------------------------- */
 /* --- Estilos Globales Base --- */
 /* -------------------------- */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
 body {
   font-family: var(--font-family-sans);
@@ -77,6 +89,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-    margin-top: 0;
+    margin: 0;
     font-weight: var(--font-weight-bold);
+    font-family: var(--font-family-headings);
 }
