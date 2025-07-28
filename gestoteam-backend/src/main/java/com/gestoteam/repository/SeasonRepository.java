@@ -13,4 +13,6 @@ public interface SeasonRepository extends JpaRepository<Season, Long> {
 
     @Query("SELECT s FROM Season s WHERE s.startDate <= :endDate AND s.endDate >= :startDate")
     List<Season> findOverlappingSeasons(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    Optional<Season> findByName(String name);
 }

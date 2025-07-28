@@ -63,12 +63,12 @@ const routes = [
       { 
         path: "/teams/:teamId/add-match", 
         name: "AddMatch", 
-        component: () => import("@/pages/Team/Matches/AddMatch.vue") 
+        component: () => import("@/pages/Team/Matches/MatchForm.vue") 
       },
             {
         path: 'teams/:teamId/matches/:id/edit',
         name: 'EditMatch',
-        component: () => import('../pages/Team/Matches/AddMatch.vue'),
+        component: () => import('../pages/Team/Matches/MatchForm.vue'),
         meta: { requiresAuth: true }
       },
       { 

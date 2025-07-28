@@ -14,7 +14,6 @@ import com.gestoteam.model.PlayerMatchStats;
 import com.gestoteam.model.Team;
 import com.gestoteam.repository.MatchRepository;
 import com.gestoteam.repository.OpponentRepository;
-import com.gestoteam.repository.PlayerMatchStatsRepository;
 import com.gestoteam.repository.PlayerRepository;
 import com.gestoteam.repository.TeamRepository;
 import com.gestoteam.util.GlobalUtil;
@@ -25,7 +24,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -40,13 +40,21 @@ public class MatchService {
     private final TeamRepository teamRepository;
     private final PlayerRepository playerRepository;
     private final OpponentRepository opponentRepository;
-    private final PlayerMatchStatsRepository playerMatchStatsRepository;
     private final ModelMapper modelMapper;
     private final GlobalUtil globalUtil;
 
     private String getCurrentUsername() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
+
+    private MatchResponse convertToMatchResponse(Match match) {
+        MatchResponse response = modelMapper.map(match, MatchResponse.class);
+        if (match.getOpponent() != null) {
+            response.setOpponent(match.getOpponent().getName());
+        }
+        return response;
+    }
+
 
     @Transactional
     public MatchResponse createMatch(MatchRequest request) {
@@ -65,14 +73,11 @@ public class MatchService {
         match.setDate(request.getDate());
         match.setLocation(request.getLocation());
         match.setSeason(globalUtil.getCurrentSeason());
-        match.setDeleted(false);
-        match.setFinalized(false);
-        match.setResult("0-0");
 
         try {
             Match savedMatch = matchRepository.save(match);
             log.info("Partido creado con ID: {} para el equipo: {} por el usuario: {}", savedMatch.getId(), team.getId(), username);
-            return modelMapper.map(savedMatch, MatchResponse.class);
+            return convertToMatchResponse(savedMatch);
         } catch (Exception e) {
             log.error("Error al crear el partido para el equipo: {} por el usuario: {}", team.getId(), username, e);
             throw new GestoServiceException("Error al crear el partido. Por favor, inténtelo más tarde.");
@@ -92,11 +97,7 @@ public class MatchService {
 
         return matches.stream()
                 .sorted(Comparator.comparing(Match::getDate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .map(match -> {
-                    MatchResponse response = modelMapper.map(match, MatchResponse.class);
-                    response.setOpponent(match.getOpponent().getName());
-                    return response;
-                })
+                .map(this::convertToMatchResponse)
                 .collect(Collectors.toList());
     }
 
@@ -105,22 +106,41 @@ public class MatchService {
         String username = getCurrentUsername();
         log.info("Actualizando el partido con ID: {} por el usuario: {}", id, username);
 
-        Match existingMatch = matchRepository.findByIdAndDeletedFalse(id)
+        Match match = matchRepository.findByIdAndDeletedFalse(id)
                 .filter(m -> m.getTeam().getOwnerId().equals(username))
                 .orElseThrow(() -> new GestoServiceException("Partido no encontrado o no tienes permisos para acceder a él."));
 
-        if (request.getOpponentId() != null) {
-            Opponent opponent = opponentRepository.findById(request.getOpponentId())
-                    .orElseThrow(() -> new GestoServiceException("Oponente no encontrado con el ID proporcionado."));
-            existingMatch.setOpponent(opponent);
+        Opponent opponent = opponentRepository.findById(request.getOpponentId())
+                .orElseThrow(() -> new GestoServiceException("Oponente no encontrado con el ID proporcionado."));
+
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+
+
+        match.setOpponent(opponent);
+        match.setLocation(request.getLocation());
+        match.setDate(LocalDateTime.parse(request.getDate(), formatter));
+        match.setFinalized(request.isFinalized());
+
+        if (request.isFinalized()) {
+            Integer goalsFor = request.getGoalsFor();
+            Integer goalsAgainst = request.getGoalsAgainst();
+            match.setGoalsFor(goalsFor);
+            match.setGoalsAgainst(goalsAgainst);
+            match.setResult(goalsFor + "-" + goalsAgainst);
+            match.setWon(goalsFor > goalsAgainst);
+            match.setDraw(goalsFor.equals(goalsAgainst));
+        } else {
+            match.setGoalsFor(null);
+            match.setGoalsAgainst(null);
+            match.setResult(null);
+            match.setWon(false);
+            match.setDraw(false);
         }
 
-        modelMapper.map(request, existingMatch);
-
         try {
-            Match savedMatch = matchRepository.save(existingMatch);
+            Match savedMatch = matchRepository.save(match);
             log.info("Partido con ID: {} actualizado correctamente por el usuario: {}", id, username);
-            return modelMapper.map(savedMatch, MatchResponse.class);
+            return convertToMatchResponse(savedMatch);
         } catch (Exception e) {
             log.error("Error al actualizar el partido con ID: {} por el usuario: {}", id, username, e);
             throw new GestoServiceException("Error al actualizar el partido. Por favor, inténtelo más tarde.");

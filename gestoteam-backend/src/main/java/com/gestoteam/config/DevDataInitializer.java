@@ -15,7 +15,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Configuration
 @Profile("dev")
@@ -36,214 +40,189 @@ public class DevDataInitializer {
     @Bean
     CommandLineRunner initDatabase() {
         return args -> {
-            log.info("Iniciando con perfil 'dev'. Poblando base de datos de prueba...");
+            log.info("Iniciando con perfil 'dev'. Poblando base de datos con datos reales...");
 
-            User user = new User();
-            user.setUsername("testuser");
-            user.setPassword(passwordEncoder.encode("password"));
-            user.setDeleted(false);
-            userRepository.save(user);
+            User user = createUser("testuser", "password");
+            Season season = createSeason("2024/2025");
 
-            UserSettings settings = new UserSettings();
-            settings.setUserId("testuser");
-            userSettingsRepository.save(settings);
+            // Equipo Principal: Atlético Gesto
+            Team team1 = createTeam(user, "Atlético Gesto", Category.SENIOR, "Primera Aficionados", "Madrid", "Ciudad Deportiva GestoTeam");
+            Map<String, Player> playersTeam1 = createPlayersForTeam1(team1);
+            List<Opponent> opponents = createOpponentsForTeam(team1);
+            createMatchesForTeam1(team1, season, playersTeam1, opponents);
 
-            Season season = new Season();
-            season.setName("2024/2025");
-            season.setStartDate(LocalDate.of(2024, 9, 1));
-            season.setEndDate(LocalDate.of(2025, 8, 31));
-            seasonRepository.save(season);
+            // Equipo Secundario: Gesto Academy
+            Team team2 = createTeam(user, "Gesto Academy", Category.JUVENIL, "Primera Juvenil", "Madrid", "Campo Anexo");
+            createPlayersForTeam2(team2);
 
-            Team team1 = new Team();
-            team1.setName("Atlético Gesto");
-            team1.setCategory(Category.SENIOR);
-            team1.setDivision("Primera Aficionados");
-            team1.setLocation("Madrid");
-            team1.setField("Ciudad Deportiva GestoTeam");
-            team1.setOwnerId("testuser");
-            teamRepository.save(team1);
-
-            Team team2 = new Team();
-            team2.setName("Gesto Academy");
-            team2.setCategory(Category.JUVENIL);
-            team2.setDivision("Primera Juvenil");
-            team2.setLocation("Madrid");
-            team2.setField("Campo Anexo");
-            team2.setOwnerId("testuser");
-            teamRepository.save(team2);
-
-            List<Player> playersTeam1 = createPlayersForTeam1(team1);
-            createOpponentsAndMatchesForTeam1(team1, season, playersTeam1);
-
-            log.info("Base de datos de prueba poblada con éxito.");
+            log.info("Base de datos de prueba poblada con éxito para el usuario '{}'", user.getUsername());
         };
     }
 
-    private List<Player> createPlayersForTeam1(Team team) {
-        Player p1 = new Player();
-        p1.setName("Alejandro");
-        p1.setSurnameFirst("García");
-        p1.setSurnameSecond("López");
-        p1.setPosition(Position.POR);
-        p1.setNumber(1);
-        p1.setStatus(PlayerStatus.ACTIVO);
-        p1.setBirthDate(LocalDate.of(1995, 3, 12));
-        p1.setTeam(team);
+    private User createUser(String username, String password) {
+        if (userRepository.findByUsername(username).isPresent()) {
+            return userRepository.findByUsername(username).get();
+        }
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setDeleted(false);
+        user = userRepository.save(user);
 
-        Player p2 = new Player();
-        p2.setName("Javier");
-        p2.setSurnameFirst("Sánchez");
-        p2.setSurnameSecond("Gómez");
-        p2.setPosition(Position.DFC);
-        p2.setNumber(4);
-        p2.setStatus(PlayerStatus.ACTIVO);
-        p2.setBirthDate(LocalDate.of(1994, 11, 5));
-        p2.setTeam(team);
-
-        Player p3 = new Player();
-        p3.setName("David");
-        p3.setSurnameFirst("Fernández");
-        p3.setSurnameSecond("Pérez");
-        p3.setPosition(Position.DFC);
-        p3.setNumber(5);
-        p3.setStatus(PlayerStatus.ACTIVO);
-        p3.setBirthDate(LocalDate.of(1993, 2, 18));
-        p3.setTeam(team);
-
-        Player p4 = new Player();
-        p4.setName("Adrián");
-        p4.setSurnameFirst("Jiménez");
-        p4.setSurnameSecond("Ortega");
-        p4.setPosition(Position.LTD);
-        p4.setNumber(2);
-        p4.setStatus(PlayerStatus.ACTIVO);
-        p4.setBirthDate(LocalDate.of(1996, 6, 30));
-        p4.setTeam(team);
-
-        Player p5 = new Player();
-        p5.setName("Mario");
-        p5.setSurnameFirst("Moreno");
-        p5.setSurnameSecond("Serrano");
-        p5.setPosition(Position.LTI);
-        p5.setNumber(3);
-        p5.setStatus(PlayerStatus.ACTIVO);
-        p5.setBirthDate(LocalDate.of(1997, 1, 25));
-        p5.setTeam(team);
-
-        Player p6 = new Player();
-        p6.setName("Carlos");
-        p6.setSurnameFirst("Romero");
-        p6.setSurnameSecond("Vázquez");
-        p6.setPosition(Position.MCD);
-        p6.setNumber(6);
-        p6.setStatus(PlayerStatus.LESIONADO);
-        p6.setBirthDate(LocalDate.of(1995, 9, 14));
-        p6.setTeam(team);
-
-        Player p7 = new Player();
-        p7.setName("Pablo");
-        p7.setSurnameFirst("Álvarez");
-        p7.setSurnameSecond("Castro");
-        p7.setPosition(Position.MC);
-        p7.setNumber(8);
-        p7.setStatus(PlayerStatus.ACTIVO);
-        p7.setBirthDate(LocalDate.of(1996, 4, 22));
-        p7.setTeam(team);
-
-        Player p8 = new Player();
-        p8.setName("Jorge");
-        p8.setSurnameFirst("Domínguez");
-        p8.setSurnameSecond("Ramos");
-        p8.setPosition(Position.MCO);
-        p8.setNumber(10);
-        p8.setStatus(PlayerStatus.ACTIVO);
-        p8.setBirthDate(LocalDate.of(1994, 12, 10));
-        p8.setTeam(team);
-
-        Player p9 = new Player();
-        p9.setName("Ignacio");
-        p9.setSurnameFirst("Vidal");
-        p9.setSurnameSecond("Castillo");
-        p9.setPosition(Position.ED);
-        p9.setNumber(7);
-        p9.setStatus(PlayerStatus.SUSPENDIDO);
-        p9.setBirthDate(LocalDate.of(1997, 5, 16));
-        p9.setTeam(team);
-
-        Player p10 = new Player();
-        p10.setName("Álvaro");
-        p10.setSurnameFirst("Molina");
-        p10.setSurnameSecond("Iglesias");
-        p10.setPosition(Position.EI);
-        p10.setNumber(11);
-        p10.setStatus(PlayerStatus.ACTIVO);
-        p10.setBirthDate(LocalDate.of(1998, 10, 3));
-        p10.setTeam(team);
-
-        Player p11 = new Player();
-        p11.setName("Rubén");
-        p11.setSurnameFirst("Ortega");
-        p11.setSurnameSecond("Garrido");
-        p11.setPosition(Position.DC);
-        p11.setNumber(9);
-        p11.setStatus(PlayerStatus.ACTIVO);
-        p11.setBirthDate(LocalDate.of(1993, 7, 8));
-        p11.setTeam(team);
-
-        return playerRepository.saveAll(List.of(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11));
+        UserSettings settings = new UserSettings();
+        settings.setUserId(username);
+        userSettingsRepository.save(settings);
+        log.info("Usuario de prueba creado: {}", username);
+        return user;
     }
 
-    private void createOpponentsAndMatchesForTeam1(Team team, Season season, List<Player> players) {
-        Opponent opponent1 = new Opponent();
-        opponent1.setName("CD La Elipa");
-        opponent1.setObservations("Equipo correoso, buen contraataque.");
-        opponent1.setTeam(team);
+    private Season createSeason(String name) {
+        return seasonRepository.findByName(name).orElseGet(() -> {
+            Season season = new Season();
+            season.setName(name);
+            season.setStartDate(LocalDate.of(2024, 9, 1));
+            season.setEndDate(LocalDate.of(2025, 8, 31));
+            log.info("Temporada creada: {}", name);
+            return seasonRepository.save(season);
+        });
+    }
 
-        Opponent opponent2 = new Opponent();
-        opponent2.setName("Sporting de Hortaleza");
-        opponent2.setObservations("Defensa muy sólida.");
-        opponent2.setTeam(team);
-        opponentRepository.saveAll(List.of(opponent1, opponent2));
+    private Team createTeam(User user, String name, Category category, String division, String location, String field) {
+        Team team = new Team();
+        team.setName(name);
+        team.setCategory(category);
+        team.setDivision(division);
+        team.setLocation(location);
+        team.setField(field);
+        team.setOwnerId(user.getUsername());
+        log.info("Creando equipo: {}", name);
+        return teamRepository.save(team);
+    }
 
-        Match match1 = new Match();
-        match1.setDate(LocalDateTime.of(2024, 10, 5, 18, 0));
-        match1.setOpponent(opponent1);
-        match1.setLocation("Campo La Elipa");
-        match1.setResult("1-3");
-        match1.setWon(true);
-        match1.setFinalized(true);
-        match1.setTeam(team);
-        match1.setSeason(season);
-        matchRepository.save(match1);
+    private Map<String, Player> createPlayersForTeam1(Team team) {
+        List<Player> players = Arrays.asList(
+                createPlayer(team, "Sergio", "Ramos", "", Position.DFC, 4, PlayerStatus.ACTIVO, LocalDate.of(1986, 3, 30)),
+                createPlayer(team, "Iker", "Casillas", "", Position.POR, 1, PlayerStatus.ACTIVO, LocalDate.of(1981, 5, 20)),
+                createPlayer(team, "Andrés", "Iniesta", "", Position.MC, 8, PlayerStatus.ACTIVO, LocalDate.of(1984, 5, 11)),
+                createPlayer(team, "David", "Villa", "", Position.DC, 7, PlayerStatus.ACTIVO, LocalDate.of(1981, 12, 3)),
+                createPlayer(team, "Xavi", "Hernández", "", Position.MC, 6, PlayerStatus.LESIONADO, LocalDate.of(1980, 1, 25)),
+                createPlayer(team, "Carles", "Puyol", "", Position.DFC, 5, PlayerStatus.ACTIVO, LocalDate.of(1978, 4, 13)),
+                createPlayer(team, "Fernando", "Torres", "", Position.DC, 9, PlayerStatus.SUSPENDIDO, LocalDate.of(1984, 3, 20)),
+                createPlayer(team, "Cesc", "Fàbregas", "", Position.MCO, 10, PlayerStatus.ACTIVO, LocalDate.of(1987, 5, 4)),
+                createPlayer(team, "Jordi", "Alba", "", Position.LTI, 18, PlayerStatus.ACTIVO, LocalDate.of(1989, 3, 21)),
+                createPlayer(team, "Gerard", "Piqué", "", Position.DFC, 3, PlayerStatus.ACTIVO, LocalDate.of(1987, 2, 2)),
+                createPlayer(team, "David", "Silva", "", Position.EI, 21, PlayerStatus.ACTIVO, LocalDate.of(1986, 1, 8))
+        );
+        playerRepository.saveAll(players);
+        log.info("Creados {} jugadores para el equipo {}", players.size(), team.getName());
+        // CORRECCIÓN: Usar una clave única para el mapa (nombre + apellido)
+        return players.stream().collect(Collectors.toMap(
+                player -> player.getName() + " " + player.getSurnameFirst(),
+                Function.identity()
+        ));
+    }
 
-        Player javier = players.stream().filter(p -> p.getName().equals("Javier")).findFirst().orElseThrow();
-        Player david = players.stream().filter(p -> p.getName().equals("David")).findFirst().orElseThrow();
+    private void createPlayersForTeam2(Team team) {
+        List<Player> players = Arrays.asList(
+                createPlayer(team, "Ansu", "Fati", "", Position.ED, 22, PlayerStatus.ACTIVO, LocalDate.of(2002, 10, 31)),
+                createPlayer(team, "Pedri", "González", "", Position.MC, 16, PlayerStatus.ACTIVO, LocalDate.of(2002, 11, 25)),
+                createPlayer(team, "Gavi", "Páez", "", Position.MC, 30, PlayerStatus.ACTIVO, LocalDate.of(2004, 8, 5))
+        );
+        playerRepository.saveAll(players);
+        log.info("Creados {} jugadores para el equipo {}", players.size(), team.getName());
+    }
 
-        PlayerMatchStats stats1 = new PlayerMatchStats();
-        stats1.setMatch(match1);
-        stats1.setPlayer(javier);
-        stats1.setMinutesPlayed(90);
-        stats1.setYellowCard(true);
-        stats1.setCalledUp(true);
-        stats1.setStarter(true);
-        playerMatchStatsRepository.save(stats1);
+    private Player createPlayer(Team team, String name, String surname1, String surname2, Position pos, int num, PlayerStatus status, LocalDate birthdate) {
+        Player p = new Player();
+        p.setName(name);
+        p.setSurnameFirst(surname1);
+        p.setSurnameSecond(surname2);
+        p.setPosition(pos);
+        p.setNumber(num);
+        p.setStatus(status);
+        p.setBirthDate(birthdate);
+        p.setTeam(team);
+        return p;
+    }
 
-        PlayerMatchStats stats2 = new PlayerMatchStats();
-        stats2.setMatch(match1);
-        stats2.setPlayer(david);
-        stats2.setGoals(1);
-        stats2.setMinutesPlayed(90);
-        stats2.setCalledUp(true);
-        stats2.setStarter(true);
-        playerMatchStatsRepository.save(stats2);
+    private List<Opponent> createOpponentsForTeam(Team team) {
+        List<Opponent> opponents = Arrays.asList(
+                createOpponent(team, "Real Madrid CF", "Máximo rival, muy peligrosos a la contra."),
+                createOpponent(team, "FC Barcelona", "Dominan la posesión, presión alta."),
+                createOpponent(team, "Atlético de Madrid", "Defensa muy sólida, equipo muy físico."),
+                createOpponent(team, "Sevilla FC", "Fuertes en su estadio, juego por bandas."),
+                createOpponent(team, "Real Betis", "Equipo con mucha calidad en el centro del campo.")
+        );
+        return opponentRepository.saveAll(opponents);
+    }
 
-        Match match2 = new Match();
-        match2.setDate(LocalDateTime.now().plusDays(15));
-        match2.setOpponent(opponent2);
-        match2.setLocation("Ciudad Deportiva GestoTeam");
-        match2.setFinalized(false);
-        match2.setTeam(team);
-        match2.setSeason(season);
-        matchRepository.save(match2);
+    private Opponent createOpponent(Team team, String name, String observations) {
+        Opponent opponent = new Opponent();
+        opponent.setName(name);
+        opponent.setObservations(observations);
+        opponent.setTeam(team);
+        return opponent;
+    }
+
+    private void createMatchesForTeam1(Team team, Season season, Map<String, Player> players, List<Opponent> opponents) {
+        // Partido 1: Victoria vs Sevilla FC (finalizado)
+        Match match1 = createFinalizedMatch(team, season, opponents.get(3), LocalDateTime.now().minusWeeks(2), "Estadio Ramón Sánchez-Pizjuán", 3, 1);
+        createPlayerStats(match1, players.get("David Villa"), true, 90, 2, 1, false, false);
+        createPlayerStats(match1, players.get("Andrés Iniesta"), true, 90, 1, 2, false, false);
+        createPlayerStats(match1, players.get("Sergio Ramos"), true, 90, 0, 0, true, false);
+
+        // Partido 2: Derrota vs Real Betis (finalizado)
+        Match match2 = createFinalizedMatch(team, season, opponents.get(4), LocalDateTime.now().minusWeeks(1), "Estadio Benito Villamarín", 0, 1);
+        createPlayerStats(match2, players.get("Iker Casillas"), true, 90, 0, 0, false, false);
+        createPlayerStats(match2, players.get("Gerard Piqué"), true, 90, 0, 0, true, false);
+
+        // Partido 3: Empate vs Atlético de Madrid (finalizado)
+        Match match3 = createFinalizedMatch(team, season, opponents.get(2), LocalDateTime.now().minusDays(4), "Cívitas Metropolitano", 2, 2);
+        createPlayerStats(match3, players.get("David Silva"), true, 90, 1, 0, false, false);
+        createPlayerStats(match3, players.get("Cesc Fàbregas"), true, 75, 1, 1, false, false);
+
+        // Partido 4: Próximo partido vs FC Barcelona
+        createPendingMatch(team, season, opponents.get(1), LocalDateTime.now().plusDays(6), team.getField());
+    }
+
+    private Match createFinalizedMatch(Team team, Season season, Opponent opponent, LocalDateTime date, String location, int goalsFor, int goalsAgainst) {
+        Match match = new Match();
+        match.setDate(date);
+        match.setOpponent(opponent);
+        match.setLocation(location);
+        match.setTeam(team);
+        match.setSeason(season);
+        match.setFinalized(true);
+        match.setGoalsFor(goalsFor);
+        match.setGoalsAgainst(goalsAgainst);
+        match.setResult(goalsFor + "-" + goalsAgainst);
+        match.setWon(goalsFor > goalsAgainst);
+        match.setDraw(goalsFor == goalsAgainst);
+        return matchRepository.save(match);
+    }
+
+    private Match createPendingMatch(Team team, Season season, Opponent opponent, LocalDateTime date, String location) {
+        Match match = new Match();
+        match.setDate(date);
+        match.setOpponent(opponent);
+        match.setLocation(location);
+        match.setFinalized(false);
+        match.setTeam(team);
+        match.setSeason(season);
+        return matchRepository.save(match);
+    }
+
+    private void createPlayerStats(Match match, Player player, boolean starter, int minutes, int goals, int assists, boolean yellow, boolean red) {
+        PlayerMatchStats stats = new PlayerMatchStats();
+        stats.setMatch(match);
+        stats.setPlayer(player);
+        stats.setCalledUp(true);
+        stats.setStarter(starter);
+        stats.setMinutesPlayed(minutes);
+        stats.setGoals(goals);
+        stats.setAssists(assists);
+        stats.setYellowCard(yellow);
+        stats.setRedCard(red);
+        playerMatchStatsRepository.save(stats);
     }
 }

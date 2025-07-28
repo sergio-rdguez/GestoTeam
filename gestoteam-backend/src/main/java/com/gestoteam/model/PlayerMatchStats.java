@@ -35,6 +35,9 @@ public class PlayerMatchStats {
     @Column(nullable = false)
     private int goals = 0;
 
+    @Column(nullable = false)
+    private int assists = 0;
+
     @Max(90)
     @Column(nullable = false)
     private int minutesPlayed = 0;

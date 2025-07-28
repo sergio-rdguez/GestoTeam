@@ -10,6 +10,9 @@ public class MatchResponse {
     private String opponent;
     private String location;
     private String result;
+    private Integer goalsFor;
+    private Integer goalsAgainst;
     private boolean won;
+    private boolean draw;
     private boolean finalized;
 }

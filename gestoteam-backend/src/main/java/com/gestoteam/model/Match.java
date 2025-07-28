@@ -32,12 +32,17 @@ public class Match {
 
     private String location;
     private String result;
+    private Integer goalsFor;
+    private Integer goalsAgainst;
 
     @Column(nullable = false)
     private boolean deleted = false;
 
     @Column(nullable = false)
     private boolean won = false;
+
+    @Column(nullable = false)
+    private boolean draw = false;
 
     @Column(nullable = false)
     private boolean finalized = false;

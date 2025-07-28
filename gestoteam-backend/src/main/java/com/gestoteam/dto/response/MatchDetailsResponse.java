@@ -12,7 +12,10 @@ public class MatchDetailsResponse {
     private Long opponentId;
     private String location;
     private String result;
+    private Integer goalsFor;
+    private Integer goalsAgainst;
     private boolean won;
+    private boolean draw;
     private boolean finalized;
     private TeamResponse team;
     private List<PlayerMatchStatsResponse> playerStats;

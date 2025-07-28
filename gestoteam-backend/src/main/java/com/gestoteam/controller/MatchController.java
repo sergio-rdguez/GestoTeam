@@ -8,6 +8,7 @@ import com.gestoteam.service.MatchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class MatchController {
     @PostMapping
     @Operation(summary = "Crear un nuevo partido")
     @ApiResponse(responseCode = "200", description = "Partido creado con éxito")
-    public MatchResponse createMatch(@RequestBody MatchRequest matchRequest) {
+    public MatchResponse createMatch(@Valid @RequestBody MatchRequest matchRequest) {
         return matchService.createMatch(matchRequest);
     }
 
@@ -44,10 +45,10 @@ public class MatchController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Actualizar un partido")
+    @Operation(summary = "Actualizar un partido", description = "Actualiza los datos de un partido, incluyendo el resultado si está finalizado.")
     @ApiResponse(responseCode = "200", description = "Partido actualizado")
     @ApiResponse(responseCode = "404", description = "Partido no encontrado")
-    public MatchResponse updateMatch(@PathVariable Long id, @RequestBody MatchUpdateRequest matchRequest) {
+    public MatchResponse updateMatch(@PathVariable Long id, @Valid @RequestBody MatchUpdateRequest matchRequest) {
         return matchService.updateMatch(id, matchRequest);
     }
 

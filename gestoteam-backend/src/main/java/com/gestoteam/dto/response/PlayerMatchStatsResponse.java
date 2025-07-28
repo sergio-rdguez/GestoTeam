@@ -8,6 +8,7 @@ public class PlayerMatchStatsResponse {
     private Long playerId;
     private String playerFullName;
     private int goals;
+    private int assists;
     private int minutesPlayed;
     private boolean yellowCard;
     private boolean doubleYellowCard;
