@@ -1,9 +1,9 @@
 <template>
-    <div class="form-page">
+    <div class="form-page-container">
         <PageHeader 
             :title="isEditMode ? 'Editar Jugador' : 'Añadir Jugador'" 
             show-back-button 
-            @back="cancel" 
+            @back="goBack" 
         />
         <BaseCard>
             <form @submit.prevent="submitForm">
@@ -12,7 +12,7 @@
                     <BaseInput v-model="player.surnameFirst" label="Primer Apellido" id="surnameFirst" required />
                     <BaseInput v-model="player.surnameSecond" label="Segundo Apellido" id="surnameSecond" />
                     <BaseInput v-model="player.birthDate" label="Fecha de Nacimiento" id="birthDate" type="date" required />
-                    <BaseInput v-model="player.number" label="Número" id="number" type="number" min="1" max="99" required />
+                    <BaseInput v-model.number="player.number" label="Dorsal" id="number" type="number" min="1" max="99" required />
                     <BaseSelect v-model="player.position" label="Posición" id="position" :options="positionOptions" required />
                     <BaseSelect v-model="player.status" label="Estado" id="status" :options="statusOptions" required />
                 </div>
@@ -46,7 +46,6 @@ export default {
     data() {
         return {
             player: {
-                id: null,
                 name: "",
                 surnameFirst: "",
                 surnameSecond: "",
@@ -70,13 +69,6 @@ export default {
             return this.statuses.map(s => ({ value: s.code, text: s.description }));
         }
     },
-    created() {
-        this.isEditMode = !!this.$route.params.id;
-        this.fetchEnums();
-        if (this.isEditMode) {
-            this.fetchPlayer();
-        }
-    },
     methods: {
         async fetchEnums() {
             try {
@@ -87,16 +79,17 @@ export default {
                 this.positions = positionsResponse.data;
                 this.statuses = statusesResponse.data;
             } catch (error) {
-                console.error("Error al cargar enums:", error);
+                notificationService.showError("Error al cargar las opciones del formulario.");
             }
         },
         async fetchPlayer() {
             try {
                 const playerId = this.$route.params.id;
                 const response = await apiClient.get(`/players/${playerId}`);
-                this.player = { ...response.data, teamId: response.data.team?.id || this.player.teamId };
+                // El backend ya nos da el teamId, lo usamos directamente
+                this.player = response.data;
             } catch (error) {
-                console.error("Error al cargar el jugador:", error);
+                notificationService.showError("Error al cargar los datos del jugador.");
             }
         },
         async submitForm() {
@@ -104,38 +97,47 @@ export default {
             try {
                 if (this.isEditMode) {
                     await apiClient.put(`/players/${this.player.id}`, this.player);
+                    notificationService.showSuccess('Jugador actualizado con éxito');
                     this.$router.push({ name: "PlayerDetails", params: { id: this.player.id } });
                 } else {
                     await apiClient.post("/players", this.player);
+                    notificationService.showSuccess('Jugador añadido con éxito');
                     this.$router.push({ name: "TeamPlayers", params: { id: this.player.teamId } });
                 }
-                notificationService.showSuccess('Jugador guardado con éxito');
             } catch (error) {
-                console.error("Error al guardar el jugador:", error);
+                // El interceptor de api.js se encarga de mostrar el error
             } finally {
                 this.isSaving = false;
             }
         },
-        cancel() {
-            const teamId = this.isEditMode ? this.player.team.id : this.player.teamId;
+        goBack() {
+            const teamId = this.isEditMode ? this.player.team.id : this.$route.params.teamId;
             this.$router.push({ name: "TeamPlayers", params: { id: teamId } });
         },
+    },
+    created() {
+        this.isEditMode = !!this.$route.params.id;
+        this.fetchEnums();
+        if (this.isEditMode) {
+            this.fetchPlayer();
+        }
     },
 };
 </script>
 
 <style scoped>
-.form-page {
-  max-width: 800px;
+.form-page-container {
+  max-width: 900px;
   margin: 0 auto;
-  padding: 2rem;
 }
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
+    gap: var(--spacing-5);
 }
 .form-actions {
-  margin-top: 2rem;
+  margin-top: var(--spacing-6);
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

@@ -1,118 +1,130 @@
 <template>
   <div class="team-matches-page">
-    <div class="header">
-      <button class="back-button" @click="goBack">
-        <i class="fa-solid fa-arrow-left"></i> Volver
-      </button>
-      <h2 class="page-title">Partidos de {{ teamName }}</h2>
+    <PageHeader :title="teamName || 'Partidos'" show-back-button @back="goBack">
+      <BaseButton v-if="matches && matches.length > 0" @click="goToAddMatch">
+        <i class="fa-solid fa-plus"></i> Añadir Partido
+      </BaseButton>
+    </PageHeader>
+
+    <div v-if="loading">
+      <LoadingSpinner message="Cargando partidos..." />
     </div>
 
+    <EmptyState
+      v-else-if="!matches || matches.length === 0"
+      title="No hay partidos registrados"
+      message="Registra tu primer partido para llevar un seguimiento de la temporada."
+      icon="fa-solid fa-calendar-plus"
+    >
+      <template #actions>
+        <BaseButton @click="goToAddMatch">
+          <i class="fa-solid fa-plus"></i> Añadir primer partido
+        </BaseButton>
+      </template>
+    </EmptyState>
+    
     <DataTable
+      v-else
       :items="matches"
       :columns="columns"
-      :loading="loading"
       default-sort-key="date"
-      @row-click="goToMatchDetails"
+      :default-sort-asc="false"
+      @row-click="viewMatchDetails"
     >
-      <template #cell-date="{ value }">
-        {{ formatDate(value) }}
+      <template #cell-opponent="{ item }">
+        {{ item.opponent }}
       </template>
-      <template #cell-status="{ item }">
-        <div
-          class="match-status"
-          :class="{
-            victory: item.finalized && item.won,
-            defeat: item.finalized && !item.won,
-            pending: !item.finalized,
-          }"
-        >
-          {{ item.finalized ? item.result : "Pendiente" }}
-        </div>
+      <template #cell-result="{ item }">
+        <span class="match-result" :class="getResultClass(item)">
+          {{ formatResult(item) }}
+        </span>
+      </template>
+      <template #cell-date="{ item }">
+        {{ formatDate(item.date) }}
       </template>
     </DataTable>
 
-    <FabMenu :actions="fabActions" @action-clicked="goToAddMatch" />
-    
-    <MessageBox
-      v-if="showMessage"
-      :message="message"
-      :type="messageType"
-      @close="closeMessage"
-    />
   </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
-import MessageBox from "@/pages/utils/MessageBox.vue";
 import DataTable from "@/components/common/DataTable.vue";
-import FabMenu from "@/components/common/FabMenu.vue";
+import PageHeader from "@/components/layout/PageHeader.vue";
+import BaseButton from "@/components/base/BaseButton.vue";
+import EmptyState from "@/components/common/EmptyState.vue";
+import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
 
 export default {
   components: {
-    MessageBox,
     DataTable,
-    FabMenu,
+    PageHeader,
+    BaseButton,
+    EmptyState,
+    LoadingSpinner,
   },
   data() {
     return {
-      teamName: "Cargando...",
+      teamId: this.$route.params.id,
+      teamName: '',
       matches: [],
       loading: true,
-      showMessage: false,
-      message: "",
-      messageType: "info",
       columns: [
-        { key: 'opponent', label: 'Rival', sortable: true },
         { key: 'date', label: 'Fecha', sortable: true },
-        { key: 'location', label: 'Estadio', sortable: true },
-        { key: 'status', label: 'Resultado', sortable: false }, // Columna custom para el estado
+        { key: 'opponent', label: 'Rival', sortable: true },
+        { key: 'result', label: 'Resultado', sortable: false },
+        { key: 'location', label: 'Ubicación', sortable: true },
       ],
-      fabActions: [
-          { label: "Añadir Partido", event: "add-match" }
-      ]
     };
   },
   methods: {
     async fetchMatches() {
       this.loading = true;
       try {
-        const teamId = this.$route.params.id;
-        const teamResponse = await apiClient.get(`/teams/${teamId}`);
+        const [teamResponse, matchesResponse] = await Promise.all([
+          apiClient.get(`/teams/${this.teamId}`),
+          apiClient.get(`/matches/team/${this.teamId}`)
+        ]);
         this.teamName = teamResponse.data.name;
-
-        const matchesResponse = await apiClient.get(`/matches/team/${teamId}`);
-        this.matches = matchesResponse.data;
+        this.matches = Array.isArray(matchesResponse.data) ? matchesResponse.data : [];
       } catch (error) {
-        this.message = "No se pudieron cargar los partidos del equipo.";
-        this.messageType = "error";
-        this.showMessage = true;
+        console.error("Error al cargar los partidos:", error);
+        this.matches = [];
       } finally {
         this.loading = false;
       }
     },
-    goBack() {
-      this.$router.push({
-        name: "TeamDetails",
-        params: { id: this.$route.params.id },
-      });
+    formatResult(match) {
+        return match.result || 'Pendiente';
+    },
+    getResultClass(match) {
+        if (!match.finalized) return 'pending';
+        if (match.won) return 'win';
+
+        // Check for a draw (e.g., "1-1", "2-2")
+        if (match.result) {
+            const scores = match.result.split('-');
+            if (scores.length === 2 && scores[0] === scores[1]) {
+                return 'draw';
+            }
+        }
+        
+        return 'loss';
+    },
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+      return new Date(dateString).toLocaleDateString('es-ES', options);
+    },
+    viewMatchDetails(match) {
+      this.$router.push({ name: 'MatchDetails', params: { id: match.id } });
     },
     goToAddMatch() {
-      this.$router.push({
-        name: "AddMatch",
-        params: { teamId: this.$route.params.id },
-      });
+      this.$router.push({ name: 'AddMatch', params: { teamId: this.teamId } });
     },
-    goToMatchDetails(match) {
-      this.$router.push({ name: "MatchDetails", params: { id: match.id } });
-    },
-    formatDate(date) {
-        const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-        return new Date(date).toLocaleString("es-ES", options);
-    },
-    closeMessage() {
-      this.showMessage = false;
-    },
+    goBack() {
+      this.$router.push({ name: 'TeamDetails', params: { id: this.teamId } });
+    }
   },
   mounted() {
     this.fetchMatches();
@@ -121,57 +133,17 @@ export default {
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Roboto:wght@400;500&display=swap");
-
-.team-matches-page {
-  padding: 2rem;
-  background: #f9fafb;
-  min-height: 100vh;
-  font-family: "Roboto", sans-serif;
+.match-result {
+    font-weight: var(--font-weight-bold);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: 9999px;
+    min-width: 80px;
+    text-align: center;
+    display: inline-block;
+    color: var(--color-background-white);
 }
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2rem;
-}
-.back-button {
-  background: white;
-  color: #333;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 8px 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-.back-button i {
-  margin-right: 5px;
-}
-.back-button:hover {
-  background: #f0f0f0;
-  transform: scale(1.05);
-}
-.page-title {
-  text-align: center;
-  font-size: 2.2rem;
-  margin: 0;
-  color: #2c3e50;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 600;
-  flex-grow: 1;
-}
-.match-status {
-  padding: 5px 12px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #fff;
-  border-radius: 15px;
-  text-align: center;
-  display: inline-block;
-}
-.match-status.pending { background-color: #3498db; }
-.match-status.victory { background-color: #2ecc71; }
-.match-status.defeat { background-color: #e74c3c; }
+.match-result.win { background-color: var(--color-success); }
+.match-result.loss { background-color: var(--color-danger); }
+.match-result.draw { background-color: var(--color-warning); }
+.match-result.pending { background-color: var(--color-gray-400); }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="form-page">
+  <div class="form-page-container">
     <PageHeader 
       :title="isEditMode ? 'Editar Equipo' : 'Añadir Nuevo Equipo'" 
       show-back-button 
@@ -16,18 +16,6 @@
             placeholder="Ej: GestoTeam Senior"
             required
           />
-          <BaseInput
-            v-model="team.field"
-            label="Campo"
-            id="field"
-            placeholder="Ej: Ciudad Deportiva Gesto"
-          />
-          <BaseInput
-            v-model="team.location"
-            label="Ubicación"
-            id="location"
-            placeholder="Ej: Madrid"
-          />
           <BaseSelect
             v-model="team.category"
             label="Categoría"
@@ -42,37 +30,43 @@
             placeholder="Ej: Primera Aficionados"
             required
           />
+          <BaseInput
+            v-model="team.field"
+            label="Campo"
+            id="field"
+            placeholder="Ej: Ciudad Deportiva Gesto"
+          />
+          <BaseInput
+            v-model="team.location"
+            label="Ubicación"
+            id="location"
+            placeholder="Ej: Madrid"
+          />
           <BaseTextarea
             v-model="team.description"
             label="Descripción"
             id="description"
             placeholder="Anotaciones sobre el equipo (opcional)"
             :rows="5"
+            class="form-grid-span-2"
           />
         </div>
 
         <div class="form-actions">
           <BaseButton type="submit" :loading="isSaving" variant="primary">
-            {{ isEditMode ? "Guardar Cambios" : "Crear Equipo" }}
+            {{ isSaving ? "Guardando..." : (isEditMode ? "Guardar Cambios" : "Crear Equipo") }}
           </BaseButton>
         </div>
       </form>
     </BaseCard>
-
-    <MessageBox
-      v-if="showMessage"
-      :message="message"
-      :type="messageType"
-      @close="closeMessage"
-    />
   </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
+import { notificationService } from '@/services/notificationService';
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
-import MessageBox from "@/pages/utils/MessageBox.vue";
 import BaseInput from "@/components/base/BaseInput.vue";
 import BaseSelect from "@/components/base/BaseSelect.vue";
 import BaseTextarea from "@/components/base/BaseTextarea.vue";
@@ -82,7 +76,6 @@ export default {
   components: {
     PageHeader,
     BaseCard,
-    MessageBox,
     BaseInput,
     BaseSelect,
     BaseTextarea,
@@ -101,15 +94,56 @@ export default {
       categories: [],
       isEditMode: false,
       isSaving: false,
-      showMessage: false,
-      message: "",
-      messageType: "info",
     };
   },
   computed: {
-      categoryOptions() {
-          return this.categories.map(c => ({ value: c.code, text: c.description }));
+    categoryOptions() {
+      return this.categories.map(c => ({ value: c.code, text: c.description }));
+    }
+  },
+  methods: {
+    async fetchTeam() {
+      try {
+        const response = await apiClient.get(`/teams/${this.$route.params.id}`);
+        this.team = response.data;
+      } catch (error) {
+        notificationService.showError("No se pudo cargar el equipo.");
       }
+    },
+    async fetchCategories() {
+      try {
+        const response = await apiClient.get("/enums/categories");
+        this.categories = response.data;
+        if (!this.isEditMode && this.categories.length > 0) {
+          this.team.category = this.categories[0].code;
+        }
+      } catch (error) {
+        notificationService.showError("No se pudieron cargar las categorías.");
+      }
+    },
+    async submitForm() {
+      this.isSaving = true;
+      try {
+        let savedTeam;
+        if (this.isEditMode) {
+          const response = await apiClient.put(`/teams/${this.$route.params.id}`, this.team);
+          savedTeam = response.data;
+          notificationService.showSuccess("Equipo actualizado con éxito.");
+        } else {
+          const response = await apiClient.post("/teams", this.team);
+          savedTeam = response.data;
+          notificationService.showSuccess("Equipo creado con éxito.");
+        }
+        this.$router.push({ name: 'TeamDetails', params: { id: savedTeam.id } });
+      } catch (error) {
+        // El interceptor de api.js ya se encarga de mostrar el error
+      } finally {
+        this.isSaving = false;
+      }
+    },
+    goBack() {
+      this.$router.push({ name: 'Teams' });
+    },
   },
   created() {
     this.isEditMode = !!this.$route.params.id;
@@ -118,93 +152,33 @@ export default {
       this.fetchTeam();
     }
   },
-  methods: {
-    async fetchTeam() {
-      try {
-        const response = await apiClient.get(`/teams/${this.$route.params.id}`);
-        this.team = { ...response.data, category: response.data.category.toUpperCase() };
-      } catch (error) {
-        this.message = "No se pudo cargar el equipo. " + (error.response?.data?.message || "Inténtelo de nuevo.");
-        this.messageType = "error";
-        this.showMessage = true;
-      }
-    },
-    async fetchCategories() {
-      try {
-        const response = await apiClient.get("/enums/categories");
-        this.categories = response.data;
-        if (!this.isEditMode && this.categories.length > 0) {
-            this.team.category = this.categories[0].code;
-        }
-      } catch (error) {
-        this.message = "No se pudieron cargar las categorías. " + (error.response?.data?.message || "Inténtelo de nuevo.");
-        this.messageType = "error";
-        this.showMessage = true;
-      }
-    },
-    async submitForm() {
-      this.isSaving = true;
-      try {
-        if (this.isEditMode) {
-          await apiClient.put(`/teams/${this.$route.params.id}`, this.team);
-          this.message = "Equipo actualizado con éxito.";
-        } else {
-          await apiClient.post("/teams", this.team);
-          this.message = "Equipo creado con éxito.";
-        }
-        this.messageType = "success";
-        this.showMessage = true;
-        setTimeout(() => this.goBack(), 1500);
-      } catch (error) {
-        this.message = "No se pudo guardar el equipo: " + (error.response?.data?.message || "Inténtelo de nuevo.");
-        this.messageType = "error";
-        this.showMessage = true;
-      } finally {
-        this.isSaving = false;
-      }
-    },
-    goBack() {
-      const teamId = this.$route.params.id;
-      if (this.isEditMode && teamId) {
-          this.$router.push({ name: 'TeamDetails', params: { id: teamId }});
-      } else {
-          this.$router.push({ name: 'Teams' });
-      }
-    },
-    closeMessage() {
-      this.showMessage = false;
-    },
-  },
-  watch: {
-    categories() {
-        if (this.isEditMode && this.team.id) {
-             const categoryEnum = this.categories.find(c => c.description === this.team.category);
-             if (categoryEnum) {
-                 this.team.category = categoryEnum.code;
-             }
-        }
-    }
-  }
 };
 </script>
 
 <style scoped>
-.form-page {
-  max-width: 800px;
+.form-page-container {
+  max-width: 900px;
   margin: 0 auto;
-  padding: 2rem;
 }
 .form-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-5);
+}
+.form-grid-span-2 {
+  grid-column: span 2;
 }
 .form-actions {
-  margin-top: 1.5rem;
+  margin-top: var(--spacing-6);
+  display: flex;
+  justify-content: flex-end;
 }
 @media (max-width: 768px) {
     .form-grid {
         grid-template-columns: 1fr;
+    }
+    .form-grid-span-2 {
+        grid-column: span 1;
     }
 }
 </style>

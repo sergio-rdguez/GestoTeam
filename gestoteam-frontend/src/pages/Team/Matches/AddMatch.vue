@@ -1,74 +1,73 @@
 <template>
-  <div class="form-page">
-    <PageHeader 
-      title="Agregar Partido" 
-      show-back-button 
-      @back="goBack"
-    />
+  <div class="form-page-container">
+    <PageHeader :title="isEditMode ? 'Editar Partido' : 'Añadir Partido'" show-back-button @back="goBack" />
 
     <BaseCard>
-      <form @submit.prevent="addMatch">
+      <form @submit.prevent="submitForm">
         <div class="form-grid">
           <BaseSelect
-            v-model="newMatch.opponentId"
-            label="Oponente"
+            v-model="match.opponentId"
+            label="Rival"
             id="opponent"
             :options="opponentOptions"
-            placeholder="Seleccione un oponente"
             required
+            :disabled="loadingOpponents"
           />
           <BaseInput
-            v-model="newMatch.location"
-            label="Estadio"
-            id="location"
-            type="text"
-            required
-          />
-          <BaseInput
-            v-model="newMatch.date"
-            label="Fecha"
+            v-model="match.date"
+            label="Fecha y Hora"
             id="date"
-            type="date"
+            type="datetime-local"
             required
           />
-          <BaseInput
-            v-model="newMatch.time"
-            label="Hora"
-            id="time"
-            type="time"
-            required
+           <BaseInput
+            v-model="match.location"
+            label="Ubicación"
+            id="location"
+            placeholder="Ej: Estadio del rival"
+            class="form-grid-span-2"
           />
         </div>
+
+        <div v-if="isEditMode" class="result-grid">
+            <h3 class="grid-span-2">Resultado</h3>
+            <BaseInput
+                v-model.number="match.goalsFor"
+                label="Goles a Favor"
+                id="goalsFor"
+                type="number"
+                min="0"
+            />
+            <BaseInput
+                v-model.number="match.goalsAgainst"
+                label="Goles en Contra"
+                id="goalsAgainst"
+                type="number"
+                min="0"
+            />
+        </div>
+
         <div class="form-actions">
-            <BaseButton type="submit" variant="primary" :loading="isSaving">
-                {{ isSaving ? "Guardando..." : "Guardar Partido" }}
-            </BaseButton>
+          <BaseButton type="submit" :loading="isSaving" variant="primary">
+            {{ isSaving ? "Guardando..." : (isEditMode ? "Guardar Cambios" : "Añadir Partido") }}
+          </BaseButton>
         </div>
       </form>
     </BaseCard>
-
-    <MessageBox
-      v-if="showMessage"
-      :message="message"
-      :type="messageType"
-      @close="closeMessage"
-    />
   </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
-import MessageBox from "@/pages/utils/MessageBox.vue";
+import { notificationService } from '@/services/notificationService';
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
 import BaseInput from "@/components/base/BaseInput.vue";
 import BaseSelect from "@/components/base/BaseSelect.vue";
 import BaseButton from "@/components/base/BaseButton.vue";
 
-
 export default {
   components: {
-    MessageBox,
     PageHeader,
     BaseCard,
     BaseInput,
@@ -77,103 +76,132 @@ export default {
   },
   data() {
     return {
-      newMatch: {
-        opponentId: "",
-        date: "",
-        time: "",
-        location: "",
+      match: {
+        teamId: this.$route.params.teamId,
+        opponentId: null,
+        date: '',
+        location: '',
+        goalsFor: null,
+        goalsAgainst: null,
       },
       opponents: [],
+      isEditMode: false,
       isSaving: false,
-      showMessage: false,
-      message: "",
-      messageType: "info",
+      loadingOpponents: true,
     };
   },
   computed: {
     opponentOptions() {
-      return this.opponents.map(opp => ({ value: opp.id, text: opp.name }));
+      return this.opponents.map(o => ({ value: o.id, text: o.name }));
     }
   },
   methods: {
     async fetchOpponents() {
-      try {
+        this.loadingOpponents = true;
         const teamId = this.$route.params.teamId;
-        const response = await apiClient.get(`/opponents/team/${teamId}`);
-        this.opponents = response.data;
-      } catch (error) {
-        this.message = "No se pudo cargar la lista de oponentes.";
-        this.messageType = "error";
-        this.showMessage = true;
-      }
+        try {
+            const response = await apiClient.get(`/opponents/team/${teamId}`);
+            this.opponents = response.data.opponents || [];
+        } catch (error) {
+            notificationService.showError("No se pudieron cargar los rivales.");
+        } finally {
+            this.loadingOpponents = false;
+        }
     },
-    async addMatch() {
-      if (!this.newMatch.opponentId) {
-        this.message = "Debes seleccionar un oponente.";
-        this.messageType = "warning";
-        this.showMessage = true;
-        return;
-      }
+    async fetchMatchForEdit() {
+        try {
+            const matchId = this.$route.params.id;
+            const response = await apiClient.get(`/matches/details/${matchId}`);
+            const data = response.data;
+            
+            this.match.opponentId = data.opponentId;
+            this.match.location = data.location;
+            this.match.date = this.formatDateForInput(data.date);
 
+            if (data.result) {
+                const scores = data.result.split('-').map(Number);
+                if (data.won) {
+                    this.match.goalsFor = scores[1];
+                    this.match.goalsAgainst = scores[0];
+                } else {
+                    this.match.goalsFor = scores[0];
+                    this.match.goalsAgainst = scores[1];
+                }
+            }
+
+        } catch (error) {
+            notificationService.showError("Error al cargar los datos del partido.");
+        }
+    },
+    async submitForm() {
       this.isSaving = true;
       try {
-        const dateTime = `${this.newMatch.date}T${this.newMatch.time}`;
-        const matchPayload = {
-          opponentId: this.newMatch.opponentId,
-          date: dateTime,
-          location: this.newMatch.location,
-          teamId: this.$route.params.teamId,
-        };
-
-        await apiClient.post("/matches", matchPayload);
-
-        this.message = "Partido agregado con éxito.";
-        this.messageType = "success";
-        this.showMessage = true;
-
-        setTimeout(() => this.goBack(), 1500);
-
+        if (this.isEditMode) {
+          const payload = { ...this.match, teamId: undefined }; // No reenviamos el teamId en el payload del PUT
+          await apiClient.put(`/matches/${this.$route.params.id}`, payload);
+          notificationService.showSuccess("Partido actualizado con éxito.");
+          this.$router.push({ name: 'MatchDetails', params: { id: this.$route.params.id } });
+        } else {
+          await apiClient.post("/matches", this.match);
+          notificationService.showSuccess("Partido añadido con éxito.");
+          this.$router.push({ name: "TeamMatches", params: { id: this.match.teamId } });
+        }
       } catch (error) {
-        this.message = "No se pudo agregar el partido: " + (error.response?.data?.message || "Inténtelo de nuevo.");
-        this.messageType = "error";
-        this.showMessage = true;
+        // El interceptor se encarga de mostrar el error.
       } finally {
-          this.isSaving = false;
+        this.isSaving = false;
       }
     },
+    formatDateForInput(date) {
+      if (!date) return '';
+      const d = new Date(date);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    },
     goBack() {
-      this.$router.push({
-        name: "TeamMatches",
-        params: { id: this.$route.params.teamId },
-      });
-    },
-    closeMessage() {
-      this.showMessage = false;
-    },
+        const teamId = this.$route.params.teamId;
+        this.$router.push({ name: "TeamMatches", params: { id: teamId } });
+    }
   },
-  mounted() {
+  async created() {
+    this.isEditMode = !!this.$route.params.id;
     this.fetchOpponents();
-  },
+    if (this.isEditMode) {
+        await this.fetchMatchForEdit();
+    }
+  }
 };
 </script>
 
 <style scoped>
-.form-page {
-  max-width: 800px;
+.form-page-container {
+  max-width: 900px;
   margin: 0 auto;
-  padding: 2rem;
 }
-.form-grid {
+.form-grid, .result-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-5);
+}
+.result-grid {
+    margin-top: var(--spacing-6);
+    padding-top: var(--spacing-6);
+    border-top: 1px solid var(--color-border);
+}
+.form-grid-span-2 {
+  grid-column: span 2;
 }
 .form-actions {
-  margin-top: 1.5rem;
+  margin-top: var(--spacing-6);
+  display: flex;
+  justify-content: flex-end;
 }
 @media (max-width: 768px) {
-    .form-grid {
+    .form-grid, .result-grid {
         grid-template-columns: 1fr;
+    }
+    .form-grid-span-2 {
+        grid-column: span 1;
     }
 }
 </style>

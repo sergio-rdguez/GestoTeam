@@ -1,236 +1,157 @@
 <template>
   <div class="match-details-page">
-    <div class="header">
-      <button class="back-button" @click="goBackToTeamMatches">
-        <i class="fa-solid fa-arrow-left"></i> Volver
-      </button>
-      <h2 class="page-title">Detalles del Partido</h2>
+    <PageHeader 
+      :title="pageTitle" 
+      show-back-button 
+      @back="goBack"
+    >
+      <BaseButton @click="editMatch" v-if="match">
+        <i class="fa-solid fa-pencil"></i> Editar Partido
+      </BaseButton>
+    </PageHeader>
+
+    <div v-if="loading">
+      <LoadingSpinner message="Cargando detalles del partido..." />
     </div>
 
-    <div v-if="loading" class="loading-message">
-      <p>Cargando datos del partido...</p>
-    </div>
+    <div v-if="!loading && match">
+        <BaseCard class="score-card">
+            <div class="team-info">
+                <span class="team-name">{{ match.team.name }}</span>
+            </div>
+            <div class="score">
+                <span class="goals">{{ goalsFor }}</span>
+                <span>-</span>
+                <span class="goals">{{ goalsAgainst }}</span>
+            </div>
+            <div class="team-info opponent">
+                <span class="team-name">{{ match.opponent }}</span>
+            </div>
+        </BaseCard>
 
-    <div v-else-if="match">
-      <div class="match-info card">
-        <div class="card-header">
-          <h3>Información del Partido</h3>
-          <button
-            v-if="!match.finalized"
-            @click="editMode = !editMode"
-            class="edit-button"
-          >
-            {{ editMode ? "Cancelar" : "Editar Partido" }}
-          </button>
-        </div>
-
-        <div class="info-grid">
-            <p><strong>Equipo Local:</strong> {{ match.team.name }}</p>
-            <p><strong>Visitante:</strong> {{ match.opponent }}</p>
-            <p><strong>Fecha:</strong> {{ formatDate(match.date) }}</p>
-            <p><strong>Hora:</strong> {{ formatTime(match.date) }}</p>
-            <p><strong>Estadio:</strong> {{ match.location }}</p>
-            <p><strong>Estado:</strong> {{ match.finalized ? 'Finalizado' : 'Pendiente' }}</p>
-        </div>
-      </div>
-
-      <div v-if="editMode && !match.finalized">
-        <div class="match-result card">
-            <h4>Resultado del Partido</h4>
-            <div class="result-fields">
-                <div class="score-inputs">
-                    <div class="score-field">
-                        <label>Local</label>
-                        <input type="number" v-model.number="editableResult.home" />
-                    </div>
-                    <span>-</span>
-                    <div class="score-field">
-                        <label>Visitante</label>
-                        <input type="number" v-model.number="editableResult.away" />
-                    </div>
+        <BaseCard class="details-card">
+            <h2 class="section-title">Detalles del Partido</h2>
+            <div class="details-grid">
+                <div>
+                    <span class="detail-label">Fecha</span>
+                    <span class="detail-value">{{ formatDate(match.date) }}</span>
+                </div>
+                <div>
+                    <span class="detail-label">Ubicación</span>
+                    <span class="detail-value">{{ match.location || 'No especificada' }}</span>
                 </div>
             </div>
-        </div>
+        </BaseCard>
 
-        <div class="player-match-stats card">
-          <h4>Estadísticas de Jugadores</h4>
-          <table class="stats-table">
-            <thead>
-              <tr>
-                <th>Jugador</th>
-                <th>G</th>
-                <th>TA</th>
-                <th>TR</th>
-                <th>MIN</th>
-                <th>CONV</th>
-                <th>TIT</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="stat in match.playerStats" :key="stat.id">
-                <td>{{ stat.playerFullName }}</td>
-                <td><input type="number" min="0" v-model.number="stat.goals" class="stat-input" /></td>
-                <td><input type="checkbox" v-model="stat.yellowCard" class="stat-checkbox" /></td>
-                <td><input type="checkbox" v-model="stat.redCard" class="stat-checkbox" /></td>
-                <td><input type="number" min="0" max="90" v-model.number="stat.minutesPlayed" class="stat-input" /></td>
-                <td><input type="checkbox" v-model="stat.calledUp" class="stat-checkbox" /></td>
-                <td><input type="checkbox" v-model="stat.starter" class="stat-checkbox" /></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-       <div v-if="match.finalized" class="final-score card">
-        <h3>Marcador Final</h3>
-        <p class="score">{{ match.result }}</p>
-      </div>
+        <BaseCard class="stats-card">
+            <h2 class="section-title">Estadísticas de Jugadores</h2>
+            <DataTable
+              v-if="calledUpPlayers.length > 0"
+              :items="calledUpPlayers"
+              :columns="playerStatsColumns"
+              default-sort-key="starter"
+              :default-sort-asc="false"
+            >
+                <template #cell-playerFullName="{ item }">
+                    <span :class="{'starter': item.starter}">{{ item.playerFullName }}</span>
+                </template>
+                <template #cell-cards="{ item }">
+                    <div class="cards-container">
+                        <i v-if="item.yellowCard" class="fa-solid fa-square card yellow"></i>
+                        <i v-if="item.doubleYellowCard" class="fa-solid fa-clone card yellow"></i>
+                        <i v-if="item.redCard" class="fa-solid fa-square card red"></i>
+                    </div>
+                </template>
+            </DataTable>
+            <EmptyState
+                v-else
+                title="Sin datos de jugadores"
+                message="No se han registrado estadísticas de jugadores para este partido."
+                icon="fa-solid fa-chart-simple"
+                :show-border="false"
+            />
+        </BaseCard>
 
-
-      <div class="actions">
-        <button
-          class="btn btn-save"
-          @click="saveEverything"
-          v-if="editMode && !match.finalized"
-          :disabled="isSaving"
-        >
-          {{ isSaving ? "Guardando..." : "Guardar Cambios" }}
-        </button>
-        <button
-          class="btn btn-finalize"
-          v-if="!match.finalized"
-          @click="finalizeMatch"
-          :disabled="isSaving"
-        >
-          Finalizar Partido
-        </button>
-      </div>
     </div>
-    <MessageBox
-      v-if="showMessage"
-      :message="message"
-      :type="messageType"
-      @close="closeMessage"
-    />
   </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
-import MessageBox from "@/pages/utils/MessageBox.vue";
+import PageHeader from "@/components/layout/PageHeader.vue";
+import BaseCard from "@/components/base/BaseCard.vue";
+import BaseButton from "@/components/base/BaseButton.vue";
+import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
+import DataTable from "@/components/common/DataTable.vue";
+import EmptyState from "@/components/common/EmptyState.vue";
 
 export default {
-  components: { MessageBox },
+  components: {
+    PageHeader,
+    BaseCard,
+    BaseButton,
+    LoadingSpinner,
+    DataTable,
+    EmptyState,
+  },
   data() {
     return {
       match: null,
       loading: true,
-      isSaving: false,
-      editMode: false,
-      editableResult: { home: 0, away: 0 },
-      showMessage: false,
-      message: "",
-      messageType: "info",
+      playerStatsColumns: [
+          { key: 'playerFullName', label: 'Jugador', sortable: true },
+          { key: 'minutesPlayed', label: 'Minutos', sortable: true },
+          { key: 'goals', label: 'Goles', sortable: true },
+          { key: 'cards', label: 'Tarjetas', sortable: false },
+      ],
     };
+  },
+  computed: {
+    pageTitle() {
+        if (!this.match) return "Detalles del Partido";
+        return `${this.match.team.name} vs ${this.match.opponent}`;
+    },
+    goalsFor() {
+        if (!this.match || !this.match.result) return '-';
+        return this.match.won ? this.match.result.split('-')[1] : this.match.result.split('-')[0];
+    },
+    goalsAgainst() {
+        if (!this.match || !this.match.result) return '-';
+        return this.match.won ? this.match.result.split('-')[0] : this.match.result.split('-')[1];
+    },
+    calledUpPlayers() {
+        if (!this.match || !this.match.playerStats) return [];
+        return this.match.playerStats.filter(p => p.calledUp);
+    }
   },
   methods: {
     async fetchMatchDetails() {
       this.loading = true;
       try {
         const matchId = this.$route.params.id;
-        const { data } = await apiClient.get(`/matches/details/${matchId}`);
-        this.match = data;
-        if (data.result) {
-            const [home, away] = data.result.split('-').map(Number);
-            this.editableResult = { home, away };
-        }
+        const response = await apiClient.get(`/matches/details/${matchId}`);
+        this.match = response.data;
       } catch (error) {
-        this.message = "No se pudieron cargar los detalles del partido.";
-        this.messageType = "error";
-        this.showMessage = true;
+        console.error("Error al cargar los detalles del partido:", error);
       } finally {
         this.loading = false;
       }
     },
-    async saveEverything() {
-      this.isSaving = true;
-      try {
-        const matchUpdatePayload = {
-          date: this.match.date,
-          location: this.match.location,
-          opponentId: this.match.opponentId,
-          result: `${this.editableResult.home}-${this.editableResult.away}`,
-          won: this.editableResult.home > this.editableResult.away,
-          finalized: this.match.finalized
-        };
-        await apiClient.put(`/matches/${this.match.id}`, matchUpdatePayload);
-
-        const statsPromises = this.match.playerStats.map(stat =>
-          apiClient.put(`/player-match-stats/${stat.id}`, stat)
-        );
-        await Promise.all(statsPromises);
-        
-        this.message = "Cambios guardados correctamente.";
-        this.messageType = "success";
-        this.showMessage = true;
-        this.editMode = false;
-        this.fetchMatchDetails(); // Recargar datos
-
-      } catch (error) {
-        this.message = "Error al guardar los cambios.";
-        this.messageType = "error";
-        this.showMessage = true;
-      } finally {
-        this.isSaving = false;
-      }
+    formatDate(dateString) {
+      if (!dateString) return 'Fecha no disponible';
+      const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      return new Date(dateString).toLocaleString('es-ES', options);
     },
-    async finalizeMatch() {
-      if (confirm("¿Seguro que quieres finalizar el partido? Ya no podrás editar las estadísticas.")) {
-        this.isSaving = true;
-        try {
-            const matchUpdatePayload = {
-                ...this.match,
-                result: `${this.editableResult.home}-${this.editableResult.away}`,
-                won: this.editableResult.home > this.editableResult.away,
-                finalized: true
-            };
-            await apiClient.put(`/matches/${this.match.id}`, matchUpdatePayload);
-
-            this.message = "Partido finalizado.";
-            this.messageType = "success";
-            this.showMessage = true;
-            this.editMode = false;
-            await this.fetchMatchDetails(); // Recargar datos
-        } catch (error) {
-            this.message = "Error al finalizar el partido.";
-            this.messageType = "error";
-            this.showMessage = true;
-        } finally {
-            this.isSaving = false;
+    editMatch() {
+      this.$router.push({ name: 'EditMatch', params: { id: this.match.id, teamId: this.match.team.id } });
+    },
+    goBack() {
+        if (this.match) {
+            this.$router.push({ name: 'TeamMatches', params: { id: this.match.team.id } });
+        } else {
+            this.$router.push({ name: 'Teams' });
         }
-      }
-    },
-    formatDate(isoString) {
-      if (!isoString) return "";
-      return new Date(isoString).toLocaleDateString("es-ES", {
-        year: "numeric", month: "long", day: "numeric",
-      });
-    },
-    formatTime(isoString) {
-        if (!isoString) return "";
-        return new Date(isoString).toLocaleTimeString("es-ES", {
-            hour: '2-digit', minute: '2-digit'
-        });
-    },
-    goBackToTeamMatches() {
-      this.$router.push({
-        name: "TeamMatches",
-        params: { id: this.match.team.id },
-      });
-    },
-    closeMessage() {
-      this.showMessage = false;
-    },
+    }
   },
   mounted() {
     this.fetchMatchDetails();
@@ -238,131 +159,71 @@ export default {
 };
 </script>
 
-
 <style scoped>
-.match-details-page {
-  padding: 40px;
-  background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
-  min-height: 100vh;
-  font-family: "Roboto", sans-serif;
+.score-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-6) var(--spacing-8);
+    text-align: center;
+    margin-bottom: var(--spacing-6);
 }
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 30px;
+.team-info {
+    flex: 1;
 }
-.back-button {
-  background: #3498db;
-  color: white;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+.team-name {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
 }
-.back-button:hover {
-  background: #2980b9;
-  transform: scale(1.05);
+.score {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-6);
+    font-size: 3rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
 }
-.page-title {
-  text-align: center;
-  font-size: 2.5rem;
-  color: #2c3e50;
-  font-family: "Montserrat", sans-serif;
-  flex-grow: 1;
+.details-card, .stats-card {
+    margin-bottom: var(--spacing-6);
+}
+.section-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--spacing-5);
+    padding-bottom: var(--spacing-2);
+    border-bottom: 1px solid var(--color-border);
+}
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-5);
+}
+.detail-label {
+    display: block;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-1);
+    font-weight: var(--font-weight-medium);
+}
+.detail-value {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+}
+.starter {
+    font-weight: var(--font-weight-bold);
+}
+.cards-container {
+    display: flex;
+    gap: var(--spacing-2);
 }
 .card {
-  background: #fff;
-  padding: 20px;
-  margin-bottom: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    font-size: 1.1rem;
 }
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+.card.yellow {
+    color: #ffc107;
 }
-.card h3, .card h4 {
-  font-family: "Montserrat", sans-serif;
-  color: #2c3e50;
+.card.red {
+    color: #dc3545;
 }
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 10px;
-}
-.info-grid p {
-    margin: 5px 0;
-}
-.edit-button {
-  background: #3498db;
-  color: white;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.result-fields {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-}
-.score-inputs {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.score-field input {
-    width: 70px;
-    text-align: center;
-    font-size: 1.2rem;
-    padding: 5px;
-}
-.stats-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: center;
-}
-.stats-table th, .stats-table td {
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
-}
-.stats-table th {
-  background: #f5f5f5;
-}
-.stat-input {
-  width: 50px;
-  text-align: center;
-}
-.stat-checkbox {
-  transform: scale(1.2);
-}
-.final-score {
-    text-align: center;
-}
-.final-score .score {
-    font-size: 3rem;
-    font-weight: bold;
-    color: #2c3e50;
-}
-.actions {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-}
-.btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  cursor: pointer;
-}
-.btn-save { background: #2ecc71; }
-.btn-finalize { background: #e74c3c; }
 </style>

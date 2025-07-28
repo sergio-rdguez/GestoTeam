@@ -1,11 +1,32 @@
 <template>
   <div class="team-players-page">
-    <h2 class="page-title">{{ teamName || 'Jugadores' }}</h2>
-    
+    <PageHeader :title="teamName || 'Jugadores'" show-back-button @back="goBack">
+      <BaseButton v-if="players.length > 0" @click="addPlayer">
+        <i class="fa-solid fa-plus"></i> Añadir Jugador
+      </BaseButton>
+    </PageHeader>
+
+    <div v-if="loading">
+      <LoadingSpinner message="Cargando jugadores..." />
+    </div>
+
+    <EmptyState
+      v-else-if="players.length === 0"
+      title="Este equipo aún no tiene jugadores"
+      message="Añade tu primer jugador para empezar a construir tu plantilla."
+      icon="fa-user-plus"
+    >
+      <template #actions>
+        <BaseButton @click="addPlayer">
+          <i class="fa-solid fa-plus"></i> Añadir primer jugador
+        </BaseButton>
+      </template>
+    </EmptyState>
+
     <DataTable
+      v-else
       :items="players"
       :columns="columns"
-      :loading="loading"
       default-sort-key="fullName"
       @row-click="viewPlayerDetails"
     >
@@ -15,20 +36,24 @@
         </span>
       </template>
     </DataTable>
-
-    <FabMenu :actions="fabActions" @action-clicked="addPlayer" />
   </div>
 </template>
 
 <script>
 import apiClient from "@/services/api";
 import DataTable from "@/components/common/DataTable.vue";
-import FabMenu from "@/components/common/FabMenu.vue";
+import PageHeader from "@/components/layout/PageHeader.vue";
+import BaseButton from "@/components/base/BaseButton.vue";
+import EmptyState from "@/components/common/EmptyState.vue";
+import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
 
 export default {
   components: {
     DataTable,
-    FabMenu,
+    PageHeader,
+    BaseButton,
+    EmptyState,
+    LoadingSpinner,
   },
   data() {
     return {
@@ -42,19 +67,18 @@ export default {
         { key: 'number', label: 'Dorsal', sortable: true },
         { key: 'status', label: 'Estado', sortable: true },
       ],
-      fabActions: [
-        { label: 'Añadir Jugador', event: 'add-player' }
-      ],
     };
   },
   methods: {
     async fetchPlayers() {
       this.loading = true;
       try {
-        const teamResponse = await apiClient.get(`/teams/${this.teamId}`);
+        // Obtenemos el nombre del equipo y los jugadores en paralelo
+        const [teamResponse, playersResponse] = await Promise.all([
+          apiClient.get(`/teams/${this.teamId}`),
+          apiClient.get(`/players/team/${this.teamId}`)
+        ]);
         this.teamName = teamResponse.data.name;
-
-        const playersResponse = await apiClient.get(`/players/team/${this.teamId}`);
         this.players = playersResponse.data.players;
       } catch (error) {
         console.error("Error al cargar los jugadores:", error);
@@ -68,6 +92,9 @@ export default {
     addPlayer() {
       this.$router.push({ name: 'AddPlayer', params: { teamId: this.teamId } });
     },
+    goBack() {
+      this.$router.push({ name: 'TeamDetails', params: { id: this.teamId } });
+    }
   },
   mounted() {
     this.fetchPlayers();
@@ -76,24 +103,18 @@ export default {
 </script>
 
 <style scoped>
-.team-players-page {
-  padding: 2rem;
-}
-.page-title {
-  text-align: center;
-  font-size: 2rem;
-  color: #333;
-  margin-bottom: 2rem;
-}
 .player-status {
-    font-size: 0.9rem;
-    font-weight: bold;
-    padding: 5px 10px;
-    border-radius: 12px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: 9999px;
     text-transform: capitalize;
-    color: white;
+    color: var(--color-background-white);
+    min-width: 80px;
+    text-align: center;
+    display: inline-block;
 }
-.player-status.activo { background-color: #28a745; }
-.player-status.lesionado { background-color: #dc3545; }
-.player-status.suspendido { background-color: #ffc107; }
+.player-status.activo { background-color: var(--color-success); }
+.player-status.lesionado { background-color: var(--color-danger); }
+.player-status.suspendido { background-color: var(--color-warning); }
 </style>
