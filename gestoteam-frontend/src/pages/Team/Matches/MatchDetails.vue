@@ -1,10 +1,9 @@
 <template>
   <div class="match-details-page">
-    <PageHeader 
-      :title="pageTitle" 
-      show-back-button 
-      @back="goBack"
-    >
+    <PageHeader :title="pageTitle" show-back-button @back="goBack">
+      <BaseButton @click="manageStats" variant="secondary" v-if="match">
+        <i class="fa-solid fa-chart-simple"></i> Gestionar Estadísticas
+      </BaseButton>
       <BaseButton @click="editMatch" v-if="match">
         <i class="fa-solid fa-pencil"></i> Editar Partido
       </BaseButton>
@@ -15,62 +14,52 @@
     </div>
 
     <div v-if="!loading && match">
-        <BaseCard class="score-card">
-            <div class="team-info">
-                <span class="team-name">{{ match.team.name }}</span>
-            </div>
-            <div class="score">
-                <span class="goals">{{ goalsFor }}</span>
-                <span>-</span>
-                <span class="goals">{{ goalsAgainst }}</span>
-            </div>
-            <div class="team-info opponent">
-                <span class="team-name">{{ match.opponent }}</span>
-            </div>
-        </BaseCard>
+      <BaseCard class="score-card">
+        <div class="team-info">
+          <span class="team-name">{{ match.team.name }}</span>
+        </div>
+        <div class="score">
+          <span class="goals">{{ goalsFor }}</span>
+          <span>-</span>
+          <span class="goals">{{ goalsAgainst }}</span>
+        </div>
+        <div class="team-info opponent">
+          <span class="team-name">{{ match.opponent }}</span>
+        </div>
+      </BaseCard>
 
-        <BaseCard class="details-card">
-            <h2 class="section-title">Detalles del Partido</h2>
-            <div class="details-grid">
-                <div>
-                    <span class="detail-label">Fecha</span>
-                    <span class="detail-value">{{ formatDate(match.date) }}</span>
-                </div>
-                <div>
-                    <span class="detail-label">Ubicación</span>
-                    <span class="detail-value">{{ match.location || 'No especificada' }}</span>
-                </div>
-            </div>
-        </BaseCard>
+      <BaseCard class="details-card">
+        <h2 class="section-title">Detalles del Partido</h2>
+        <div class="details-grid">
+          <div>
+            <span class="detail-label">Fecha</span>
+            <span class="detail-value">{{ formatDate(match.date) }}</span>
+          </div>
+          <div>
+            <span class="detail-label">Ubicación</span>
+            <span class="detail-value">{{ match.location || 'No especificada' }}</span>
+          </div>
+        </div>
+      </BaseCard>
 
-        <BaseCard class="stats-card">
-            <h2 class="section-title">Estadísticas de Jugadores</h2>
-            <DataTable
-              v-if="calledUpPlayers.length > 0"
-              :items="calledUpPlayers"
-              :columns="playerStatsColumns"
-              default-sort-key="starter"
-              :default-sort-asc="false"
-            >
-                <template #cell-playerFullName="{ item }">
-                    <span :class="{'starter': item.starter}">{{ item.playerFullName }}</span>
-                </template>
-                <template #cell-cards="{ item }">
-                    <div class="cards-container">
-                        <i v-if="item.yellowCard" class="fa-solid fa-square card yellow"></i>
-                        <i v-if="item.doubleYellowCard" class="fa-solid fa-clone card yellow"></i>
-                        <i v-if="item.redCard" class="fa-solid fa-square card red"></i>
-                    </div>
-                </template>
-            </DataTable>
-            <EmptyState
-                v-else
-                title="Sin datos de jugadores"
-                message="No se han registrado estadísticas de jugadores para este partido."
-                icon="fa-solid fa-chart-simple"
-                :show-border="false"
-            />
-        </BaseCard>
+      <BaseCard class="stats-card">
+        <h2 class="section-title">Estadísticas de Jugadores</h2>
+        <DataTable v-if="calledUpPlayers.length > 0" :items="calledUpPlayers" :columns="playerStatsColumns"
+          default-sort-key="starter" :default-sort-asc="false">
+          <template #cell-playerFullName="{ item }">
+            <span :class="{ 'starter': item.starter }">{{ item.playerFullName }}</span>
+          </template>
+          <template #cell-cards="{ item }">
+            <div class="cards-container">
+              <i v-if="item.yellowCard" class="fa-solid fa-square card yellow"></i>
+              <i v-if="item.doubleYellowCard" class="fa-solid fa-clone card yellow"></i>
+              <i v-if="item.redCard" class="fa-solid fa-square card red"></i>
+            </div>
+          </template>
+        </DataTable>
+        <EmptyState v-else title="Sin datos de jugadores" message="Añade estadísticas para este partido."
+          icon="fa-solid fa-chart-simple" :show-border="false" />
+      </BaseCard>
 
     </div>
   </div>
@@ -99,29 +88,30 @@ export default {
       match: null,
       loading: true,
       playerStatsColumns: [
-          { key: 'playerFullName', label: 'Jugador', sortable: true },
-          { key: 'minutesPlayed', label: 'Minutos', sortable: true },
-          { key: 'goals', label: 'Goles', sortable: true },
-          { key: 'cards', label: 'Tarjetas', sortable: false },
+        { key: 'playerFullName', label: 'Jugador', sortable: true },
+        { key: 'minutesPlayed', label: 'Minutos', sortable: true },
+        { key: 'goals', label: 'Goles', sortable: true },
+        { key: 'assists', label: 'Asist.', sortable: true },
+        { key: 'cards', label: 'Tarjetas', sortable: false },
       ],
     };
   },
   computed: {
     pageTitle() {
-        if (!this.match) return "Detalles del Partido";
-        return `${this.match.team.name} vs ${this.match.opponent}`;
+      if (!this.match) return "Detalles del Partido";
+      return `${this.match.team.name} vs ${this.match.opponent}`;
     },
     goalsFor() {
-        if (!this.match || !this.match.result) return '-';
-        return this.match.won ? this.match.result.split('-')[1] : this.match.result.split('-')[0];
+      if (!this.match || !this.match.result) return '-';
+      return this.match.won ? this.match.result.split('-')[1] : this.match.result.split('-')[0];
     },
     goalsAgainst() {
-        if (!this.match || !this.match.result) return '-';
-        return this.match.won ? this.match.result.split('-')[0] : this.match.result.split('-')[1];
+      if (!this.match || !this.match.result) return '-';
+      return this.match.won ? this.match.result.split('-')[0] : this.match.result.split('-')[1];
     },
     calledUpPlayers() {
-        if (!this.match || !this.match.playerStats) return [];
-        return this.match.playerStats.filter(p => p.calledUp);
+      if (!this.match || !this.match.playerStats) return [];
+      return this.match.playerStats.filter(p => p.calledUp);
     }
   },
   methods: {
@@ -145,12 +135,15 @@ export default {
     editMatch() {
       this.$router.push({ name: 'EditMatch', params: { id: this.match.id, teamId: this.match.team.id } });
     },
+    manageStats() {
+      this.$router.push({ name: 'ManageMatchStats', params: { id: this.match.id, teamId: this.match.team.id } });
+    },
     goBack() {
-        if (this.match) {
-            this.$router.push({ name: 'TeamMatches', params: { id: this.match.team.id } });
-        } else {
-            this.$router.push({ name: 'Teams' });
-        }
+      if (this.match) {
+        this.$router.push({ name: 'TeamMatches', params: { id: this.match.team.id } });
+      } else {
+        this.$router.push({ name: 'Teams' });
+      }
     }
   },
   mounted() {
@@ -161,69 +154,83 @@ export default {
 
 <style scoped>
 .score-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-6) var(--spacing-8);
-    text-align: center;
-    margin-bottom: var(--spacing-6);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-6) var(--spacing-8);
+  text-align: center;
+  margin-bottom: var(--spacing-6);
 }
+
 .team-info {
-    flex: 1;
+  flex: 1;
 }
+
 .team-name {
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
+
 .score {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-6);
-    font-size: 3rem;
-    font-weight: var(--font-weight-bold);
-    color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  font-size: 3rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
 }
-.details-card, .stats-card {
-    margin-bottom: var(--spacing-6);
+
+.details-card,
+.stats-card {
+  margin-bottom: var(--spacing-6);
 }
+
 .section-title {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    margin-bottom: var(--spacing-5);
-    padding-bottom: var(--spacing-2);
-    border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-5);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--color-border);
 }
+
 .details-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-5);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-5);
 }
+
 .detail-label {
-    display: block;
-    font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
-    margin-bottom: var(--spacing-1);
-    font-weight: var(--font-weight-medium);
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-1);
+  font-weight: var(--font-weight-medium);
 }
+
 .detail-value {
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
 }
+
 .starter {
-    font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-bold);
 }
+
 .cards-container {
-    display: flex;
-    gap: var(--spacing-2);
+  display: flex;
+  gap: var(--spacing-2);
 }
+
 .card {
-    font-size: 1.1rem;
+  font-size: 1.1rem;
 }
+
 .card.yellow {
-    color: #ffc107;
+  color: #ffc107;
 }
+
 .card.red {
-    color: #dc3545;
+  color: #dc3545;
 }
 </style>

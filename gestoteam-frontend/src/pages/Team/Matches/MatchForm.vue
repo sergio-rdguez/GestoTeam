@@ -1,227 +1,243 @@
 <template>
-  <MainLayout>
-    <PageHeader :title="pageTitle" :breadcrumbs="breadcrumbs" />
-    <BaseCard>
-      <form @submit.prevent="submitForm" class="space-y-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label for="opponent" class="block text-sm font-medium text-gray-700">Rival</label>
-            <BaseSelect
-              id="opponent"
-              v-model="match.opponentId"
-              :options="opponentOptions"
-              required
-              placeholder="Selecciona un rival"
-            />
-          </div>
-          <div>
-            <label for="date" class="block text-sm font-medium text-gray-700">Fecha y Hora</label>
-            <BaseInput
-              id="date"
-              v-model="match.date"
-              type="datetime-local"
-              required
-            />
-          </div>
-          <div class="md:col-span-2">
-            <label for="location" class="block text-sm font-medium text-gray-700">Lugar</label>
-            <BaseInput
-              id="location"
-              v-model="match.location"
-              type="text"
-              placeholder="Ej: Ciudad Deportiva GestoTeam"
-              required
-            />
-          </div>
-        </div>
+  <div class="form-page-container">
+    <PageHeader 
+      :title="isEditMode ? 'Editar Partido' : 'Añadir Partido'" 
+      show-back-button 
+      @back="goBack" 
+    />
 
-        <div v-if="editMode" class="pt-8 border-t border-gray-200">
-          <h3 class="text-lg leading-6 font-medium text-gray-900">Resultado del Partido</h3>
-          <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-            <BaseCheckbox
-                id="finalized"
+    <div v-if="loading" class="loading-container">
+      <LoadingSpinner message="Cargando datos del partido..." />
+    </div>
+
+    <BaseCard v-else>
+      <form @submit.prevent="submitForm">
+        <div class="form-grid">
+          <BaseSelect
+            v-model="match.opponentId"
+            label="Rival"
+            id="opponent"
+            :options="opponentOptions"
+            placeholder="Selecciona un rival"
+            required
+            class="form-grid-span-2"
+          />
+          <BaseInput
+            v-model="match.date"
+            label="Fecha y Hora"
+            id="date"
+            type="datetime-local"
+            required
+          />
+          <BaseInput
+            v-model="match.location"
+            label="Lugar del Partido"
+            id="location"
+            placeholder="Ej: Ciudad Deportiva GestoTeam"
+            required
+          />
+
+          <template v-if="isEditMode">
+            <div class="form-grid-span-2 result-section">
+              <BaseCheckbox
                 v-model="match.finalized"
                 label="Partido Finalizado"
-            />
-            <div v-if="match.finalized">
-              <label for="goalsFor" class="block text-sm font-medium text-gray-700">Goles a Favor</label>
-              <BaseInput
-                id="goalsFor"
-                v-model.number="match.goalsFor"
-                type="number"
-                min="0"
-                placeholder="0"
+                id="finalized"
               />
+              <div v-if="match.finalized" class="result-inputs">
+                <BaseInput
+                  v-model.number="match.goalsFor"
+                  label="Goles a Favor"
+                  id="goalsFor"
+                  type="number"
+                  min="0"
+                />
+                <BaseInput
+                  v-model.number="match.goalsAgainst"
+                  label="Goles en Contra"
+                  id="goalsAgainst"
+                  type="number"
+                  min="0"
+                />
+              </div>
+               <p v-else class="result-info-text">
+                Marca la casilla para poder registrar el resultado.
+              </p>
             </div>
-            <div v-if="match.finalized">
-              <label for="goalsAgainst" class="block text-sm font-medium text-gray-700">Goles en Contra</label>
-              <BaseInput
-                id="goalsAgainst"
-                v-model.number="match.goalsAgainst"
-                type="number"
-                min="0"
-                placeholder="0"
-              />
-            </div>
-          </div>
-           <p v-if="!match.finalized" class="mt-4 text-sm text-gray-500">
-              Marca la casilla "Partido Finalizado" para poder introducir el resultado.
-            </p>
+          </template>
         </div>
 
-        <div class="flex justify-end space-x-4 pt-4">
-          <BaseButton type="button" @click="cancel" variant="secondary">Cancelar</BaseButton>
-          <BaseButton type="submit" variant="primary">{{ submitButtonText }}</BaseButton>
+        <div class="form-actions">
+          <BaseButton type="submit" :loading="isSaving" variant="primary">
+            {{ isSaving ? "Guardando..." : (isEditMode ? "Guardar Cambios" : "Crear Partido") }}
+          </BaseButton>
         </div>
       </form>
     </BaseCard>
-  </MainLayout>
+  </div>
 </template>
 
-<script>
-import MainLayout from '@/components/layout/MainLayout.vue';
-import PageHeader from '@/components/layout/PageHeader.vue';
-import BaseCard from '@/components/base/BaseCard.vue';
-import BaseInput from '@/components/base/BaseInput.vue';
-import BaseSelect from '@/components/base/BaseSelect.vue';
-import BaseButton from '@/components/base/BaseButton.vue';
-import BaseCheckbox from '@/components/base/BaseCheckbox.vue';
-import api from '@/services/api';
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import apiClient from "@/services/api";
 import { notificationService } from '@/services/notificationService';
 
-export default {
-  name: 'MatchForm',
-  components: {
-    MainLayout,
-    PageHeader,
-    BaseCard,
-    BaseInput,
-    BaseSelect,
-    BaseButton,
-    BaseCheckbox,
-  },
-  data() {
-    return {
-      match: {
-        opponentId: null,
-        date: '',
-        location: '',
-        finalized: false,
-        goalsFor: 0,
-        goalsAgainst: 0,
-      },
-      opponents: [],
-      editMode: false,
-      teamId: null,
-      matchId: null,
-    };
-  },
-  computed: {
-    pageTitle() {
-      return this.editMode ? 'Editar Partido' : 'Añadir Partido';
-    },
-    submitButtonText() {
-      return this.editMode ? 'Guardar Cambios' : 'Crear Partido';
-    },
-    breadcrumbs() {
-      return [
-        { name: 'Equipos', to: '/teams' },
-        { name: 'Equipo', to: `/team/${this.teamId}` },
-        { name: 'Partidos', to: `/team/${this.teamId}/matches` },
-        { name: this.pageTitle, to: this.$route.path },
-      ];
-    },
-    opponentOptions() {
-      return this.opponents.map(op => ({ value: op.id, text: op.name }));
-    },
-  },
-  async created() {
-    this.teamId = this.$route.params.teamId;
-    this.matchId = this.$route.params.matchId;
-    this.editMode = !!this.matchId;
+import PageHeader from "@/components/layout/PageHeader.vue";
+import BaseCard from "@/components/base/BaseCard.vue";
+import BaseInput from "@/components/base/BaseInput.vue";
+import BaseSelect from "@/components/base/BaseSelect.vue";
+import BaseButton from "@/components/base/BaseButton.vue";
+import BaseCheckbox from "@/components/base/BaseCheckbox.vue";
+import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
 
-    await this.fetchOpponents();
+const route = useRoute();
+const router = useRouter();
 
-    if (this.editMode) {
-      await this.fetchMatchForEdit();
-    }
-  },
-  methods: {
-    async fetchOpponents() {
-      try {
-        const response = await api.get(`/opponents/team/${this.teamId}`);
-        this.opponents = response.data;
-      } catch (error) {
-        notificationService.showError('No se pudieron cargar los rivales.');
-      }
-    },
-    async fetchMatchForEdit() {
-      try {
-        const response = await api.get(`/matches/details/${this.matchId}`);
-        const data = response.data;
-        this.match = {
-          opponentId: data.opponentId,
-          date: this.formatDateForInput(data.date),
-          location: data.location,
-          finalized: data.finalized,
-          goalsFor: data.goalsFor ?? 0,
-          goalsAgainst: data.goalsAgainst ?? 0,
-        };
-      } catch (error) {
-        notificationService.showError('Error al cargar los datos del partido.');
-        this.$router.push(`/team/${this.teamId}/matches`);
-      }
-    },
-    async submitForm() {
-      if (this.editMode) {
-        await this.updateMatch();
-      } else {
-        await this.createMatch();
-      }
-    },
-    async createMatch() {
-      try {
-        const payload = {
-          teamId: this.teamId,
-          opponentId: this.match.opponentId,
-          date: new Date(this.match.date).toISOString(),
-          location: this.match.location,
-        };
-        await api.post('/matches', payload);
-        notificationService.showSuccess('Partido creado con éxito.');
-        this.$router.push(`/team/${this.teamId}/matches`);
-      } catch (error) {
-        notificationService.showError('Error al crear el partido.');
-      }
-    },
-    async updateMatch() {
-       try {
-        const payload = {
-            opponentId: this.match.opponentId,
-            date: new Date(this.match.date).toISOString(),
-            location: this.match.location,
-            finalized: this.match.finalized,
-            goalsFor: this.match.finalized ? this.match.goalsFor : null,
-            goalsAgainst: this.match.finalized ? this.match.goalsAgainst : null
-        };
-        
-        await api.put(`/matches/${this.matchId}`, payload);
-        notificationService.showSuccess('Partido actualizado con éxito.');
-        this.$router.push(`/team/${this.teamId}/matches`);
-      } catch (error) {
-        notificationService.showError('Error al actualizar el partido.');
-      }
-    },
-    cancel() {
-      this.$router.push(`/team/${this.teamId}/matches`);
-    },
-    formatDateForInput(isoDate) {
-      if (!isoDate) return '';
-      const date = new Date(isoDate);
-      // Ajuste para la zona horaria local
-      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-      return date.toISOString().slice(0, 16);
-    },
-  },
+const teamId = route.params.teamId;
+const matchId = route.params.id;
+const isEditMode = computed(() => !!matchId);
+
+const loading = ref(true);
+const isSaving = ref(false);
+
+const match = ref({
+  opponentId: '',
+  date: '',
+  location: '',
+  finalized: false,
+  goalsFor: null,
+  goalsAgainst: null,
+});
+const opponents = ref([]);
+
+const opponentOptions = computed(() => 
+  opponents.value.map(op => ({ value: op.id, text: op.name }))
+);
+
+const formatDateForInput = (isoDate) => {
+  if (!isoDate) return '';
+  const date = new Date(isoDate);
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
 };
+
+const fetchOpponents = async () => {
+  try {
+    const response = await apiClient.get(`/opponents/team/${teamId}`);
+    opponents.value = response.data;
+  } catch (error) {
+    notificationService.showError('No se pudieron cargar los rivales.');
+  }
+};
+
+const fetchMatchForEdit = async () => {
+  try {
+    const response = await apiClient.get(`/matches/details/${matchId}`);
+    const data = response.data;
+    match.value = {
+      opponentId: data.opponentId,
+      date: formatDateForInput(data.date),
+      location: data.location,
+      finalized: data.finalized,
+      goalsFor: data.goalsFor ?? null,
+      goalsAgainst: data.goalsAgainst ?? null,
+    };
+  } catch (error) {
+    notificationService.showError('Error al cargar los datos del partido.');
+    goBack();
+  }
+};
+
+const submitForm = async () => {
+  isSaving.value = true;
+  try {
+    const payload = {
+      ...match.value,
+      date: new Date(match.value.date).toISOString(),
+    };
+    
+    if (!payload.finalized) {
+        payload.goalsFor = null;
+        payload.goalsAgainst = null;
+    }
+
+    if (isEditMode.value) {
+      await apiClient.put(`/matches/${matchId}`, payload);
+      notificationService.showSuccess('Partido actualizado con éxito.');
+    } else {
+      payload.teamId = teamId;
+      await apiClient.post('/matches', payload);
+      notificationService.showSuccess('Partido creado con éxito.');
+    }
+    goBack();
+  } catch (error) {
+    // El interceptor se encarga de mostrar el error
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+const goBack = () => {
+  router.push({ name: 'TeamMatches', params: { id: teamId } });
+};
+
+onMounted(async () => {
+  loading.value = true;
+  await fetchOpponents();
+  if (isEditMode.value) {
+    await fetchMatchForEdit();
+  }
+  loading.value = false;
+});
 </script>
+
+<style scoped>
+.form-page-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-5);
+}
+.form-grid-span-2 {
+  grid-column: span 2;
+}
+.result-section {
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
+}
+.result-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-5);
+  margin-top: var(--spacing-4);
+}
+.result-info-text {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-top: var(--spacing-2);
+}
+.form-actions {
+  margin-top: var(--spacing-6);
+  display: flex;
+  justify-content: flex-end;
+}
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+@media (max-width: 768px) {
+  .form-grid, .result-inputs {
+    grid-template-columns: 1fr;
+  }
+  .form-grid-span-2 {
+    grid-column: span 1;
+  }
+}
+</style>
