@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import LoginPage from '@/pages/auth/LoginPage.vue';
+import RegisterPage from '@/pages/auth/RegisterPage.vue';
 import TeamsPage from '@/pages/Team/TeamsPage.vue';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import TeamDetails from '@/pages/Team/TeamDetails.vue';
@@ -18,6 +19,11 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: LoginPage,
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterPage,
   },
   {
     path: '/',
@@ -48,10 +54,11 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const loggedIn = localStorage.getItem('user-token');
-  if (to.name !== 'Login' && !loggedIn) {
+  const loggedIn = localStorage.getItem('authToken');
+  const isAuthRoute = to.name === 'Login' || to.name === 'Register';
+  if (!loggedIn && !isAuthRoute) {
     next({ name: 'Login' });
-  } else if (to.name === 'Login' && loggedIn) {
+  } else if (loggedIn && isAuthRoute) {
     next({ name: 'Teams' });
   } else {
     next();
