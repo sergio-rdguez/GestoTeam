@@ -48,6 +48,9 @@ const handleLogin = async () => {
             Entrar
           </BaseButton>
         </form>
+        <div class="mt-3 text-center">
+          <router-link :to="{ name: 'Register' }">¿No tienes cuenta? Crea una</router-link>
+        </div>
       </template>
     </BaseCard>
   </div>
@@ -77,5 +80,9 @@ const handleLogin = async () => {
 
 .text-center {
   text-align: center;
+}
+
+.mt-3 {
+  margin-top: 1rem;
 }
 </style>

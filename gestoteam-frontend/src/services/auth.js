@@ -47,6 +47,14 @@ const authService = {
   },
 
   /**
+   * Registra un nuevo usuario en el sistema.
+   * @param {object} credentials - { username, password }
+   */
+  async register(credentials) {
+    await api.post('/auth/register', credentials);
+  },
+
+  /**
    * Cierra la sesión, limpia todo y redirige.
    */
   logout() {
@@ -63,3 +71,9 @@ const authService = {
 };
 
 export default authService;
+
+// Función auxiliar para que otros módulos (como el interceptor de axios)
+// puedan obtener el token actual sin acoplarse al estado interno
+export function getToken() {
+  return localStorage.getItem('authToken');
+}
