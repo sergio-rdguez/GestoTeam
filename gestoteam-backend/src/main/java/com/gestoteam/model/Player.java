@@ -75,9 +75,6 @@ public class Player {
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Injury> injuries = new ArrayList<>();
 
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PlayerPayment> payments = new ArrayList<>();
-
     @PostLoad
     @PostPersist
     @PostUpdate

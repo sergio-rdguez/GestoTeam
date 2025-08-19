@@ -13,7 +13,7 @@ java {
 
 repositories {
     mavenCentral()
-    maven { url 'https://repo.spring.io/release' } // Repositorio adicional
+    maven { url 'https://repo.spring.io/release' }
 }
 
 dependencyManagement {
@@ -28,10 +28,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-flyway'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
-    // Flyway para PostgreSQL
+    // Flyway
+    implementation 'org.flywaydb:flyway-core'
     runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 
     // OpenAPI (Swagger)
