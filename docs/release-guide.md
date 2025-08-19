@@ -55,25 +55,25 @@ cd ../gestoteam-desktop && npm run build
 ```bash
 # 1. Actualizar versión en package.json del desktop
 cd gestoteam-desktop
-# Editar package.json: "version": "1.0.0"
+# Editar package.json: "version": "0.0.1"
 
 # 2. Actualizar versión en package.json del frontend
 cd ../gestoteam-frontend
-# Editar package.json: "version": "1.0.0"
+# Editar package.json: "version": "0.0.1"
 
 # 3. Commit de versiones
 git add .
-git commit -m "chore: actualizar versiones a v1.0.0"
+git commit -m "chore: actualizar versiones a v0.0.1"
 git push origin main
 ```
 
 ### Paso 3: Crear Tag y Release
 ```bash
 # 1. Crear tag local
-git tag v1.0.0
+git tag v0.0.1
 
 # 2. Push del tag (esto dispara GitHub Actions)
-git push origin v1.0.0
+git push origin v0.0.1
 
 # 3. Verificar que GitHub Actions se ejecuta
 # Ve a: https://github.com/tu-usuario/gestoteam/actions
@@ -91,7 +91,7 @@ git push origin v1.0.0
 - [ ] **Logs** están limpios
 
 ### ✅ **Durante el Release**
-- [ ] **Tag** creado con formato correcto (`v1.0.0`)
+- [ ] **Tag** creado con formato correcto (`v0.0.1`)
 - [ ] **GitHub Actions** se ejecuta correctamente
 - [ ] **Build** se completa sin errores
 - [ ] **Instalador** se genera correctamente
@@ -109,10 +109,10 @@ git push origin v1.0.0
 ### **Semantic Versioning (SemVer)**
 ```
 MAJOR.MINOR.PATCH
-  1   .  0   .  0
+  0   .  0   .  1
 ```
 
-- **MAJOR** (1): Cambios incompatibles con versiones anteriores
+- **MAJOR** (0): Cambios incompatibles con versiones anteriores
 - **MINOR** (0): Nuevas funcionalidades compatibles
 - **PATCH** (0): Correcciones de bugs compatibles
 
@@ -137,7 +137,7 @@ v1.0.0-rc.1       # Release candidate
 
 ### **Estructura Recomendada**
 ```markdown
-# GestoTeam Desktop v1.0.0
+# GestoTeam Desktop v0.0.1
 
 ## 🎉 Nuevas Funcionalidades
 - Gestión completa de jugadores
@@ -174,12 +174,12 @@ v1.0.0-rc.1       # Release candidate
 # 2. Corregir errores en el código
 # 3. Hacer commit de correcciones
 # 4. Eliminar tag anterior
-git tag -d v1.0.0
-git push origin :refs/tags/v1.0.0
+git tag -d v0.0.1
+git push origin :refs/tags/v0.0.1
 
 # 5. Crear nuevo tag
-git tag v1.0.0
-git push origin v1.0.0
+git tag v0.0.1
+git push origin v0.0.1
 ```
 
 ### **Build Falla Localmente**

@@ -100,8 +100,8 @@ git commit -m "release: v1.0.0"
 git push
 
 # 3. Crear tag (esto dispara el build automático)
-git tag v1.0.0
-git push origin v1.0.0
+git tag v0.0.1
+git push origin v0.0.1
 ```
 
 ### Build Manual
@@ -145,8 +145,8 @@ VUE_APP_API_URL=http://localhost:8081/api
 
 ## 🔄 Flujo de Trabajo
 
-1. **Desarrollo** → Rama `develop`
-2. **Testing** → Pull Request a `main`
+1. **Desarrollo** → Rama `main`
+2. **Testing** → Validación local
 3. **Release** → Tag `v*` → Build automático
 4. **Distribución** → GitHub Releases con instaladores
 

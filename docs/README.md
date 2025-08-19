@@ -124,9 +124,9 @@ Esta documentación está organizada para diferentes tipos de usuarios y necesid
 ## 📈 **Versiones y Compatibilidad**
 
 ### 🔄 **Versión Actual**
-- **Versión**: 1.0.0
+- **Versión**: 0.0.1
 - **Fecha**: Agosto 2024
-- **Estado**: Estable
+- **Estado**: Primera Release
 - **Soporte**: Hasta Diciembre 2025
 
 ### 💻 **Compatibilidad**

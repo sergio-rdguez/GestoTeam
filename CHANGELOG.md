@@ -18,7 +18,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Limpieza de archivos innecesarios
 - Mejora de la documentación
 
-## [1.0.0] - 2024-08-20
+## [0.0.1] - 2024-08-20
 
 ### Added
 - **Aplicación Desktop completa** para Windows
@@ -83,7 +83,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - **Respaldos automáticos** en segundo plano
 - **Gestión eficiente** de memoria
 
-## [0.9.0] - 2024-08-15
+### Infrastructure
+- **GitHub Actions** para CI/CD automático
+- **Build automatizado** de todas las plataformas
+- **Generación automática** de instaladores
+- **Releases automáticos** en GitHub
+- **Auto-update** integrado para clientes
+
+## [0.0.0] - 2024-08-15
 
 ### Added
 - Estructura base del proyecto
@@ -95,86 +102,6 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Migración de Maven a Gradle
 - Actualización a Java 17
 - Actualización a Spring Boot 3.3.0
-
-## [0.8.0] - 2024-08-10
-
-### Added
-- Modelos de datos básicos
-- Repositorios JPA
-- Servicios de negocio básicos
-- Controladores REST básicos
-
-### Changed
-- Refactorización de la arquitectura
-- Mejora del manejo de excepciones
-
-## [0.7.0] - 2024-08-05
-
-### Added
-- Sistema de autenticación básico
-- Gestión de usuarios
-- Configuración de seguridad
-
-### Fixed
-- Problemas de CORS
-- Validación de formularios
-
-## [0.6.0] - 2024-08-01
-
-### Added
-- Componentes base de la UI
-- Páginas principales de la aplicación
-- Sistema de routing
-
-### Changed
-- Mejora de la interfaz de usuario
-- Optimización del rendimiento
-
-## [0.5.0] - 2024-07-25
-
-### Added
-- Configuración de base de datos
-- Migraciones Flyway
-- Entidades JPA básicas
-
-### Changed
-- Refactorización del modelo de datos
-
-## [0.4.0] - 2024-07-20
-
-### Added
-- Estructura del proyecto frontend
-- Componentes Vue.js básicos
-- Configuración de build
-
-### Changed
-- Migración a Vue.js 3
-- Actualización de dependencias
-
-## [0.3.0] - 2024-07-15
-
-### Added
-- Estructura del proyecto backend
-- Configuración de Spring Boot
-- Dependencias básicas
-
-### Changed
-- Migración a Spring Boot 3
-- Actualización a Java 17
-
-## [0.2.0] - 2024-07-10
-
-### Added
-- Concepto inicial del proyecto
-- Estructura de directorios
-- Configuración de Git
-
-## [0.1.0] - 2024-07-05
-
-### Added
-- Inicio del proyecto GestoTeam
-- Definición de requisitos
-- Planificación de arquitectura
 
 ---
 
@@ -192,18 +119,17 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 Este proyecto usa [Semantic Versioning](https://semver.org/):
 
 - **MAJOR.MINOR.PATCH**
-- **MAJOR**: Cambios incompatibles con versiones anteriores
-- **MINOR**: Nuevas funcionalidades compatibles
-- **PATCH**: Correcciones de bugs compatibles
+- **MAJOR** (0): Cambios incompatibles con versiones anteriores
+- **MINOR** (0): Nuevas funcionalidades compatibles
+- **PATCH** (1): Correcciones de bugs compatibles
 
 ## 🚀 Proceso de Release
 
-1. **Desarrollo** en rama `develop`
+1. **Desarrollo** en rama `main`
 2. **Testing** y validación
-3. **Merge** a rama `main`
-4. **Tag** de versión (ej: `v1.0.0`)
-5. **GitHub Actions** build automático
-6. **Release** publicado automáticamente
+3. **Tag** de versión (ej: `v0.0.1`)
+4. **GitHub Actions** build automático
+5. **Release** publicado automáticamente
 
 ---
 
