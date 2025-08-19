@@ -84,7 +84,7 @@ export default {
         },
         async fetchPlayer() {
             try {
-                const playerId = this.$route.params.id;
+                const playerId = this.$route.params.playerId;
                 const response = await apiClient.get(`/players/${playerId}`);
                 // El backend ya nos da el teamId, lo usamos directamente
                 this.player = response.data;
@@ -98,11 +98,11 @@ export default {
                 if (this.isEditMode) {
                     await apiClient.put(`/players/${this.player.id}`, this.player);
                     notificationService.showSuccess('Jugador actualizado con éxito');
-                    this.$router.push({ name: "PlayerDetails", params: { id: this.player.id } });
+                    this.$router.push({ name: "PlayerDetails", params: { playerId: this.player.id } });
                 } else {
                     await apiClient.post("/players", this.player);
                     notificationService.showSuccess('Jugador añadido con éxito');
-                    this.$router.push({ name: "TeamPlayers", params: { id: this.player.teamId } });
+                    this.$router.push({ name: "TeamPlayers", params: { teamId: this.player.team.id } });
                 }
             } catch (error) {
                 // El interceptor de api.js se encarga de mostrar el error
@@ -112,11 +112,11 @@ export default {
         },
         goBack() {
             const teamId = this.isEditMode ? this.player.team.id : this.$route.params.teamId;
-            this.$router.push({ name: "TeamPlayers", params: { id: teamId } });
+            this.$router.push({ name: "TeamPlayers", params: { teamId: teamId } });
         },
     },
     created() {
-        this.isEditMode = !!this.$route.params.id;
+        this.isEditMode = !!this.$route.params.playerId;
         this.fetchEnums();
         if (this.isEditMode) {
             this.fetchPlayer();

@@ -87,13 +87,13 @@ export default {
       }
     },
     viewPlayerDetails(player) {
-      this.$router.push({ name: 'PlayerDetails', params: { id: player.id } });
+      this.$router.push({ name: 'PlayerDetails', params: { playerId: player.id } });
     },
     addPlayer() {
-      this.$router.push({ name: 'AddPlayer', params: { teamId: this.teamId } });
+      this.$router.push({ name: 'NewPlayer', params: { teamId: this.teamId } });
     },
     goBack() {
-      this.$router.push({ name: 'TeamDetails', params: { id: this.teamId } });
+      this.$router.push({ name: 'TeamDetails', params: { teamId: this.teamId } });
     }
   },
   mounted() {

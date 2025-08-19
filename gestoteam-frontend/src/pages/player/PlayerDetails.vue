@@ -83,7 +83,7 @@ export default {
     async fetchPlayerDetails() {
       this.loading = true;
       try {
-        const playerId = this.$route.params.id;
+        const playerId = this.$route.params.playerId;
         const response = await apiClient.get(`/players/${playerId}`);
         this.player = response.data;
       } catch (error) {
@@ -98,13 +98,13 @@ export default {
     },
     goBack() {
       if (this.player && this.player.team) {
-        this.$router.push({ name: "TeamPlayers", params: { id: this.player.team.id } });
+        this.$router.push({ name: "TeamPlayers", params: { teamId: this.player.team.id } });
       } else {
         this.$router.push({ name: 'Teams' });
       }
     },
     editPlayer() {
-      this.$router.push({ name: "EditPlayer", params: { id: this.player.id } });
+      this.$router.push({ name: "EditPlayer", params: { playerId: this.player.id,  teamId: this.player.team.id  } });
     },
     async deletePlayer() {
       if (confirm("¿Estás seguro de que deseas eliminar este jugador?")) {
