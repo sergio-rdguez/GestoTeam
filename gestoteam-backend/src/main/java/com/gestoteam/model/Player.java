@@ -33,6 +33,8 @@ public class Player {
 
     private String surnameSecond;
 
+    private String photoPath;
+
     @Transient
     private String fullName;
 

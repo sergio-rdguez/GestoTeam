@@ -11,6 +11,10 @@
                     <BaseInput v-model="player.name" label="Nombre" id="name" required />
                     <BaseInput v-model="player.surnameFirst" label="Primer Apellido" id="surnameFirst" required />
                     <BaseInput v-model="player.surnameSecond" label="Segundo Apellido" id="surnameSecond" />
+                    <div v-if="isEditMode" class="file-upload">
+                        <label for="photoFile">Foto</label>
+                        <input id="photoFile" type="file" accept="image/*" @change="onFileSelected" />
+                    </div>
                     <BaseInput v-model="player.birthDate" label="Fecha de Nacimiento" id="birthDate" type="date" required />
                     <BaseInput v-model.number="player.number" label="Dorsal" id="number" type="number" min="1" max="99" required />
                     <BaseSelect v-model="player.position" label="Posición" id="position" :options="positionOptions" required />
@@ -59,6 +63,7 @@ export default {
             statuses: [],
             isEditMode: false,
             isSaving: false,
+            selectedFile: null,
         };
     },
     computed: {
@@ -92,17 +97,41 @@ export default {
                 notificationService.showError("Error al cargar los datos del jugador.");
             }
         },
+        onFileSelected(event) {
+            const files = event.target.files;
+            this.selectedFile = files && files[0] ? files[0] : null;
+        },
         async submitForm() {
             this.isSaving = true;
             try {
+                const payload = {
+                    name: this.player.name,
+                    surnameFirst: this.player.surnameFirst,
+                    surnameSecond: this.player.surnameSecond,
+                    birthDate: this.player.birthDate,
+                    number: this.player.number,
+                    position: this.player.position,
+                    status: this.player.status,
+                    teamId: this.isEditMode
+                        ? (this.player.team && this.player.team.id ? this.player.team.id : this.$route.params.teamId)
+                        : (this.player.teamId || this.$route.params.teamId),
+                };
+
                 if (this.isEditMode) {
-                    await apiClient.put(`/players/${this.player.id}`, this.player);
+                    await apiClient.put(`/players/${this.player.id}`, payload);
+                    if (this.selectedFile) {
+                        const formData = new FormData();
+                        formData.append('file', this.selectedFile);
+                        await apiClient.post(`/files/player/${this.player.id}`, formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                    }
                     notificationService.showSuccess('Jugador actualizado con éxito');
                     this.$router.push({ name: "PlayerDetails", params: { playerId: this.player.id } });
                 } else {
-                    await apiClient.post("/players", this.player);
+                    await apiClient.post("/players", payload);
                     notificationService.showSuccess('Jugador añadido con éxito');
-                    this.$router.push({ name: "TeamPlayers", params: { teamId: this.player.team.id } });
+                    this.$router.push({ name: "TeamPlayers", params: { teamId: payload.teamId } });
                 }
             } catch (error) {
                 // El interceptor de api.js se encarga de mostrar el error
@@ -111,7 +140,9 @@ export default {
             }
         },
         goBack() {
-            const teamId = this.isEditMode ? this.player.team.id : this.$route.params.teamId;
+            const teamId = this.isEditMode
+                ? ((this.player.team && this.player.team.id) ? this.player.team.id : this.$route.params.teamId)
+                : this.$route.params.teamId;
             this.$router.push({ name: "TeamPlayers", params: { teamId: teamId } });
         },
     },

@@ -13,6 +13,7 @@ public class PlayerResponse {
     private String surnameFirst = "";
     private String surnameSecond = "";
     private String fullName = "";
+    private String photoUrl = "";
     private Position position = Position.NA;
     private int number = 0;
     private int age = 0;

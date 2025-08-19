@@ -58,6 +58,7 @@ CREATE TABLE player (
     name VARCHAR(255) NOT NULL,
     surname_first VARCHAR(255) NOT NULL,
     surname_second VARCHAR(255),
+    photo_path VARCHAR(500),
     position VARCHAR(255) NOT NULL,
     number INT NOT NULL,
     status VARCHAR(255) NOT NULL,

@@ -183,6 +183,14 @@ class PlayerServiceTest {
         when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.of(testTeam));
         when(playerRepository.findByTeamIdAndDeletedFalse(1L)).thenReturn(List.of(testPlayer));
 
+        TeamPlayerSummaryResponse.PlayerSummary mappedSummary = new TeamPlayerSummaryResponse.PlayerSummary();
+        mappedSummary.setId(1L);
+        mappedSummary.setFullName("Test Player");
+        mappedSummary.setPosition("DC");
+        mappedSummary.setPositionOrder(Position.DC.getOrder());
+        mappedSummary.setStatus(PlayerStatus.ACTIVO);
+        when(modelMapper.map(any(Player.class), eq(TeamPlayerSummaryResponse.PlayerSummary.class))).thenReturn(mappedSummary);
+
         TeamPlayerSummaryResponse response = playerService.getPlayersByTeamId(1L);
 
         assertThat(response.getTeamId()).isEqualTo(1L);

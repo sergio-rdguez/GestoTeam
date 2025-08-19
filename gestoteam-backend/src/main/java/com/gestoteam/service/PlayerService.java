@@ -65,6 +65,9 @@ public class PlayerService {
                 .filter(player -> player.getTeam().getOwnerId().equals(username))
                 .map(player -> {
                     PlayerResponse response = modelMapper.map(player, PlayerResponse.class);
+                    if (player.getPhotoPath() != null && !player.getPhotoPath().isBlank()) {
+                        response.setPhotoUrl("/files/" + player.getPhotoPath());
+                    }
                     fillSeasonStats(response, id, globalUtil.getCurrentSeason().getId());
                     log.info("Jugador con ID: {} encontrado para el usuario: {}", id, username);
                     return response;
@@ -162,7 +165,13 @@ public class PlayerService {
 
         List<TeamPlayerSummaryResponse.PlayerSummary> playerSummaries = players.stream()
                 .sorted(Comparator.comparing(player -> player.getPosition().getOrder()))
-                .map(player -> modelMapper.map(player, TeamPlayerSummaryResponse.PlayerSummary.class))
+                .map(player -> {
+                    TeamPlayerSummaryResponse.PlayerSummary summary = modelMapper.map(player, TeamPlayerSummaryResponse.PlayerSummary.class);
+                    if (player.getPhotoPath() != null && !player.getPhotoPath().isBlank()) {
+                        summary.setPhotoUrl("/files/" + player.getPhotoPath());
+                    }
+                    return summary;
+                })
                 .collect(toList());
 
         Map<String, Long> statusCount = players.stream()

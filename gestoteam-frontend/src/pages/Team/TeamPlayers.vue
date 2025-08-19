@@ -30,6 +30,10 @@
       default-sort-key="fullName"
       @row-click="viewPlayerDetails"
     >
+      <template #cell-photoUrl="{ value }">
+        <img v-if="value" :src="value" alt="Foto" class="avatar" />
+        <span v-else class="avatar placeholder"><i class="fa-regular fa-user"></i></span>
+      </template>
       <template #cell-status="{ item }">
         <span class="player-status" :class="item.status.toLowerCase()">
           {{ item.status }}
@@ -62,6 +66,7 @@ export default {
       players: [],
       loading: true,
       columns: [
+        { key: 'photoUrl', label: 'Foto', sortable: false },
         { key: 'fullName', label: 'Nombre', sortable: true },
         { key: 'position', label: 'Posición', sortable: true, sortOn: 'positionOrder' },
         { key: 'number', label: 'Dorsal', sortable: true },
@@ -117,4 +122,20 @@ export default {
 .player-status.activo { background-color: var(--color-success); }
 .player-status.lesionado { background-color: var(--color-danger); }
 .player-status.suspendido { background-color: var(--color-warning); }
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.avatar.placeholder {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #eef2f7;
+  color: #6b7280;
+}
 </style>

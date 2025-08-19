@@ -18,6 +18,7 @@ public class TeamPlayerSummaryResponse {
     public static class PlayerSummary {
         private long id;
         private String fullName;
+        private String photoUrl;
         private int number;
         private String position;
         private int positionOrder;
