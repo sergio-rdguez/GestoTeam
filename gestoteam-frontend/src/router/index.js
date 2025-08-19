@@ -1,128 +1,58 @@
-import { createRouter, createWebHistory } from "vue-router";
-import authService from "@/services/auth"; // <-- CORRECCIÓN 1: Importación por defecto
-import MainLayout from "@/components/layout/MainLayout.vue";
+import { createRouter, createWebHashHistory } from 'vue-router';
+import LoginPage from '@/pages/auth/LoginPage.vue';
+import TeamsPage from '@/pages/Team/TeamsPage.vue';
+import MainLayout from '@/components/layout/MainLayout.vue';
+import TeamDetails from '@/pages/Team/TeamDetails.vue';
+import TeamPlayers from '@/pages/Team/TeamPlayers.vue';
+import PlayerDetails from '@/pages/player/PlayerDetails.vue';
+import PlayerForm from '@/pages/player/PlayerForm.vue';
+import TeamForm from '@/pages/Team/TeamForm.vue';
+import UserSettings from '@/pages/settings/UserSettings.vue';
+import TeamMatches from '@/pages/Team/Matches/TeamMatches.vue';
+import MatchDetails from '@/pages/Team/Matches/MatchDetails.vue';
+import MatchForm from '@/pages/Team/Matches/MatchForm.vue';
+import RivalsDetails from "@/pages/Team/Rivals/RivalsDetails.vue";
 
 const routes = [
   {
-    path: "/login",
-    name: "Login",
-    component: () => import("@/pages/auth/LoginPage.vue"),
-    meta: { requiresAuth: false },
+    path: '/login',
+    name: 'Login',
+    component: LoginPage,
   },
   {
-    path: "/",
+    path: '/',
     component: MainLayout,
-    meta: { requiresAuth: true },
     children: [
-      { path: "", redirect: "/teams" },
-      {
-        path: "/teams",
-        name: "Teams",
-        component: () => import("@/pages/Team/TeamsPage.vue"),
-      },
-      {
-        path: "/teams/add",
-        name: "AddTeam",
-        component: () => import("@/pages/Team/TeamForm.vue"),
-      },
-      {
-        path: "/teams/:id",
-        name: "TeamDetails",
-        component: () => import("@/pages/Team/TeamDetails.vue"),
-      },
-      {
-        path: "/teams/:id/edit",
-        name: "EditTeam",
-        component: () => import("@/pages/Team/TeamForm.vue"),
-      },
-      {
-        path: "/teams/:id/players",
-        name: "TeamPlayers",
-        component: () => import("@/pages/Team/TeamPlayers.vue"),
-      },
-      {
-        path: "/teams/:id/statistics",
-        name: "TeamStatistics",
-        component: () => import("@/pages/Team/TeamStatistics.vue"),
-      },
-      {
-        path: "/teams/:id/matches",
-        name: "TeamMatches",
-        component: () => import("@/pages/Team/Matches/TeamMatches.vue"),
-      },
-      {
-        path: "/teams/:id/notifications",
-        name: "TeamNotifications",
-        component: () => import("@/pages/Team/TeamNotifications.vue"),
-      },
-      {
-        path: "/teams/:id/trainings",
-        name: "TeamTrainings",
-        component: () => import("@/pages/Team/TeamTrainings.vue"),
-      },
-      {
-        path: "/teams/:teamId/add-match",
-        name: "AddMatch",
-        component: () => import("@/pages/Team/Matches/MatchForm.vue"),
-      },
-      {
-        path: "teams/:teamId/matches/:id/edit",
-        name: "EditMatch",
-        component: () => import("../pages/Team/Matches/MatchForm.vue"),
-      },
-      {
-        path: "teams/:teamId/matches/:id/stats",
-        name: "ManageMatchStats",
-        component: () => import("@/pages/Team/Matches/MatchStatsManager.vue"),
-        meta: { requiresAuth: true },
-      },
-      {
-        path: "/teams/:teamId/add-player",
-        name: "AddPlayer",
-        component: () => import("@/pages/player/PlayerForm.vue"),
-      },
-      {
-        path: "/matches/:id",
-        name: "MatchDetails",
-        component: () => import("@/pages/Team/Matches/MatchDetails.vue"),
-        props: true,
-      },
-      {
-        path: "/players/:id",
-        name: "PlayerDetails",
-        component: () => import("@/pages/player/PlayerDetails.vue"),
-      },
-      {
-        path: "/players/:id/edit",
-        name: "EditPlayer",
-        component: () => import("@/pages/player/PlayerForm.vue"),
-      },
-      {
-        path: "/rivals/:teamId",
-        name: "RivalDetails",
-        component: () => import("@/pages/Team/Rivals/RivalsDetails.vue"),
-      },
-      {
-        path: "/settings",
-        name: "UserSettings",
-        component: () => import("@/pages/settings/UserSettings.vue"),
-      },
+      { path: '', redirect: '/teams' },
+      { path: 'teams', name: 'Teams', component: TeamsPage },
+      { path: 'teams/new', name: 'NewTeam', component: TeamForm, meta: { isNew: true } },
+      { path: 'teams/:teamId/edit', name: 'EditTeam', component: TeamForm, props: true, meta: { isNew: false } },
+      { path: 'teams/:teamId', name: 'TeamDetails', component: TeamDetails, props: true },
+      { path: 'teams/:teamId/players', name: 'TeamPlayers', component: TeamPlayers, props: true },
+      { path: 'teams/:teamId/players/new', name: 'NewPlayer', component: PlayerForm, props: true, meta: { isNew: true } },
+      { path: 'teams/:teamId/players/:playerId/edit', name: 'EditPlayer', component: PlayerForm, props: true, meta: { isNew: false } },
+      { path: 'players/:playerId', name: 'PlayerDetails', component: PlayerDetails, props: true },
+      { path: 'settings', name: 'UserSettings', component: UserSettings },
+      { path: 'teams/:teamId/matches', name: 'TeamMatches', component: TeamMatches, props: true },
+      { path: 'teams/:teamId/matches/new', name: 'NewMatch', component: MatchForm, props: true, meta: { isNew: true } },
+      { path: 'teams/:teamId/matches/:matchId/edit', name: 'EditMatch', component: MatchForm, props: true, meta: { isNew: false } },
+      { path: 'matches/:matchId', name: 'MatchDetails', component: MatchDetails, props: true },
+      { path: 'opponents/:opponentId', name: 'RivalsDetails', component: RivalsDetails, props: true },
     ],
   },
 ];
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
+  history: createWebHashHistory(process.env.BASE_URL),
   routes,
 });
 
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = authService.state.isAuthenticated;
-
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next({ name: "Login" });
-  } else if (to.name === "Login" && isAuthenticated) {
-    next({ name: "Teams" });
+  const loggedIn = localStorage.getItem('user-token');
+  if (to.name !== 'Login' && !loggedIn) {
+    next({ name: 'Login' });
+  } else if (to.name === 'Login' && loggedIn) {
+    next({ name: 'Teams' });
   } else {
     next();
   }
