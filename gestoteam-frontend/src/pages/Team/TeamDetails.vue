@@ -36,12 +36,12 @@
         </BaseCard>
 
         <div class="navigation-cards">
-          <router-link :to="{ name: 'TeamPlayers', params: { id: team.id } }" class="nav-card">
+          <router-link :to="{ name: 'TeamPlayers', params: { teamId : team.id } }" class="nav-card">
             <i class="fa-solid fa-users nav-icon"></i>
             <span class="nav-title">Jugadores</span>
             <p class="nav-description">Gestiona tu plantilla</p>
           </router-link>
-          <router-link :to="{ name: 'TeamMatches', params: { id: team.id } }" class="nav-card">
+          <router-link :to="{ name: 'TeamMatches', params: { teamId : team.id } }" class="nav-card">
             <i class="fa-solid fa-trophy nav-icon"></i>
             <span class="nav-title">Partidos</span>
             <p class="nav-description">Consulta el calendario y resultados</p>
@@ -76,9 +76,10 @@ export default {
     async fetchTeamDetails() {
       this.loading = true;
       try {
-        const teamId = this.$route.params.id;
+        const teamId = this.$route.params.teamId;
         const response = await apiClient.get(`/teams/${teamId}`);
         this.team = response.data;
+        console.log("Equipo cargado:", this.team);
       } catch (error) {
         console.error("Error al cargar los detalles del equipo:", error);
       } finally {
@@ -89,7 +90,7 @@ export default {
       this.$router.push({ name: "Teams" });
     },
     editTeam() {
-      this.$router.push({ name: "EditTeam", params: { id: this.team.id } });
+      this.$router.push({ name: "EditTeam", params: { teamId : this.team.id } });
     },
   },
   mounted() {

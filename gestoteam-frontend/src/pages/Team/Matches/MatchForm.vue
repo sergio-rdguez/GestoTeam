@@ -179,7 +179,7 @@ const submitForm = async () => {
 };
 
 const goBack = () => {
-  router.push({ name: 'TeamMatches', params: { id: teamId } });
+  router.push({ name: 'TeamMatches', params: { teamId: teamId } });
 };
 
 onMounted(async () => {

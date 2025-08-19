@@ -109,7 +109,7 @@ import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
 const route = useRoute();
 const router = useRouter();
 
-const matchId = route.params.id;
+const matchId = route.params.matchId;
 const teamId = route.params.teamId; 
 
 const stats = ref([]);
@@ -164,7 +164,7 @@ const saveStats = async () => {
 };
 
 const goBack = () => {
-  router.push({ name: 'TeamMatches', params: { id: teamId } });
+  router.push({ name: 'TeamMatches', params: { teamId: teamId } });
 };
 
 onMounted(fetchStats);

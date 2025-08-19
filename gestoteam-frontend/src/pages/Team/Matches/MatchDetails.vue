@@ -118,7 +118,7 @@ export default {
     async fetchMatchDetails() {
       this.loading = true;
       try {
-        const matchId = this.$route.params.id;
+        const matchId = this.$route.params.matchId;
         const response = await apiClient.get(`/matches/details/${matchId}`);
         this.match = response.data;
       } catch (error) {
@@ -133,14 +133,14 @@ export default {
       return new Date(dateString).toLocaleString('es-ES', options);
     },
     editMatch() {
-      this.$router.push({ name: 'EditMatch', params: { id: this.match.id, teamId: this.match.team.id } });
+      this.$router.push({ name: 'EditMatch', params: { matchId: this.match.id, teamId: this.match.team.id } });
     },
     manageStats() {
-      this.$router.push({ name: 'ManageMatchStats', params: { id: this.match.id, teamId: this.match.team.id } });
+      this.$router.push({ name: 'ManageMatchStats', params: { matchId: this.match.id, teamId: this.match.team.id } });
     },
     goBack() {
       if (this.match) {
-        this.$router.push({ name: 'TeamMatches', params: { id: this.match.team.id } });
+        this.$router.push({ name: 'TeamMatches', params: { teamId: this.match.team.id } });
       } else {
         this.$router.push({ name: 'Teams' });
       }

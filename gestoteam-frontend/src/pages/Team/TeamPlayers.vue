@@ -57,7 +57,7 @@ export default {
   },
   data() {
     return {
-      teamId: this.$route.params.id,
+      teamId: this.$route.params.teamId,
       teamName: '',
       players: [],
       loading: true,

@@ -73,10 +73,10 @@ export default {
       }
     },
     viewTeam(team) {
-      this.$router.push({ name: "TeamDetails", params: { id: team.id } });
+      this.$router.push({ name: "TeamDetails", params: { teamId: team.id } });
     },
     addTeam() {
-      this.$router.push({ name: "AddTeam" });
+      this.$router.push({ name: "NewTeam" });
     },
   },
   mounted() {

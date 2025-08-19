@@ -104,7 +104,7 @@ export default {
   methods: {
     async fetchTeam() {
       try {
-        const response = await apiClient.get(`/teams/${this.$route.params.id}`);
+        const response = await apiClient.get(`/teams/${this.$route.params.teamId}`);
         this.team = response.data;
       } catch (error) {
         notificationService.showError("No se pudo cargar el equipo.");
@@ -126,7 +126,7 @@ export default {
       try {
         let savedTeam;
         if (this.isEditMode) {
-          const response = await apiClient.put(`/teams/${this.$route.params.id}`, this.team);
+          const response = await apiClient.put(`/teams/${this.$route.params.teamId}`, this.team);
           savedTeam = response.data;
           notificationService.showSuccess("Equipo actualizado con éxito.");
         } else {
@@ -134,7 +134,7 @@ export default {
           savedTeam = response.data;
           notificationService.showSuccess("Equipo creado con éxito.");
         }
-        this.$router.push({ name: 'TeamDetails', params: { id: savedTeam.id } });
+        this.$router.push({ name: 'TeamDetails', params: { teamId: savedTeam.id } });
       } catch (error) {
         // El interceptor de api.js ya se encarga de mostrar el error
       } finally {
@@ -146,7 +146,7 @@ export default {
     },
   },
   created() {
-    this.isEditMode = !!this.$route.params.id;
+    this.isEditMode = !!this.$route.params.teamId;
     this.fetchCategories();
     if (this.isEditMode) {
       this.fetchTeam();

@@ -65,7 +65,7 @@ export default {
   },
   data() {
     return {
-      teamId: this.$route.params.id,
+      teamId: this.$route.params.teamId,
       teamName: '',
       matches: [],
       loading: true,
@@ -117,13 +117,13 @@ export default {
       return new Date(dateString).toLocaleDateString('es-ES', options);
     },
     viewMatchDetails(match) {
-      this.$router.push({ name: 'MatchDetails', params: { id: match.id } });
+      this.$router.push({ name: 'MatchDetails', params: { matchId: match.id } });
     },
     goToAddMatch() {
       this.$router.push({ name: 'AddMatch', params: { teamId: this.teamId } });
     },
     goBack() {
-      this.$router.push({ name: 'TeamDetails', params: { id: this.teamId } });
+      this.$router.push({ name: 'TeamDetails', params: { teamId: this.teamId } });
     }
   },
   mounted() {
