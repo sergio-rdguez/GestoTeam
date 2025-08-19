@@ -36,6 +36,13 @@ public class MatchController {
         return matchService.getMatchesByTeam(teamId);
     }
 
+    @GetMapping("/opponent/{opponentId}")
+    @Operation(summary = "Obtener los partidos contra un oponente específico")
+    @ApiResponse(responseCode = "200", description = "Lista de partidos obtenida")
+    public List<MatchResponse> getMatchesByOpponent(@PathVariable Long opponentId) {
+        return matchService.getMatchesByOpponent(opponentId);
+    }
+
     @GetMapping("/details/{id}")
     @Operation(summary = "Obtener los detalles de un partido")
     @ApiResponse(responseCode = "200", description = "Detalles del partido obtenidos")

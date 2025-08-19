@@ -3,6 +3,7 @@ package com.gestoteam.service;
 import com.gestoteam.dto.request.PlayerRequest;
 import com.gestoteam.dto.response.PlayerResponse;
 import com.gestoteam.dto.response.TeamPlayerSummaryResponse;
+import com.gestoteam.enums.Foot;
 import com.gestoteam.enums.PlayerStatus;
 import com.gestoteam.enums.Position;
 import com.gestoteam.exception.GestoServiceException;
@@ -11,6 +12,7 @@ import com.gestoteam.repository.PlayerMatchStatsRepository;
 import com.gestoteam.repository.PlayerRepository;
 import com.gestoteam.repository.TeamRepository;
 import com.gestoteam.repository.UserSettingsRepository;
+import com.gestoteam.repository.UserRepository;
 import com.gestoteam.util.GlobalUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +50,8 @@ class PlayerServiceTest {
     private ModelMapper modelMapper;
     @Mock
     private GlobalUtil globalUtil;
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private SecurityContext securityContext;
@@ -57,7 +61,7 @@ class PlayerServiceTest {
     @InjectMocks
     private PlayerService playerService;
 
-    private static final String USERNAME = "testuser";
+    private static final Long USER_ID = 1L;
     private Team testTeam;
     private Player testPlayer;
     private PlayerRequest testPlayerRequest;
@@ -66,11 +70,17 @@ class PlayerServiceTest {
     void setUp() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
-        when(authentication.getName()).thenReturn(USERNAME);
+        when(authentication.getName()).thenReturn("testuser");
+
+        // Mock del usuario para BaseService
+        User testUser = new User();
+        testUser.setId(USER_ID);
+        testUser.setUsername("testuser");
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
 
         testTeam = new Team();
         testTeam.setId(1L);
-        testTeam.setOwnerId(USERNAME);
+        testTeam.setOwnerId(USER_ID);
         testTeam.setName("Test Team");
 
         testPlayer = new Player();
@@ -79,6 +89,7 @@ class PlayerServiceTest {
         testPlayer.setTeam(testTeam);
         testPlayer.setStatus(PlayerStatus.ACTIVO);
         testPlayer.setPosition(Position.DC);
+        testPlayer.setFoot(Foot.DIESTRO);
 
         testPlayerRequest = new PlayerRequest();
         testPlayerRequest.setName("New Player");
@@ -108,7 +119,7 @@ class PlayerServiceTest {
 
     @Test
     void getPlayerById_ShouldReturnEmpty_WhenPlayerDoesNotBelongToUser() {
-        testTeam.setOwnerId("anotherUser");
+        testTeam.setOwnerId(2L);
         when(playerRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(testPlayer));
 
         Optional<PlayerResponse> result = playerService.getPlayerById(1L);
@@ -122,8 +133,8 @@ class PlayerServiceTest {
         UserSettings settings = new UserSettings();
         settings.setMaxPlayersPerTeam(25);
 
-        when(userSettingsRepository.findByUserId(USERNAME)).thenReturn(Optional.of(settings));
-        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.of(testTeam));
+        when(userSettingsRepository.findByUserId(USER_ID)).thenReturn(Optional.of(settings));
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTeam));
         when(playerRepository.countByTeamIdAndDeletedFalse(1L)).thenReturn(10L);
         when(modelMapper.map(any(PlayerRequest.class), eq(Player.class))).thenReturn(new Player());
 
@@ -137,8 +148,8 @@ class PlayerServiceTest {
         UserSettings settings = new UserSettings();
         settings.setMaxPlayersPerTeam(10);
 
-        when(userSettingsRepository.findByUserId(USERNAME)).thenReturn(Optional.of(settings));
-        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.of(testTeam));
+        when(userSettingsRepository.findByUserId(USER_ID)).thenReturn(Optional.of(settings));
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTeam));
         when(playerRepository.countByTeamIdAndDeletedFalse(1L)).thenReturn(10L);
 
         assertThatThrownBy(() -> playerService.createPlayer(testPlayerRequest))
@@ -151,7 +162,7 @@ class PlayerServiceTest {
     @Test
     void updatePlayer_ShouldUpdatePlayer_WhenPlayerAndTeamExist() {
         when(playerRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(testPlayer));
-        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.of(testTeam));
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTeam));
 
         playerService.updatePlayer(1L, testPlayerRequest);
 
@@ -180,14 +191,17 @@ class PlayerServiceTest {
 
     @Test
     void getPlayersByTeamId_ShouldReturnSummary_WhenTeamExists() {
-        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.of(testTeam));
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTeam));
         when(playerRepository.findByTeamIdAndDeletedFalse(1L)).thenReturn(List.of(testPlayer));
 
         TeamPlayerSummaryResponse.PlayerSummary mappedSummary = new TeamPlayerSummaryResponse.PlayerSummary();
         mappedSummary.setId(1L);
         mappedSummary.setFullName("Test Player");
+        mappedSummary.setPhotoUrl("/api/files/test-photo.jpg");
+        mappedSummary.setNumber(10);
         mappedSummary.setPosition("DC");
         mappedSummary.setPositionOrder(Position.DC.getOrder());
+        mappedSummary.setFoot("Diestro");
         mappedSummary.setStatus(PlayerStatus.ACTIVO);
         when(modelMapper.map(any(Player.class), eq(TeamPlayerSummaryResponse.PlayerSummary.class))).thenReturn(mappedSummary);
 
@@ -201,7 +215,7 @@ class PlayerServiceTest {
 
     @Test
     void getPlayersByTeamId_ShouldThrowException_WhenTeamNotFound() {
-        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.empty());
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> playerService.getPlayersByTeamId(1L))
                 .isInstanceOf(GestoServiceException.class)

@@ -1,5 +1,6 @@
 package com.gestoteam.model;
 
+import com.gestoteam.enums.Foot;
 import com.gestoteam.enums.PlayerStatus;
 import com.gestoteam.enums.Position;
 import jakarta.persistence.*;
@@ -41,6 +42,10 @@ public class Player {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Position position;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Foot foot;
 
     @Column(nullable = false)
     private int number;

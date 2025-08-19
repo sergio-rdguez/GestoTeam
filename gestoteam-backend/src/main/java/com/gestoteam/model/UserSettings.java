@@ -16,7 +16,7 @@ public class UserSettings {
     private Long id;
 
     @Column(name = "user_id", nullable = false, unique = true)
-    private String userId;
+    private Long userId;
 
     @Column(name = "max_players_per_team", nullable = false)
     private Integer maxPlayersPerTeam = 25;

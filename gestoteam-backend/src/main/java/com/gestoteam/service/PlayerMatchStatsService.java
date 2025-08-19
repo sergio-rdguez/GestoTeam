@@ -10,16 +10,16 @@ import com.gestoteam.repository.MatchRepository;
 import com.gestoteam.repository.PlayerMatchStatsRepository;
 import com.gestoteam.repository.PlayerRepository;
 import com.gestoteam.repository.TeamRepository;
-import lombok.RequiredArgsConstructor;
+import com.gestoteam.repository.UserRepository;
+
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
-public class PlayerMatchStatsService {
+public class PlayerMatchStatsService extends BaseService {
 
     private final PlayerMatchStatsRepository playerMatchStatsRepository;
     private final PlayerRepository playerRepository;
@@ -27,32 +27,37 @@ public class PlayerMatchStatsService {
     private final TeamRepository teamRepository;
     private final ModelMapper modelMapper;
 
-    private String getCurrentUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
+    public PlayerMatchStatsService(UserRepository userRepository, PlayerMatchStatsRepository playerMatchStatsRepository, PlayerRepository playerRepository, MatchRepository matchRepository, TeamRepository teamRepository, ModelMapper modelMapper) {
+        super(userRepository);
+        this.playerMatchStatsRepository = playerMatchStatsRepository;
+        this.playerRepository = playerRepository;
+        this.matchRepository = matchRepository;
+        this.teamRepository = teamRepository;
+        this.modelMapper = modelMapper;
     }
 
     public PlayerMatchStatsResponse getPlayerMatchStatsById(Long id) {
-        String username = getCurrentUsername();
-        log.info("Obteniendo estadísticas de jugador-partido con ID: {} por el usuario: {}", id, username);
+        Long userId = getCurrentUserId();
+        log.info("Obteniendo estadísticas de jugador-partido con ID: {} por el usuario: {}", id, userId);
 
         PlayerMatchStats stats = playerMatchStatsRepository.findById(id)
-                .filter(s -> s.getMatch().getTeam().getOwnerId().equals(username))
+                .filter(s -> s.getMatch().getTeam().getOwnerId().equals(userId))
                 .orElseThrow(() -> new GestoServiceException("Estadísticas no encontradas o no tienes permisos para acceder a ellas."));
 
         return modelMapper.map(stats, PlayerMatchStatsResponse.class);
     }
 
     public PlayerMatchStatsResponse createPlayerMatchStats(PlayerMatchStatsRequest request) {
-        String username = getCurrentUsername();
+        Long userId = getCurrentUserId();
         log.info("Creando estadísticas para el partido ID: {} y jugador ID: {} por el usuario: {}",
-                request.getMatchId(), request.getPlayerId(), username);
+                request.getMatchId(), request.getPlayerId(), userId);
 
         Match match = matchRepository.findByIdAndDeletedFalse(request.getMatchId())
-                .filter(m -> m.getTeam().getOwnerId().equals(username))
+                .filter(m -> m.getTeam().getOwnerId().equals(userId))
                 .orElseThrow(() -> new GestoServiceException("Partido no encontrado o no tienes permisos para acceder a él."));
 
         Player player = playerRepository.findByIdAndDeletedFalse(request.getPlayerId())
-                .filter(p -> p.getTeam().getOwnerId().equals(username))
+                .filter(p -> p.getTeam().getOwnerId().equals(userId))
                 .orElseThrow(() -> new GestoServiceException("Jugador no encontrado o no tienes permisos para acceder a él."));
 
         PlayerMatchStats stats = modelMapper.map(request, PlayerMatchStats.class);
@@ -70,11 +75,11 @@ public class PlayerMatchStatsService {
     }
 
     public PlayerMatchStatsResponse updatePlayerMatchStats(Long id, PlayerMatchStatsRequest request) {
-        String username = getCurrentUsername();
-        log.info("Actualizando estadísticas de jugador con ID: {} por el usuario: {}", id, username);
+        Long userId = getCurrentUserId();
+        log.info("Actualizando estadísticas de jugador con ID: {} por el usuario: {}", id, userId);
 
         PlayerMatchStats existingStats = playerMatchStatsRepository.findById(id)
-                .filter(stats -> stats.getMatch().getTeam().getOwnerId().equals(username))
+                .filter(stats -> stats.getMatch().getTeam().getOwnerId().equals(userId))
                 .orElseThrow(() -> new GestoServiceException("Estadísticas no encontradas o no tienes permisos para acceder a ellas."));
 
         // Actualizamos los campos necesarios. ModelMapper podría usarse aquí también.
@@ -90,10 +95,10 @@ public class PlayerMatchStatsService {
 
         try {
             PlayerMatchStats savedStats = playerMatchStatsRepository.save(existingStats);
-            log.info("Estadísticas con ID: {} actualizadas correctamente por el usuario: {}", id, username);
+            log.info("Estadísticas con ID: {} actualizadas correctamente por el usuario: {}", id, userId);
             return modelMapper.map(savedStats, PlayerMatchStatsResponse.class);
         } catch (Exception e) {
-            log.error("Error al actualizar las estadísticas con ID: {} por el usuario: {}", id, username, e);
+            log.error("Error al actualizar las estadísticas con ID: {} por el usuario: {}", id, userId, e);
             throw new GestoServiceException("Error al actualizar las estadísticas. Por favor, inténtelo más tarde.");
         }
     }

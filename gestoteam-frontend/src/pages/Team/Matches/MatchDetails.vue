@@ -66,7 +66,7 @@
 </template>
 
 <script>
-import apiClient from "@/services/api";
+import api from "@/services/api";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
 import BaseButton from "@/components/base/BaseButton.vue";
@@ -119,7 +119,7 @@ export default {
       this.loading = true;
       try {
         const matchId = this.$route.params.matchId;
-        const response = await apiClient.get(`/matches/details/${matchId}`);
+                    const response = await api.get(`/matches/details/${matchId}`);
         this.match = response.data;
       } catch (error) {
         console.error("Error al cargar los detalles del partido:", error);
@@ -136,7 +136,7 @@ export default {
       this.$router.push({ name: 'EditMatch', params: { matchId: this.match.id, teamId: this.match.team.id } });
     },
     manageStats() {
-      this.$router.push({ name: 'ManageMatchStats', params: { matchId: this.match.id, teamId: this.match.team.id } });
+      this.$router.push({ name: 'MatchStatsManager', params: { matchId: this.match.id, teamId: this.match.team.id } });
     },
     goBack() {
       if (this.match) {

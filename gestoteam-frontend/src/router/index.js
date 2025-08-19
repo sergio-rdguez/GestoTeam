@@ -12,7 +12,10 @@ import UserSettings from '@/pages/settings/UserSettings.vue';
 import TeamMatches from '@/pages/Team/Matches/TeamMatches.vue';
 import MatchDetails from '@/pages/Team/Matches/MatchDetails.vue';
 import MatchForm from '@/pages/Team/Matches/MatchForm.vue';
-import RivalsDetails from "@/pages/Team/Rivals/RivalsDetails.vue";
+import MatchStatsManager from '@/pages/Team/Matches/MatchStatsManager.vue';
+import OpponentsPage from '@/pages/Team/Opponents/OpponentsPage.vue';
+import OpponentForm from '@/pages/Team/Opponents/OpponentForm.vue';
+import OpponentDetails from '@/pages/Team/Opponents/OpponentDetails.vue';
 
 const routes = [
   {
@@ -42,8 +45,12 @@ const routes = [
       { path: 'teams/:teamId/matches', name: 'TeamMatches', component: TeamMatches, props: true },
       { path: 'teams/:teamId/matches/new', name: 'NewMatch', component: MatchForm, props: true, meta: { isNew: true } },
       { path: 'teams/:teamId/matches/:matchId/edit', name: 'EditMatch', component: MatchForm, props: true, meta: { isNew: false } },
+      { path: 'teams/:teamId/matches/:matchId/stats', name: 'MatchStatsManager', component: MatchStatsManager, props: true },
+      { path: 'teams/:teamId/opponents', name: 'Opponents', component: OpponentsPage, props: true },
+      { path: 'teams/:teamId/opponents/new', name: 'NewOpponent', component: OpponentForm, props: true, meta: { isNew: true } },
+      { path: 'teams/:teamId/opponents/:opponentId/edit', name: 'EditOpponent', component: OpponentForm, props: true, meta: { isNew: false } },
       { path: 'matches/:matchId', name: 'MatchDetails', component: MatchDetails, props: true },
-      { path: 'opponents/:opponentId', name: 'RivalsDetails', component: RivalsDetails, props: true },
+      { path: 'opponents/:opponentId', name: 'OpponentDetails', component: OpponentDetails, props: true },
     ],
   },
 ];

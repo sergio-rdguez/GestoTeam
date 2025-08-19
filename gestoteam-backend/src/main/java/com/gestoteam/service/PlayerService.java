@@ -8,15 +8,12 @@ import com.gestoteam.model.Player;
 import com.gestoteam.model.PlayerMatchStats;
 import com.gestoteam.model.Team;
 import com.gestoteam.model.UserSettings;
-import com.gestoteam.repository.PlayerMatchStatsRepository;
-import com.gestoteam.repository.PlayerRepository;
-import com.gestoteam.repository.TeamRepository;
-import com.gestoteam.repository.UserSettingsRepository;
+import com.gestoteam.repository.*;
 import com.gestoteam.util.GlobalUtil;
-import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -28,9 +25,8 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
-public class PlayerService {
+public class PlayerService extends BaseService {
 
     private final PlayerRepository playerRepository;
     private final PlayerMatchStatsRepository playerMatchStatsRepository;
@@ -39,56 +35,62 @@ public class PlayerService {
     private final ModelMapper modelMapper;
     private final GlobalUtil globalUtil;
 
-    private String getCurrentUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
+    public PlayerService(UserRepository userRepository, PlayerRepository playerRepository, PlayerMatchStatsRepository playerMatchStatsRepository, UserSettingsRepository userSettingsRepository, TeamRepository teamRepository, ModelMapper modelMapper, GlobalUtil globalUtil) {
+        super(userRepository);
+        this.playerRepository = playerRepository;
+        this.playerMatchStatsRepository = playerMatchStatsRepository;
+        this.userSettingsRepository = userSettingsRepository;
+        this.teamRepository = teamRepository;
+        this.modelMapper = modelMapper;
+        this.globalUtil = globalUtil;
     }
 
     public List<PlayerResponse> getAllPlayers() {
-        String username = getCurrentUsername();
-        log.info("Obteniendo todos los jugadores para el usuario: {}", username);
+        Long userId = getCurrentUserId();
+        log.info("Obteniendo todos los jugadores para el usuario: {}", userId);
 
         List<PlayerResponse> players = playerRepository.findByDeletedFalse()
                 .stream()
-                .filter(player -> player.getTeam().getOwnerId().equals(username))
+                .filter(player -> player.getTeam().getOwnerId().equals(userId))
                 .map(player -> modelMapper.map(player, PlayerResponse.class))
                 .collect(toList());
 
-        log.info("Se encontraron {} jugadores para el usuario: {}", players.size(), username);
+        log.info("Se encontraron {} jugadores para el usuario: {}", players.size(), userId);
         return players;
     }
 
     public Optional<PlayerResponse> getPlayerById(Long id) {
-        String username = getCurrentUsername();
-        log.info("Buscando jugador con ID: {} para el usuario: {}", id, username);
+        Long userId = getCurrentUserId();
+        log.info("Buscando jugador con ID: {} para el usuario: {}", id, userId);
 
         Optional<PlayerResponse> playerResponse = playerRepository.findByIdAndDeletedFalse(id)
-                .filter(player -> player.getTeam().getOwnerId().equals(username))
+                .filter(player -> player.getTeam().getOwnerId().equals(userId))
                 .map(player -> {
                     PlayerResponse response = modelMapper.map(player, PlayerResponse.class);
                     if (player.getPhotoPath() != null && !player.getPhotoPath().isBlank()) {
-                        response.setPhotoUrl("/files/" + player.getPhotoPath());
+                        response.setPhotoUrl("/api/files/" + player.getPhotoPath());
                     }
                     fillSeasonStats(response, id, globalUtil.getCurrentSeason().getId());
-                    log.info("Jugador con ID: {} encontrado para el usuario: {}", id, username);
+                    log.info("Jugador con ID: {} encontrado para el usuario: {}", id, userId);
                     return response;
                 });
 
         if (playerResponse.isEmpty()) {
-            log.warn("Jugador con ID: {} no encontrado o no pertenece al usuario: {}", id, username);
+            log.warn("Jugador con ID: {} no encontrado o no pertenece al usuario: {}", id, userId);
         }
 
         return playerResponse;
     }
 
     public void createPlayer(PlayerRequest playerRequest) {
-        String username = getCurrentUsername();
-        log.info("Creando jugador para el equipo con ID: {} por el usuario: {}", playerRequest.getTeamId(), username);
+        Long userId = getCurrentUserId();
+        log.info("Creando jugador para el equipo con ID: {} por el usuario: {}", playerRequest.getTeamId(), userId);
 
-        UserSettings userSettings = userSettingsRepository.findByUserId(username)
+        UserSettings userSettings = userSettingsRepository.findByUserId(userId)
                 .orElseThrow(() -> new GestoServiceException("Configuraciones no encontradas para el usuario"));
 
         Long teamId = playerRequest.getTeamId();
-        Team team = teamRepository.findByIdAndOwnerIdAndDeletedFalse(teamId, username)
+        Team team = teamRepository.findByIdAndOwnerIdAndDeletedFalse(teamId, userId)
                 .orElseThrow(() -> new GestoServiceException("Equipo no encontrado o no tienes permisos para acceder a él."));
 
         long activePlayerCount = playerRepository.countByTeamIdAndDeletedFalse(teamId);
@@ -104,23 +106,23 @@ public class PlayerService {
 
         try {
             playerRepository.save(player);
-            log.info("Jugador creado con éxito para el equipo ID: {} por el usuario: {}", teamId, username);
+            log.info("Jugador creado con éxito para el equipo ID: {} por el usuario: {}", teamId, userId);
         } catch (Exception e) {
-            log.error("Error al crear el jugador para el equipo ID: {} por el usuario: {}", teamId, username, e);
+            log.error("Error al crear el jugador para el equipo ID: {} por el usuario: {}", teamId, userId, e);
             throw new GestoServiceException("Error al crear el jugador. Por favor, inténtelo más tarde.");
         }
     }
 
     public void updatePlayer(Long id, PlayerRequest playerRequest) {
-        String username = getCurrentUsername();
-        log.info("Actualizando jugador con ID: {} para el usuario: {}", id, username);
+        Long userId = getCurrentUserId();
+        log.info("Actualizando jugador con ID: {} para el usuario: {}", id, userId);
 
         Player player = playerRepository.findByIdAndDeletedFalse(id)
-                .filter(p -> p.getTeam().getOwnerId().equals(username))
+                .filter(p -> p.getTeam().getOwnerId().equals(userId))
                 .orElseThrow(() -> new GestoServiceException("Jugador no encontrado o no tienes permisos para acceder a él."));
 
         Long newTeamId = playerRequest.getTeamId();
-        Team team = teamRepository.findByIdAndOwnerIdAndDeletedFalse(newTeamId, username)
+        Team team = teamRepository.findByIdAndOwnerIdAndDeletedFalse(newTeamId, userId)
                 .orElseThrow(() -> new GestoServiceException("Equipo no encontrado o no tienes permisos para acceder a él."));
 
         modelMapper.map(playerRequest, player);
@@ -129,36 +131,36 @@ public class PlayerService {
 
         try {
             playerRepository.save(player);
-            log.info("Jugador con ID: {} actualizado con éxito para el usuario: {}", id, username);
+            log.info("Jugador con ID: {} actualizado con éxito para el usuario: {}", id, userId);
         } catch (Exception e) {
-            log.error("Error al actualizar el jugador con ID: {} para el usuario: {}", id, username, e);
+            log.error("Error al actualizar el jugador con ID: {} para el usuario: {}", id, userId, e);
             throw new GestoServiceException("Error al actualizar el jugador. Por favor, inténtelo más tarde.");
         }
     }
 
     public void deletePlayer(Long id) {
-        String username = getCurrentUsername();
-        log.info("Eliminando jugador con ID: {} para el usuario: {}", id, username);
+        Long userId = getCurrentUserId();
+        log.info("Eliminando jugador con ID: {} para el usuario: {}", id, userId);
 
         Player player = playerRepository.findByIdAndDeletedFalse(id)
-                .filter(p -> p.getTeam().getOwnerId().equals(username))
+                .filter(p -> p.getTeam().getOwnerId().equals(userId))
                 .orElseThrow(() -> new GestoServiceException("Jugador no encontrado o no tienes permisos para acceder a él."));
 
         player.setDeleted(true);
         try {
             playerRepository.save(player);
-            log.info("Jugador con ID: {} marcado como eliminado con éxito por el usuario: {}", id, username);
+            log.info("Jugador con ID: {} marcado como eliminado con éxito por el usuario: {}", id, userId);
         } catch (Exception e) {
-            log.error("Error al eliminar el jugador con ID: {} para el usuario: {}", id, username, e);
+            log.error("Error al eliminar el jugador con ID: {} para el usuario: {}", id, userId, e);
             throw new GestoServiceException("Error al eliminar el jugador. Por favor, inténtelo más tarde.");
         }
     }
 
     public TeamPlayerSummaryResponse getPlayersByTeamId(Long teamId) {
-        String username = getCurrentUsername();
-        log.info("Obteniendo jugadores del equipo con ID: {} para el usuario: {}", teamId, username);
+        Long userId = getCurrentUserId();
+        log.info("Obteniendo jugadores del equipo con ID: {} para el usuario: {}", teamId, userId);
 
-        Team team = teamRepository.findByIdAndOwnerIdAndDeletedFalse(teamId, username)
+        Team team = teamRepository.findByIdAndOwnerIdAndDeletedFalse(teamId, userId)
                 .orElseThrow(() -> new GestoServiceException("Equipo no encontrado o no tienes permisos para acceder a él."));
 
         List<Player> players = playerRepository.findByTeamIdAndDeletedFalse(teamId);
@@ -168,7 +170,13 @@ public class PlayerService {
                 .map(player -> {
                     TeamPlayerSummaryResponse.PlayerSummary summary = modelMapper.map(player, TeamPlayerSummaryResponse.PlayerSummary.class);
                     if (player.getPhotoPath() != null && !player.getPhotoPath().isBlank()) {
-                        summary.setPhotoUrl("/files/" + player.getPhotoPath());
+                        summary.setPhotoUrl("/api/files/" + player.getPhotoPath());
+                    }
+                    // Mapear el pie a descripción
+                    if (player.getFoot() != null) {
+                        summary.setFoot(player.getFoot().getDescripcion());
+                    } else {
+                        summary.setFoot("No especificado");
                     }
                     return summary;
                 })
@@ -184,7 +192,7 @@ public class PlayerService {
         response.setTeamName(team.getName());
         response.setStatusCount(statusCount);
 
-        log.info("Se encontraron {} jugadores para el equipo ID: {} y usuario: {}", players.size(), teamId, username);
+        log.info("Se encontraron {} jugadores para el equipo ID: {} y usuario: {}", players.size(), teamId, userId);
         return response;
     }
 

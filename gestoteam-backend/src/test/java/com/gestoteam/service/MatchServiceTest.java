@@ -46,6 +46,8 @@ class MatchServiceTest {
     private ModelMapper modelMapper;
     @Mock
     private GlobalUtil globalUtil;
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private SecurityContext securityContext;
@@ -55,7 +57,7 @@ class MatchServiceTest {
     @InjectMocks
     private MatchService matchService;
 
-    private static final String USERNAME = "testuser";
+    private static final Long USER_ID = 1L;
     private Team testTeam;
     private Opponent testOpponent;
     private Season testSeason;
@@ -65,11 +67,17 @@ class MatchServiceTest {
     void setUp() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
-        when(authentication.getName()).thenReturn(USERNAME);
+        when(authentication.getName()).thenReturn("testuser");
+
+        // Mock del usuario para BaseService
+        User testUser = new User();
+        testUser.setId(USER_ID);
+        testUser.setUsername("testuser");
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
 
         testTeam = new Team();
         testTeam.setId(1L);
-        testTeam.setOwnerId(USERNAME);
+        testTeam.setOwnerId(USER_ID);
 
         testOpponent = new Opponent();
         testOpponent.setId(1L);
@@ -94,7 +102,7 @@ class MatchServiceTest {
         request.setDate(LocalDateTime.now().plusDays(10));
         request.setLocation("Estadio Test");
 
-        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.of(testTeam));
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTeam));
         when(opponentRepository.findById(1L)).thenReturn(Optional.of(testOpponent));
         when(globalUtil.getCurrentSeason()).thenReturn(testSeason);
         when(matchRepository.save(any(Match.class))).thenReturn(testMatch);
@@ -147,7 +155,7 @@ class MatchServiceTest {
 
     @Test
     void deleteMatch_ShouldThrowException_WhenMatchDoesNotBelongToUser() {
-        testTeam.setOwnerId("anotherUser");
+        testTeam.setOwnerId(2L);
         when(matchRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(testMatch));
 
         assertThatThrownBy(() -> matchService.deleteMatch(1L))

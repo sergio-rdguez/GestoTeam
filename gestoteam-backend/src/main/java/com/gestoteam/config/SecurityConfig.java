@@ -36,7 +36,7 @@ public class SecurityConfig {
             .authenticationProvider(authenticationProvider()) // Asegúrate de que esto está aquí
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/files/**").permitAll()
+                .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/api/files/**").permitAll()
                 .anyRequest().authenticated()
             );
 

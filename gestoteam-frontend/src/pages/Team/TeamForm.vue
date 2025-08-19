@@ -63,7 +63,7 @@
 </template>
 
 <script>
-import apiClient from "@/services/api";
+import api from "@/services/api";
 import { notificationService } from '@/services/notificationService';
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
@@ -104,7 +104,7 @@ export default {
   methods: {
     async fetchTeam() {
       try {
-        const response = await apiClient.get(`/teams/${this.$route.params.teamId}`);
+                        const response = await api.get(`/teams/${this.$route.params.teamId}`);
         this.team = response.data;
       } catch (error) {
         notificationService.showError("No se pudo cargar el equipo.");
@@ -112,7 +112,7 @@ export default {
     },
     async fetchCategories() {
       try {
-        const response = await apiClient.get("/enums/categories");
+                    const response = await api.get("/enums/categories");
         this.categories = response.data;
         if (!this.isEditMode && this.categories.length > 0) {
           this.team.category = this.categories[0].code;
@@ -126,11 +126,11 @@ export default {
       try {
         let savedTeam;
         if (this.isEditMode) {
-          const response = await apiClient.put(`/teams/${this.$route.params.teamId}`, this.team);
+                      const response = await api.put(`/teams/${this.$route.params.teamId}`, this.team);
           savedTeam = response.data;
           notificationService.showSuccess("Equipo actualizado con éxito.");
         } else {
-          const response = await apiClient.post("/teams", this.team);
+                      const response = await api.post("/teams", this.team);
           savedTeam = response.data;
           notificationService.showSuccess("Equipo creado con éxito.");
         }

@@ -38,8 +38,8 @@ public class AuthService {
         User user = new User();
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(rawPassword));
-        userRepository.save(user);
-        userSettingsService.createDefaultSettings(username);
+        User savedUser = userRepository.save(user);
+        userSettingsService.createDefaultSettings(savedUser.getId());
     }
 
 // Dentro de la clase AuthService

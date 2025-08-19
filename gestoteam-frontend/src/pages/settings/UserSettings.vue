@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import apiClient from "@/services/api";
+import api from "@/services/api";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
 import BaseInput from "@/components/base/BaseInput.vue";
@@ -100,7 +100,7 @@ export default {
         async fetchSettings() {
             this.loading = true;
             try {
-                const response = await apiClient.get("/user-settings");
+                const response = await api.get("/user-settings");
                 this.settings = response.data;
             } catch (error) {
                 console.error("Error al obtener configuraciones:", error);
@@ -111,7 +111,7 @@ export default {
         async updateSettings() {
             this.isSaving = true;
             try {
-                await apiClient.put("/user-settings", this.settings);
+                await api.put("/user-settings", this.settings);
                 // Idealmente, aquí mostraríamos un toast/snackbar de éxito
                 this.$router.go(-1);
             } catch (error) {

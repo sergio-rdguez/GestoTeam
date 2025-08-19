@@ -96,7 +96,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import apiClient from "@/services/api";
+import api from "@/services/api";
 import { notificationService } from '@/services/notificationService';
 
 import PageHeader from "@/components/layout/PageHeader.vue";
@@ -118,7 +118,7 @@ const isSaving = ref(false);
 
 const fetchStats = async () => {
   try {
-    const response = await apiClient.get(`/player-match-stats/${matchId}`);
+            const response = await api.get(`/player-match-stats/${matchId}`);
     stats.value = response.data.map(stat => ({
         ...stat,
         playerDorsal: stat.playerDorsal || '-',
@@ -153,7 +153,7 @@ const handleCalledUpChange = (playerStat) => {
 const saveStats = async () => {
   isSaving.value = true;
   try {
-    await apiClient.put(`/matches/${matchId}/stats`, stats.value);
+            await api.put(`/matches/${matchId}/stats`, stats.value);
     notificationService.showSuccess('Estadísticas guardadas con éxito.');
     goBack();
   } catch (error) {

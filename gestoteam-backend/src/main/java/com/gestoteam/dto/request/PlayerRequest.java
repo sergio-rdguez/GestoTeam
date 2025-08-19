@@ -1,5 +1,6 @@
 package com.gestoteam.dto.request;
 
+import com.gestoteam.enums.Foot;
 import com.gestoteam.enums.PlayerStatus;
 import com.gestoteam.enums.Position;
 import lombok.Data;
@@ -23,6 +24,8 @@ public class PlayerRequest {
 
     @NotNull(message = "La posición es obligatoria")
     private Position position;
+
+    private Foot foot;
 
     @Positive(message = "El número debe ser un valor positivo")
     private int number;

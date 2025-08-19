@@ -34,4 +34,28 @@ public class OpponentController {
     public List<OpponentResponse> getOpponentsByTeam(@PathVariable Long teamId) {
         return opponentService.getOpponentsByTeam(teamId);
     }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Obtener un rival por ID", description = "Devuelve los detalles de un rival específico.")
+    @ApiResponse(responseCode = "200", description = "Rival obtenido con éxito")
+    @ApiResponse(responseCode = "404", description = "Rival no encontrado")
+    public OpponentResponse getOpponentById(@PathVariable Long id) {
+        return opponentService.getOpponentById(id);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Actualizar un rival", description = "Actualiza los datos de un rival existente.")
+    @ApiResponse(responseCode = "200", description = "Rival actualizado con éxito")
+    @ApiResponse(responseCode = "404", description = "Rival no encontrado")
+    public OpponentResponse updateOpponent(@PathVariable Long id, @RequestBody OpponentRequest request) {
+        return opponentService.updateOpponent(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Eliminar un rival", description = "Elimina un rival existente.")
+    @ApiResponse(responseCode = "200", description = "Rival eliminado con éxito")
+    @ApiResponse(responseCode = "404", description = "Rival no encontrado")
+    public void deleteOpponent(@PathVariable Long id) {
+        opponentService.deleteOpponent(id);
+    }
 }

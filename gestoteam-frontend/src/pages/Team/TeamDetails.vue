@@ -46,6 +46,11 @@
             <span class="nav-title">Partidos</span>
             <p class="nav-description">Consulta el calendario y resultados</p>
           </router-link>
+          <router-link :to="{ name: 'Opponents', params: { teamId : team.id } }" class="nav-card">
+            <i class="fa-solid fa-users-gear nav-icon"></i>
+            <span class="nav-title">Oponentes</span>
+            <p class="nav-description">Gestiona los equipos rivales</p>
+          </router-link>
         </div>
       </div>
     </div>
@@ -53,7 +58,7 @@
 </template>
 
 <script>
-import apiClient from "@/services/api";
+import api from "@/services/api";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
 import BaseButton from "@/components/base/BaseButton.vue";
@@ -77,7 +82,7 @@ export default {
       this.loading = true;
       try {
         const teamId = this.$route.params.teamId;
-        const response = await apiClient.get(`/teams/${teamId}`);
+                    const response = await api.get(`/teams/${teamId}`);
         this.team = response.data;
         console.log("Equipo cargado:", this.team);
       } catch (error) {
@@ -90,7 +95,11 @@ export default {
       this.$router.push({ name: "Teams" });
     },
     editTeam() {
-      this.$router.push({ name: "EditTeam", params: { teamId : this.team.id } });
+      if (this.team && this.team.id) {
+        this.$router.push({ name: "EditTeam", params: { teamId: this.team.id } });
+      } else {
+        console.error("No se puede editar: falta información del equipo");
+      }
     },
   },
   mounted() {
@@ -136,7 +145,7 @@ export default {
 }
 .navigation-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: var(--spacing-6);
 }
 .nav-card {

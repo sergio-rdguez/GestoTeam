@@ -1,5 +1,6 @@
 package com.gestoteam.dto.response;
 
+import com.gestoteam.enums.Foot;
 import com.gestoteam.enums.PlayerStatus;
 import com.gestoteam.enums.Position;
 import lombok.Data;
@@ -15,6 +16,7 @@ public class PlayerResponse {
     private String fullName = "";
     private String photoUrl = "";
     private Position position = Position.NA;
+    private Foot foot = Foot.DIESTRO;
     private int number = 0;
     private int age = 0;
     private LocalDate birthDate = LocalDate.now();

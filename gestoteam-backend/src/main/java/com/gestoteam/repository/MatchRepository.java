@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findByTeamIdAndSeason_IdAndDeletedFalse(Long teamId, Long seasonId);
     Optional<Match> findByIdAndDeletedFalse(Long id);
+    List<Match> findByOpponentIdAndDeletedFalse(Long opponentId);
 }

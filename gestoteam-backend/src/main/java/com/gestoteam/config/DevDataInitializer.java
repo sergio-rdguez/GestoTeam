@@ -1,6 +1,7 @@
 package com.gestoteam.config;
 
 import com.gestoteam.enums.Category;
+import com.gestoteam.enums.Foot;
 import com.gestoteam.enums.PlayerStatus;
 import com.gestoteam.enums.Position;
 import com.gestoteam.model.*;
@@ -70,7 +71,7 @@ public class DevDataInitializer {
         user = userRepository.save(user);
 
         UserSettings settings = new UserSettings();
-        settings.setUserId(username);
+        settings.setUserId(user.getId());
         userSettingsRepository.save(settings);
         log.info("Usuario de prueba creado: {}", username);
         return user;
@@ -94,7 +95,7 @@ public class DevDataInitializer {
         team.setDivision(division);
         team.setLocation(location);
         team.setField(field);
-        team.setOwnerId(user.getUsername());
+        team.setOwnerId(user.getId());
         log.info("Creando equipo: {}", name);
         return teamRepository.save(team);
     }
@@ -138,6 +139,7 @@ public class DevDataInitializer {
         p.setSurnameFirst(surname1);
         p.setSurnameSecond(surname2);
         p.setPosition(pos);
+        p.setFoot(Foot.DIESTRO); // Valor por defecto
         p.setNumber(num);
         p.setStatus(status);
         p.setBirthDate(birthdate);
@@ -159,6 +161,7 @@ public class DevDataInitializer {
     private Opponent createOpponent(Team team, String name, String observations) {
         Opponent opponent = new Opponent();
         opponent.setName(name);
+        opponent.setField("Estadio del rival");
         opponent.setObservations(observations);
         opponent.setTeam(team);
         return opponent;

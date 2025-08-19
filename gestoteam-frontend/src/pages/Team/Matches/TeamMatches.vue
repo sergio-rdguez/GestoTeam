@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import apiClient from "@/services/api";
+import api from "@/services/api";
 import DataTable from "@/components/common/DataTable.vue";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseButton from "@/components/base/BaseButton.vue";
@@ -82,8 +82,8 @@ export default {
       this.loading = true;
       try {
         const [teamResponse, matchesResponse] = await Promise.all([
-          apiClient.get(`/teams/${this.teamId}`),
-          apiClient.get(`/matches/team/${this.teamId}`)
+                  api.get(`/teams/${this.teamId}`),
+        api.get(`/matches/team/${this.teamId}`)
         ]);
         this.teamName = teamResponse.data.name;
         this.matches = Array.isArray(matchesResponse.data) ? matchesResponse.data : [];
@@ -120,7 +120,7 @@ export default {
       this.$router.push({ name: 'MatchDetails', params: { matchId: match.id } });
     },
     goToAddMatch() {
-      this.$router.push({ name: 'AddMatch', params: { teamId: this.teamId } });
+      this.$router.push({ name: 'NewMatch', params: { teamId: this.teamId } });
     },
     goBack() {
       this.$router.push({ name: 'TeamDetails', params: { teamId: this.teamId } });

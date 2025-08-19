@@ -22,6 +22,7 @@ public class TeamPlayerSummaryResponse {
         private int number;
         private String position;
         private int positionOrder;
+        private String foot;
         private PlayerStatus status;
     }
 }

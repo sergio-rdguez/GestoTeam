@@ -80,7 +80,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import apiClient from "@/services/api";
+import api from "@/services/api";
 import { notificationService } from '@/services/notificationService';
 
 import PageHeader from "@/components/layout/PageHeader.vue";
@@ -124,7 +124,7 @@ const formatDateForInput = (isoDate) => {
 
 const fetchOpponents = async () => {
   try {
-    const response = await apiClient.get(`/opponents/team/${teamId}`);
+            const response = await api.get(`/opponents/team/${teamId}`);
     opponents.value = response.data;
   } catch (error) {
     notificationService.showError('No se pudieron cargar los rivales.');
@@ -133,7 +133,7 @@ const fetchOpponents = async () => {
 
 const fetchMatchForEdit = async () => {
   try {
-    const response = await apiClient.get(`/matches/details/${matchId}`);
+            const response = await api.get(`/matches/details/${matchId}`);
     const data = response.data;
     match.value = {
       opponentId: data.opponentId,
@@ -163,11 +163,11 @@ const submitForm = async () => {
     }
 
     if (isEditMode.value) {
-      await apiClient.put(`/matches/${matchId}`, payload);
+              await api.put(`/matches/${matchId}`, payload);
       notificationService.showSuccess('Partido actualizado con éxito.');
     } else {
       payload.teamId = teamId;
-      await apiClient.post('/matches', payload);
+              await api.post('/matches', payload);
       notificationService.showSuccess('Partido creado con éxito.');
     }
     goBack();

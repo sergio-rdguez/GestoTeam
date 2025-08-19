@@ -7,9 +7,11 @@ import com.gestoteam.model.Match;
 import com.gestoteam.model.Player;
 import com.gestoteam.model.PlayerMatchStats;
 import com.gestoteam.model.Team;
+import com.gestoteam.model.User;
 import com.gestoteam.repository.MatchRepository;
 import com.gestoteam.repository.PlayerMatchStatsRepository;
 import com.gestoteam.repository.PlayerRepository;
+import com.gestoteam.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +42,8 @@ class PlayerMatchStatsServiceTest {
     @Mock
     private ModelMapper modelMapper;
     @Mock
+    private UserRepository userRepository;
+    @Mock
     private SecurityContext securityContext;
     @Mock
     private Authentication authentication;
@@ -47,7 +51,7 @@ class PlayerMatchStatsServiceTest {
     @InjectMocks
     private PlayerMatchStatsService playerMatchStatsService;
 
-    private static final String USERNAME = "testuser";
+    private static final Long USER_ID = 1L;
     private Team testTeam;
     private Player testPlayer;
     private Match testMatch;
@@ -58,11 +62,17 @@ class PlayerMatchStatsServiceTest {
     void setUp() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
-        when(authentication.getName()).thenReturn(USERNAME);
+        when(authentication.getName()).thenReturn("testuser");
+
+        // Mock del usuario para BaseService
+        User testUser = new User();
+        testUser.setId(USER_ID);
+        testUser.setUsername("testuser");
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
 
         testTeam = new Team();
         testTeam.setId(1L);
-        testTeam.setOwnerId(USERNAME);
+        testTeam.setOwnerId(USER_ID);
 
         testPlayer = new Player();
         testPlayer.setId(1L);
@@ -95,7 +105,7 @@ class PlayerMatchStatsServiceTest {
 
     @Test
     void getPlayerMatchStatsById_ShouldThrowException_WhenNotAuthorized() {
-        testTeam.setOwnerId("anotherUser");
+        testTeam.setOwnerId(2L);
         when(playerMatchStatsRepository.findById(1L)).thenReturn(Optional.of(testStats));
 
         assertThatThrownBy(() -> playerMatchStatsService.getPlayerMatchStatsById(1L))

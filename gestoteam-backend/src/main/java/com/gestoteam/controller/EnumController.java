@@ -36,4 +36,10 @@ public class EnumController {
     public List<EnumResponse> getCategories() {
         return enumService.getCategories();
     }
+
+    @GetMapping("/foots")
+    @Operation(summary = "Obtener los posibles tipos de pie de un jugador")
+    public List<EnumResponse> getFoots() {
+        return enumService.getFoots();
+    }
 }

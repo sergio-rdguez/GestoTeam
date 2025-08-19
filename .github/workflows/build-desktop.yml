@@ -1,0 +1,62 @@
+name: Build Desktop Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            gestoteam-frontend/package-lock.json
+            gestoteam-desktop/package-lock.json
+            
+      - name: Build Backend
+        working-directory: ./gestoteam-backend
+        run: |
+          ./gradlew.bat clean build -x test
+          
+      - name: Build Frontend
+        working-directory: ./gestoteam-frontend
+        run: |
+          npm ci
+          npm run build
+          
+      - name: Prepare Desktop
+        run: |
+          mkdir gestoteam-desktop\app
+          mkdir gestoteam-desktop\dist
+          copy gestoteam-backend\build\libs\*.jar gestoteam-desktop\app\gestoteam.jar
+          xcopy gestoteam-frontend\dist\* gestoteam-desktop\dist\ /E /I /Y
+          
+      - name: Build Desktop
+        working-directory: ./gestoteam-desktop
+        run: |
+          npm ci
+          npm run build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: gestoteam-desktop/dist-electron/*.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -41,7 +41,7 @@ class UserSettingsControllerTest {
     void getSettings_ShouldReturnUserSettings() throws Exception {
         UserSettings settings = new UserSettings();
         settings.setId(1L);
-        settings.setUserId("testuser");
+        settings.setUserId(1L);
         settings.setMaxPlayersPerTeam(25);
 
         when(userSettingsService.getSettings()).thenReturn(settings);
@@ -55,7 +55,7 @@ class UserSettingsControllerTest {
     void updateSettings_ShouldReturnUpdatedSettings() throws Exception {
         UserSettings updatedSettings = new UserSettings();
         updatedSettings.setId(1L);
-        updatedSettings.setUserId("testuser");
+        updatedSettings.setUserId(1L);
         updatedSettings.setMaxPlayersPerTeam(30);
 
         when(userSettingsService.updateSettings(any(UserSettings.class))).thenReturn(updatedSettings);

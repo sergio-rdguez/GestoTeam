@@ -31,7 +31,7 @@
       @row-click="viewPlayerDetails"
     >
       <template #cell-photoUrl="{ value }">
-        <img v-if="value" :src="value" alt="Foto" class="avatar" />
+        <img v-if="value" :src="getImageUrl(value)" alt="Foto" class="avatar" />
         <span v-else class="avatar placeholder"><i class="fa-regular fa-user"></i></span>
       </template>
       <template #cell-status="{ item }">
@@ -44,7 +44,8 @@
 </template>
 
 <script>
-import apiClient from "@/services/api";
+import api from "@/services/api";
+import { buildImageUrl } from "@/utils/imageUtils";
 import DataTable from "@/components/common/DataTable.vue";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseButton from "@/components/base/BaseButton.vue";
@@ -69,6 +70,7 @@ export default {
         { key: 'photoUrl', label: 'Foto', sortable: false },
         { key: 'fullName', label: 'Nombre', sortable: true },
         { key: 'position', label: 'Posición', sortable: true, sortOn: 'positionOrder' },
+        { key: 'foot', label: 'Pie', sortable: true },
         { key: 'number', label: 'Dorsal', sortable: true },
         { key: 'status', label: 'Estado', sortable: true },
       ],
@@ -80,8 +82,8 @@ export default {
       try {
         // Obtenemos el nombre del equipo y los jugadores en paralelo
         const [teamResponse, playersResponse] = await Promise.all([
-          apiClient.get(`/teams/${this.teamId}`),
-          apiClient.get(`/players/team/${this.teamId}`)
+                  api.get(`/teams/${this.teamId}`),
+        api.get(`/players/team/${this.teamId}`)
         ]);
         this.teamName = teamResponse.data.name;
         this.players = playersResponse.data.players;
@@ -92,10 +94,18 @@ export default {
       }
     },
     viewPlayerDetails(player) {
-      this.$router.push({ name: 'PlayerDetails', params: { playerId: player.id } });
+      if (player && player.id) {
+        this.$router.push({ name: 'PlayerDetails', params: { playerId: player.id } });
+      } else {
+        console.error("No se puede ver detalles: ID de jugador inválido");
+      }
     },
     addPlayer() {
       this.$router.push({ name: 'NewPlayer', params: { teamId: this.teamId } });
+    },
+    getImageUrl(photoUrl) {
+      if (!photoUrl) return null;
+      return buildImageUrl(photoUrl);
     },
     goBack() {
       this.$router.push({ name: 'TeamDetails', params: { teamId: this.teamId } });

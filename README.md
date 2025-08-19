@@ -1,112 +1,188 @@
+# 🏆 GestoTeam
 
-# GestoTeam
+**GestoTeam** es una aplicación profesional para la gestión integral de equipos de fútbol, disponible en **versión web** y **versión desktop** para Windows.
 
-**GestoTeam** es una aplicación diseñada para facilitar la gestión integral de equipos de fútbol. Permite registrar jugadores, controlar asistencias a entrenamientos, gestionar convocatorias, llevar estadísticas detalladas y mucho más.
+## 🚀 Características Principales
 
-## Características Principales
+- **👥 Gestión de Jugadores**: Registro completo con estadísticas, posiciones y historial
+- **⚽ Gestión de Partidos**: Control de convocatorias, resultados y estadísticas
+- **🏗️ Gestión de Equipos**: Administración de plantillas y roles
+- **📊 Estadísticas Avanzadas**: Análisis detallado de rendimiento
+- **🔄 Gestión de Rivales**: Base de datos de equipos contrarios
+- **📱 Multiplataforma**: Web responsive + Aplicación desktop Windows
 
-- **Gestión de Jugadores**: Registro y actualización de información de los jugadores, incluyendo posiciones y estadísticas individuales.
-- **Control de Asistencias**: Seguimiento de la asistencia de los jugadores a los entrenamientos y partidos.
-- **Gestión de Convocatorias**: Creación y administración de convocatorias para partidos, asignando roles y posiciones.
-- **Estadísticas de Partidos**: Registro de goles, tarjetas y otros datos relevantes de cada partido.
-- **Análisis de Rivales**: Almacenamiento de información sobre equipos rivales, incluyendo formaciones y tácticas observadas.
-
-## Tecnologías Utilizadas
-
-- **Backend**: [Spring Boot](https://spring.io/projects/spring-boot) con Java 21.
-- **Frontend**: [Vue.js](https://vuejs.org/).
-- **Base de Datos**: [PostgreSQL](https://www.postgresql.org/).
-
-## Requisitos del Sistema
-
-- **Java**: Versión 17.
-- **Node.js**: Versión 14 o superior.
-- **PostgreSQL**: Versión 13 o superior.
-
-## Estructura del Proyecto
+## 🏗️ Arquitectura del Proyecto
 
 ```
 GestoTeam/
-├── backend/          # Proyecto de Spring Boot
-│   ├── src/          # Código fuente del backend
-│   ├── pom.xml       # Configuración de Maven
-│   └── ...           # Archivos de configuración del backend
-├── frontend/         # Proyecto de Vue.js
-│   ├── src/          # Código fuente del frontend
-│   ├── package.json  # Configuración de npm
-│   └── ...           # Archivos de configuración del frontend
-└── README.md         # Descripción general del proyecto
+├── 🖥️ gestoteam-backend/          # API REST Spring Boot
+├── 🌐 gestoteam-frontend/         # Frontend Vue.js
+├── 💻 gestoteam-desktop/          # Aplicación Electron Windows
+├── 📚 docs/                       # Documentación técnica
+├── 📦 releases/                   # Instaladores para clientes
+└── 🔄 .github/workflows/          # CI/CD automático
 ```
 
-## Instalación y Configuración
+## 🛠️ Tecnologías Utilizadas
 
-### Paso 1: Clonar el Repositorio
+### Backend
+- **Java 17** + **Spring Boot 3.3.0**
+- **Spring Security** + **JWT**
+- **Spring Data JPA** + **Hibernate**
+- **H2 Database** (desktop) + **PostgreSQL** (web)
+- **Flyway** para migraciones
+- **Gradle** para build
+
+### Frontend
+- **Vue.js 3** + **Vue Router**
+- **Bootstrap 5** para UI
+- **Axios** para API calls
+- **FontAwesome** para iconos
+
+### Desktop
+- **Electron 28** para aplicación Windows
+- **electron-builder** para instaladores NSIS
+- **electron-updater** para auto-actualizaciones
+
+## 📋 Requisitos del Sistema
+
+### Para Desarrollo
+- **Java 17** o superior
+- **Node.js 18** o superior
+- **npm** o **yarn**
+- **Git**
+
+### Para Clientes Desktop
+- **Windows 10/11** (64-bit)
+- **4GB RAM** mínimo
+- **500MB** espacio en disco
+
+## 🚀 Instalación y Desarrollo
+
+### 1. Clonar el Repositorio
+```bash
+git clone https://github.com/tu-usuario/gestoteam.git
+cd gestoteam
+```
+
+### 2. Backend (Spring Boot)
+```bash
+cd gestoteam-backend
+./gradlew bootRun
+```
+**Puerto**: 8081 (desktop) / 8080 (web)
+
+### 3. Frontend (Vue.js)
+```bash
+cd gestoteam-frontend
+npm install
+npm run serve
+```
+**Puerto**: 3000
+
+### 4. Desktop (Electron)
+```bash
+cd gestoteam-desktop
+npm install
+npm run dev
+```
+
+## 📦 Build y Release
+
+### Build Automático
+El proyecto incluye **GitHub Actions** que se ejecutan automáticamente al crear un tag:
 
 ```bash
-git clone https://github.com/tu-usuario/GestoTeam.git
-cd GestoTeam
+# 1. Actualizar versión en package.json
+# 2. Commit y push
+git add .
+git commit -m "release: v1.0.0"
+git push
+
+# 3. Crear tag (esto dispara el build automático)
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
-### Paso 2: Configuración del Backend
+### Build Manual
+```bash
+# Backend
+cd gestoteam-backend
+./gradlew clean build
 
-1. **Navega al directorio del backend**:
-   ```bash
-   cd backend
-   ```
+# Frontend
+cd gestoteam-frontend
+npm run build
 
-2. **Configura la base de datos**:
-   - Asegúrate de tener PostgreSQL instalado y ejecutándose.
-   - Crea una base de datos llamada `gestoteam` (o cualquier nombre que prefieras).
-   - Configura el archivo `src/main/resources/application.properties` con los detalles de la conexión a la base de datos:
-     ```properties
-     spring.datasource.url=jdbc:postgresql://localhost:5432/gestoteam
-     spring.datasource.username=tu_usuario
-     spring.datasource.password=tu_contraseña
-     spring.jpa.hibernate.ddl-auto=update
-     ```
+# Desktop
+cd gestoteam-desktop
+npm run build
+```
 
-3. **Construir y ejecutar el backend**:
-   - Ejecuta el siguiente comando para iniciar el backend en modo desarrollo:
-     ```bash
-     ./mvnw spring-boot:run
-     ```
-   - El backend estará disponible en `http://localhost:8080`.
+## 🔧 Configuración
 
-### Paso 3: Configuración del Frontend
+### Perfiles de Spring Boot
+- **`local-client`**: Para aplicación desktop (H2 + puerto 8081)
+- **`dev`**: Para desarrollo web (H2 + puerto 8080)
+- **`prod`**: Para producción web (PostgreSQL + puerto 8080)
 
-1. **Navega al directorio del frontend**:
-   ```bash
-   cd ../frontend
-   ```
+### Variables de Entorno
+```bash
+# Backend
+SPRING_PROFILES_ACTIVE=local-client
+SERVER_PORT=8081
 
-2. **Instala las dependencias**:
-   - Ejecuta el siguiente comando para instalar todas las dependencias de Vue:
-     ```bash
-     npm install
-     ```
+# Frontend
+VUE_APP_API_URL=http://localhost:8081/api
+```
 
-3. **Configura la conexión al backend**:
-   - En el archivo `frontend/src/config.js` (o el archivo de configuración correspondiente), define la URL del backend:
-     ```javascript
-     export const API_BASE_URL = "http://localhost:8080/api";
-     ```
+## 📚 Documentación
 
-4. **Ejecuta el frontend**:
-   - Inicia el servidor de desarrollo de Vue con el siguiente comando:
-     ```bash
-     npm run serve
-     ```
-   - El frontend estará disponible en `http://localhost:3000`.
+- **📖 [Guía de Usuario](docs/user-guide.md)** - Para clientes finales
+- **🔧 [Guía de Desarrollo](docs/development.md)** - Para desarrolladores
+- **🚀 [Guía de Deployment](docs/deployment.md)** - Para producción
+- **📦 [Guía de Release](docs/release.md)** - Para crear versiones
 
-## Ejecución de la Aplicación Completa
+## 🔄 Flujo de Trabajo
 
-1. Asegúrate de que tanto el backend como el frontend están ejecutándose.
-2. Accede a `http://localhost:3000` en tu navegador para comenzar a utilizar GestoTeam.
+1. **Desarrollo** → Rama `develop`
+2. **Testing** → Pull Request a `main`
+3. **Release** → Tag `v*` → Build automático
+4. **Distribución** → GitHub Releases con instaladores
 
-## Contribuciones
+## 🤝 Contribución
 
-Las contribuciones son bienvenidas. Por favor, abre un issue o envía un pull request con tus sugerencias o mejoras.
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-## Licencia
+## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+Este proyecto es **privado y confidencial**. Todos los derechos reservados.
+
+## 📞 Soporte
+
+- **📧 Email**: soporte@gestoteam.com
+- **🐛 Issues**: [GitHub Issues](https://github.com/tu-usuario/gestoteam/issues)
+- **📖 Documentación**: [docs/](docs/)
+
+---
+
+## 🎯 **Resumen para Clientes**
+
+**GestoTeam Desktop** es una aplicación **completa y profesional** que incluye:
+
+✅ **Todo integrado** (backend + frontend)  
+✅ **Base de datos local** (sin internet)  
+✅ **Actualizaciones automáticas**  
+✅ **Instalador profesional** para Windows  
+✅ **Soporte técnico** incluido  
+
+**Para instalar**: Descargar el `.exe` del último release y ejecutar.
+
+---
+
+**Desarrollado con ❤️ por GestoTeam AI**  
+*Gestiona tu equipo de fútbol de forma profesional*

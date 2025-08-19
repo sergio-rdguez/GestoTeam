@@ -5,7 +5,9 @@ import com.gestoteam.dto.response.TeamResponse;
 import com.gestoteam.enums.Category;
 import com.gestoteam.exception.GestoServiceException;
 import com.gestoteam.model.Team;
+import com.gestoteam.model.User;
 import com.gestoteam.repository.TeamRepository;
+import com.gestoteam.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +34,9 @@ class TeamServiceTest {
     private TeamRepository teamRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private ModelMapper modelMapper;
 
     @Mock
@@ -44,9 +49,11 @@ class TeamServiceTest {
     private TeamService teamService;
 
     private static final String USERNAME = "testuser";
+    private static final Long USER_ID = 1L;
     private Team testTeam;
     private TeamRequest testTeamRequest;
     private TeamResponse testTeamResponse;
+    private User testUser;
 
     @BeforeEach
     void setUp() {
@@ -54,10 +61,16 @@ class TeamServiceTest {
         SecurityContextHolder.setContext(securityContext);
         when(authentication.getName()).thenReturn(USERNAME);
 
+        // Mock del usuario
+        testUser = new User();
+        testUser.setId(USER_ID);
+        testUser.setUsername(USERNAME);
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
+
         testTeam = new Team();
         testTeam.setId(1L);
         testTeam.setName("Test Team");
-        testTeam.setOwnerId(USERNAME);
+        testTeam.setOwnerId(USER_ID);
         testTeam.setCategory(Category.SENIOR);
         testTeam.setDeleted(false);
 
@@ -73,19 +86,19 @@ class TeamServiceTest {
 
     @Test
     void getAllTeams_ShouldReturnTeamList_WhenTeamsExistForUser() {
-        when(teamRepository.findByOwnerIdAndDeletedFalse(USERNAME)).thenReturn(List.of(testTeam));
+        when(teamRepository.findByOwnerIdAndDeletedFalse(USER_ID)).thenReturn(List.of(testTeam));
 
         List<TeamResponse> result = teamService.getAllTeams();
 
         assertThat(result).isNotNull().hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Test Team");
         assertThat(result.get(0).getCategory()).isEqualTo(Category.SENIOR.getName());
-        verify(teamRepository).findByOwnerIdAndDeletedFalse(USERNAME);
+        verify(teamRepository).findByOwnerIdAndDeletedFalse(USER_ID);
     }
 
     @Test
     void getTeamById_ShouldReturnTeam_WhenTeamExistsAndBelongsToUser() {
-        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.of(testTeam));
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTeam));
 
         Optional<TeamResponse> result = teamService.getTeamById(1L);
 
@@ -95,7 +108,7 @@ class TeamServiceTest {
 
     @Test
     void getTeamById_ShouldReturnEmpty_WhenTeamNotFound() {
-        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.empty());
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.empty());
 
         Optional<TeamResponse> result = teamService.getTeamById(1L);
 
@@ -120,7 +133,7 @@ class TeamServiceTest {
         // Configuramos el comportamiento para la primera llamada a map (void)
         doNothing().when(modelMapper).map(eq(testTeamRequest), eq(testTeam));
 
-        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.of(testTeam));
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTeam));
         when(teamRepository.save(any(Team.class))).thenReturn(testTeam);
 
         // Configuramos el comportamiento para la segunda llamada a map (con retorno)
@@ -136,7 +149,7 @@ class TeamServiceTest {
 
     @Test
     void updateTeam_ShouldThrowException_WhenTeamNotFound() {
-        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USERNAME)).thenReturn(Optional.empty());
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> teamService.updateTeam(1L, testTeamRequest))
                 .isInstanceOf(GestoServiceException.class)
@@ -145,17 +158,17 @@ class TeamServiceTest {
 
     @Test
     void deleteTeam_ShouldMarkTeamAsDeleted_WhenTeamExists() {
-        when(teamRepository.findByIdAndOwnerId(1L, USERNAME)).thenReturn(Optional.of(testTeam));
+        when(teamRepository.findByIdAndOwnerId(1L, USER_ID)).thenReturn(Optional.of(testTeam));
 
         teamService.deleteTeam(1L);
 
-        verify(teamRepository).save(testTeam);
         assertThat(testTeam.getDeleted()).isTrue();
+        verify(teamRepository).save(testTeam);
     }
 
     @Test
     void deleteTeam_ShouldThrowException_WhenTeamNotFound() {
-        when(teamRepository.findByIdAndOwnerId(1L, USERNAME)).thenReturn(Optional.empty());
+        when(teamRepository.findByIdAndOwnerId(1L, USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> teamService.deleteTeam(1L))
                 .isInstanceOf(GestoServiceException.class)

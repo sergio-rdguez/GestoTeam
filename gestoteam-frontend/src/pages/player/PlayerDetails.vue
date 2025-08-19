@@ -10,13 +10,15 @@
       <BaseCard>
         <div class="player-info">
           <div class="player-photo">
-            <img :src="player.photoUrl || defaultPhoto" alt="Foto del jugador" />
+            <img :src="getPlayerPhotoUrl()" alt="Foto del jugador" />
           </div>
           <div class="basic-info">
             <p><strong>Nombre:</strong> {{ player.fullName }}</p>
             <p><strong>Edad:</strong> {{ player.age }} años</p>
             <p><strong>Equipo:</strong> {{ player.team.name }}</p>
             <p><strong>Categoría:</strong> {{ player.team.category }}</p>
+            <p><strong>Posición:</strong> {{ getPositionDescription(player.position) }}</p>
+            <p><strong>Pie:</strong> {{ getFootDescription(player.foot) }}</p>
             <p><span class="player-status" :class="player.status.toLowerCase()">{{ player.status }}</span></p>
           </div>
         </div>
@@ -57,7 +59,8 @@
 </template>
 
 <script>
-import apiClient from "@/services/api";
+import api from "@/services/api";
+import { buildImageUrl } from "@/utils/imageUtils";
 import FabMenu from "@/components/common/FabMenu.vue";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
@@ -73,6 +76,8 @@ export default {
       player: null,
       loading: true,
       defaultPhoto: require('@/assets/default-player-photo.png'),
+      positions: [],
+      foots: [],
       fabActions: [
         { label: "Editar", event: "edit-player" },
         { label: "Eliminar", event: "delete-player", class: "danger" },
@@ -83,9 +88,15 @@ export default {
     async fetchPlayerDetails() {
       this.loading = true;
       try {
-        const playerId = this.$route.params.playerId;
-        const response = await apiClient.get(`/players/${playerId}`);
-        this.player = response.data;
+        const [playerResponse, positionsResponse, footsResponse] = await Promise.all([
+          api.get(`/players/${this.$route.params.playerId}`),
+          api.get('/enums/positions'),
+          api.get('/enums/foots')
+        ]);
+        
+        this.player = playerResponse.data;
+        this.positions = positionsResponse.data;
+        this.foots = footsResponse.data;
       } catch (error) {
         console.error("Error al cargar los detalles del jugador:", error);
       } finally {
@@ -96,6 +107,20 @@ export default {
         if (event === 'edit-player') this.editPlayer();
         else if (event === 'delete-player') this.deletePlayer();
     },
+    getPositionDescription(positionCode) {
+      const position = this.positions.find(p => p.code === positionCode);
+      return position ? position.description : positionCode;
+    },
+    getFootDescription(footCode) {
+      const foot = this.foots.find(f => f.code === footCode);
+      return foot ? foot.description : footCode;
+    },
+    getPlayerPhotoUrl() {
+      if (this.player && this.player.photoUrl) {
+        return buildImageUrl(this.player.photoUrl);
+      }
+      return this.defaultPhoto;
+    },
     goBack() {
       if (this.player && this.player.team) {
         this.$router.push({ name: "TeamPlayers", params: { teamId: this.player.team.id } });
@@ -104,13 +129,17 @@ export default {
       }
     },
     editPlayer() {
-      this.$router.push({ name: "EditPlayer", params: { playerId: this.player.id,  teamId: this.player.team.id  } });
+      if (this.player && this.player.team && this.player.team.id) {
+        this.$router.push({ name: "EditPlayer", params: { playerId: this.player.id, teamId: this.player.team.id } });
+      } else {
+        console.error("No se puede editar: falta información del equipo");
+      }
     },
     async deletePlayer() {
       if (confirm("¿Estás seguro de que deseas eliminar este jugador?")) {
         this.loading = true;
         try {
-          await apiClient.delete(`/players/${this.player.id}`);
+          await api.delete(`/players/${this.player.id}`);
           this.goBack();
         } catch (error) {
           console.error("Error al eliminar el jugador:", error);

@@ -11,13 +11,19 @@
                     <BaseInput v-model="player.name" label="Nombre" id="name" required />
                     <BaseInput v-model="player.surnameFirst" label="Primer Apellido" id="surnameFirst" required />
                     <BaseInput v-model="player.surnameSecond" label="Segundo Apellido" id="surnameSecond" />
-                    <div v-if="isEditMode" class="file-upload">
-                        <label for="photoFile">Foto</label>
+                    <div class="file-upload">
+                        <label for="photoFile">Foto del Jugador</label>
+                        <div v-if="currentPhotoUrl" class="current-photo">
+                            <img :src="currentPhotoUrl" alt="Foto actual" class="preview-photo" />
+                            <small>Foto actual</small>
+                        </div>
                         <input id="photoFile" type="file" accept="image/*" @change="onFileSelected" />
+                        <small class="form-help">Formatos soportados: JPG, PNG, GIF, WEBP. Tamaño máximo: 5MB</small>
                     </div>
                     <BaseInput v-model="player.birthDate" label="Fecha de Nacimiento" id="birthDate" type="date" required />
                     <BaseInput v-model.number="player.number" label="Dorsal" id="number" type="number" min="1" max="99" required />
                     <BaseSelect v-model="player.position" label="Posición" id="position" :options="positionOptions" required />
+                    <BaseSelect v-model="player.foot" label="Pie" id="foot" :options="footOptions" required />
                     <BaseSelect v-model="player.status" label="Estado" id="status" :options="statusOptions" required />
                 </div>
                 <div class="form-actions">
@@ -32,7 +38,8 @@
 
 <script>
 import { notificationService } from '@/services/notificationService';
-import apiClient from "@/services/api";
+import { buildImageUrl } from "@/utils/imageUtils";
+import api from "@/services/api";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
 import BaseInput from "@/components/base/BaseInput.vue";
@@ -56,19 +63,25 @@ export default {
                 birthDate: null,
                 number: null,
                 position: "",
+                foot: "DIESTRO",
                 status: "",
                 teamId: this.$route.params.teamId,
             },
             positions: [],
+            foots: [],
             statuses: [],
             isEditMode: false,
             isSaving: false,
             selectedFile: null,
+            currentPhotoUrl: null,
         };
     },
     computed: {
         positionOptions() {
             return this.positions.map(p => ({ value: p.code, text: p.description }));
+        },
+        footOptions() {
+            return this.foots.map(f => ({ value: f.code, text: f.description }));
         },
         statusOptions() {
             return this.statuses.map(s => ({ value: s.code, text: s.description }));
@@ -77,11 +90,13 @@ export default {
     methods: {
         async fetchEnums() {
             try {
-                const [positionsResponse, statusesResponse] = await Promise.all([
-                    apiClient.get("/enums/positions"),
-                    apiClient.get("/enums/player-status"),
+                const [positionsResponse, footsResponse, statusesResponse] = await Promise.all([
+                    api.get("/enums/positions"),
+                    api.get("/enums/foots"),
+                    api.get("/enums/player-status"),
                 ]);
                 this.positions = positionsResponse.data;
+                this.foots = footsResponse.data;
                 this.statuses = statusesResponse.data;
             } catch (error) {
                 notificationService.showError("Error al cargar las opciones del formulario.");
@@ -90,9 +105,18 @@ export default {
         async fetchPlayer() {
             try {
                 const playerId = this.$route.params.playerId;
-                const response = await apiClient.get(`/players/${playerId}`);
+                const response = await api.get(`/players/${playerId}`);
                 // El backend ya nos da el teamId, lo usamos directamente
                 this.player = response.data;
+                // Si no tiene pie asignado, asignar el valor por defecto
+                if (!this.player.foot) {
+                    this.player.foot = "DIESTRO";
+                }
+                
+                // Construir la URL de la foto actual
+                if (this.player.photoUrl) {
+                    this.currentPhotoUrl = buildImageUrl(this.player.photoUrl);
+                }
             } catch (error) {
                 notificationService.showError("Error al cargar los datos del jugador.");
             }
@@ -100,6 +124,15 @@ export default {
         onFileSelected(event) {
             const files = event.target.files;
             this.selectedFile = files && files[0] ? files[0] : null;
+            
+            // Mostrar preview de la nueva imagen seleccionada
+            if (this.selectedFile) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.currentPhotoUrl = e.target.result;
+                };
+                reader.readAsDataURL(this.selectedFile);
+            }
         },
         async submitForm() {
             this.isSaving = true;
@@ -111,6 +144,7 @@ export default {
                     birthDate: this.player.birthDate,
                     number: this.player.number,
                     position: this.player.position,
+                    foot: this.player.foot,
                     status: this.player.status,
                     teamId: this.isEditMode
                         ? (this.player.team && this.player.team.id ? this.player.team.id : this.$route.params.teamId)
@@ -118,18 +152,29 @@ export default {
                 };
 
                 if (this.isEditMode) {
-                    await apiClient.put(`/players/${this.player.id}`, payload);
+                    await api.put(`/players/${this.player.id}`, payload);
                     if (this.selectedFile) {
                         const formData = new FormData();
                         formData.append('file', this.selectedFile);
-                        await apiClient.post(`/files/player/${this.player.id}`, formData, {
+                        await api.post(`/files/player/${this.player.id}`, formData, {
                             headers: { 'Content-Type': 'multipart/form-data' }
                         });
                     }
                     notificationService.showSuccess('Jugador actualizado con éxito');
                     this.$router.push({ name: "PlayerDetails", params: { playerId: this.player.id } });
                 } else {
-                    await apiClient.post("/players", payload);
+                    const response = await api.post("/players", payload);
+                    const newPlayerId = response.data.id;
+                    
+                    // Si se seleccionó una foto, subirla
+                    if (this.selectedFile) {
+                        const formData = new FormData();
+                        formData.append('file', this.selectedFile);
+                        await api.post(`/files/player/${newPlayerId}`, formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                    }
+                    
                     notificationService.showSuccess('Jugador añadido con éxito');
                     this.$router.push({ name: "TeamPlayers", params: { teamId: payload.teamId } });
                 }
@@ -140,10 +185,19 @@ export default {
             }
         },
         goBack() {
-            const teamId = this.isEditMode
-                ? ((this.player.team && this.player.team.id) ? this.player.team.id : this.$route.params.teamId)
-                : this.$route.params.teamId;
-            this.$router.push({ name: "TeamPlayers", params: { teamId: teamId } });
+            let teamId = null;
+            if (this.isEditMode) {
+                teamId = (this.player.team && this.player.team.id) ? this.player.team.id : this.$route.params.teamId;
+            } else {
+                teamId = this.$route.params.teamId;
+            }
+            
+            if (teamId) {
+                this.$router.push({ name: "TeamPlayers", params: { teamId: teamId } });
+            } else {
+                console.error("No se puede volver: falta teamId");
+                this.$router.push({ name: "Teams" });
+            }
         },
     },
     created() {
@@ -170,5 +224,56 @@ export default {
   margin-top: var(--spacing-6);
   display: flex;
   justify-content: flex-end;
+}
+
+.file-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.file-upload label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.file-upload input[type="file"] {
+  padding: var(--spacing-2);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--background-secondary);
+  cursor: pointer;
+}
+
+.file-upload input[type="file"]:hover {
+  border-color: var(--primary-color);
+  background-color: var(--background-hover);
+}
+
+.form-help {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-top: var(--spacing-1);
+}
+
+.current-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+}
+
+.preview-photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  object-fit: cover;
+}
+
+.current-photo small {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
 }
 </style>

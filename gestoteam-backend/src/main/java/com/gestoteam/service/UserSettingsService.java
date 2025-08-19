@@ -1,33 +1,41 @@
 package com.gestoteam.service;
 
 import com.gestoteam.exception.GestoServiceException;
+import com.gestoteam.model.User;
 import com.gestoteam.model.UserSettings;
+import com.gestoteam.repository.UserRepository;
 import com.gestoteam.repository.UserSettingsRepository;
-import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
-public class UserSettingsService {
+public class UserSettingsService extends BaseService {
 
     private final UserSettingsRepository userSettingsRepository;
 
-    private String getCurrentUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
+    public UserSettingsService(UserRepository userRepository, UserSettingsRepository userSettingsRepository) {
+        super(userRepository);
+        this.userSettingsRepository = userSettingsRepository;
     }
+
+
 
     public UserSettings getSettings() {
         String username = getCurrentUsername();
         log.info("Obteniendo configuraciones para el usuario: {}", username);
 
         try {
-            return userSettingsRepository.findByUserId(username)
+            // Primero obtener el usuario para obtener su ID
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new GestoServiceException("Usuario no encontrado: " + username));
+            
+            return userSettingsRepository.findByUserId(user.getId())
                     .orElseGet(() -> {
                         log.info("No se encontraron configuraciones para {}. Creando por defecto.", username);
-                        return createDefaultSettings(username);
+                        return createDefaultSettings(user.getId());
                     });
         } catch (Exception e) {
             log.error("Error al obtener configuraciones para el usuario: {}", username, e);
@@ -58,7 +66,7 @@ public class UserSettingsService {
         }
     }
 
-    public UserSettings createDefaultSettings(String userId) {
+    public UserSettings createDefaultSettings(Long userId) {
         log.info("Creando configuraciones por defecto para el usuario: {}", userId);
 
         UserSettings defaultSettings = new UserSettings();

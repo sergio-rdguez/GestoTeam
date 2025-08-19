@@ -23,6 +23,8 @@ public class Opponent {
     @Column(nullable = false)
     private String name;
 
+    private String field;
+
     private String observations;
 
     @ManyToOne

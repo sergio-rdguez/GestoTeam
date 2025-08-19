@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import apiClient from "@/services/api";
+import api from "@/services/api";
 import DataTable from "@/components/common/DataTable.vue";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseButton from "@/components/base/BaseButton.vue";
@@ -64,7 +64,7 @@ export default {
     async fetchTeams() {
       this.loading = true;
       try {
-        const response = await apiClient.get("/teams");
+        const response = await api.get("/teams");
         this.teams = response.data;
       } catch (error) {
         console.error("Error al obtener equipos:", error);

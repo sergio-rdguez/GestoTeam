@@ -54,11 +54,18 @@ class AuthServiceTest {
     void register_ShouldSaveUser_WhenUsernameIsNew() {
         when(userRepository.existsByUsername("testuser")).thenReturn(false);
         when(passwordEncoder.encode("password")).thenReturn("encodedPassword");
+        
+        // Simular que el usuario se guarda y se le asigna un ID
+        User savedUser = new User();
+        savedUser.setId(1L);
+        savedUser.setUsername("testuser");
+        savedUser.setPassword("encodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
         authService.register("testuser", "password");
 
         verify(userRepository).save(any(User.class));
-        verify(userSettingsService).createDefaultSettings("testuser");
+        verify(userSettingsService).createDefaultSettings(1L);
     }
 
     @Test

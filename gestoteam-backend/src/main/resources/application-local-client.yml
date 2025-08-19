@@ -1,24 +1,59 @@
+# Configuración para el cliente local (Electron)
+# Este archivo se activa con: --spring.profiles.active=local-client
+
+# Base de datos H2 (archivo local)
 spring:
   datasource:
     url: jdbc:h2:file:./gestoteamdb
-    driverClassName: org.h2.Driver
     username: sa
-    password:
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
+    password: 
+    driver-class-name: org.h2.Driver
+  
+  # H2 Console (solo para desarrollo)
   h2:
     console:
       enabled: true
       path: /h2-console
+  
+  # JPA/Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  
+  # Flyway (migraciones de base de datos)
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
 
+# Servidor
 server:
   port: 8081
 
+# Logging
+logging:
+  level:
+    com.gestoteam: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+
+# JWT Configuration
 jwt:
   secret: "unaClaveSecretaLargaYUnicaParaGestoTeamQueSeaDificilDeAdivinar"
   expiration: 86400
+
+# Configuración específica de la aplicación
+gestoteam:
+  app:
+    mode: local-client
+    auto-update:
+      enabled: true
+      check-interval: 3600000 # 1 hora
+    database:
+      backup:
+        enabled: true
+        interval: 86400000 # 24 horas
+        max-backups: 7

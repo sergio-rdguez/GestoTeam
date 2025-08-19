@@ -61,7 +61,7 @@ public class Team {
     private LocalDateTime updatedAt;
 
     @Column(nullable = false)
-    private String ownerId;
+    private Long ownerId;
 
     @Column(nullable = false)
     private Boolean deleted = false;

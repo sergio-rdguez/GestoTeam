@@ -1,6 +1,7 @@
 package com.gestoteam.service;
 
 import com.gestoteam.enums.Category;
+import com.gestoteam.enums.Foot;
 import com.gestoteam.enums.PlayerStatus;
 import com.gestoteam.enums.Position;
 import com.gestoteam.exception.GestoServiceException;
@@ -56,6 +57,20 @@ public class EnumService {
         } catch (Exception e) {
             log.error("Error al obtener las categorías.", e);
             throw new GestoServiceException("No se pudieron obtener las categorías.");
+        }
+    }
+
+    public List<EnumResponse> getFoots() {
+        log.info("Obteniendo tipos de pie...");
+        try {
+            List<EnumResponse> foots = Arrays.stream(Foot.values())
+                    .map(foot -> new EnumResponse(foot.name(), foot.getDescripcion()))
+                    .collect(Collectors.toList());
+            log.info("Se obtuvieron {} tipos de pie.", foots.size());
+            return foots;
+        } catch (Exception e) {
+            log.error("Error al obtener los tipos de pie.", e);
+            throw new GestoServiceException("No se pudieron obtener los tipos de pie.");
         }
     }
 
