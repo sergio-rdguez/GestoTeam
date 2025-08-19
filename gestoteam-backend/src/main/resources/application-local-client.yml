@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    # La base de datos será un fichero llamado 'gestoteamdb' en la misma carpeta que el .jar
+    url: jdbc:h2:file:./gestoteamdb;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: validate # Dejamos que Flyway gestione la BBDD
+  flyway:
+    enabled: true # Activamos Flyway para este perfil
+    locations: classpath:db
+
+server:
+  port: 8081
+
+jwt:
+  secret: "unaClaveSecretaLargaYUnicaParaGestoTeamQueSeaDificilDeAdivinar"
+  expiration: 86400

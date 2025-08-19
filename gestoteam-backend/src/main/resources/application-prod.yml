@@ -10,10 +10,13 @@ spring:
     password: admin
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
@@ -32,6 +35,5 @@ swagger:
 audit:
   secret-key: "b7E3aX8Zp4Q2r9Wc"
 jwt:
-  secret: "unaClaveSecretaLargaYUnicaParaGestoTeamQueSeaDificilDeAdivinar" # Cambia esto por una clave segura
+  secret: "unaClaveSecretaLargaYUnicaParaGestoTeamQueSeaDificilDeAdivinar"
   expiration: 86400
-

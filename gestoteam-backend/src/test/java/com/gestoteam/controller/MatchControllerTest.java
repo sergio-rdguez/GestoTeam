@@ -17,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -60,15 +61,15 @@ class MatchControllerTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk()); // El controlador devuelve 200 OK
+                .andExpect(status().isOk());
     }
-    
+
     @Test
     @WithMockUser(username = "testuser")
     void getMatchesByTeam_ShouldReturnMatchList() throws Exception {
         MatchResponse response = new MatchResponse();
         response.setId(1L);
-        
+
         given(matchService.getMatchesByTeam(1L)).willReturn(List.of(response));
 
         mockMvc.perform(get("/api/matches/team/{teamId}", 1L))
@@ -83,7 +84,7 @@ class MatchControllerTest {
         MatchDetailsResponse response = new MatchDetailsResponse();
         response.setId(1L);
         response.setOpponent("Rival Test");
-        
+
         given(matchService.getMatchDetailsById(1L)).willReturn(response);
 
         mockMvc.perform(get("/api/matches/details/{id}", 1L))
@@ -91,19 +92,21 @@ class MatchControllerTest {
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.opponent", is("Rival Test")));
     }
-    
+
     @Test
     @WithMockUser(username = "testuser")
     void updateMatch_ShouldReturnOk_WithValidData() throws Exception {
         MatchUpdateRequest request = new MatchUpdateRequest();
         request.setLocation("Nuevo Estadio");
+        request.setOpponentId(1L);
+        request.setDate(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
 
         MatchResponse response = new MatchResponse();
         response.setId(1L);
         response.setLocation("Nuevo Estadio");
 
         given(matchService.updateMatch(eq(1L), any(MatchUpdateRequest.class))).willReturn(response);
-        
+
         mockMvc.perform(put("/api/matches/{id}", 1L)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
