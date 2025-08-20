@@ -27,6 +27,7 @@
       v-else
       :items="opponents"
       :columns="columns"
+      table-name="opponents"
       default-sort-key="name"
       @row-click="viewOpponentDetails"
     >

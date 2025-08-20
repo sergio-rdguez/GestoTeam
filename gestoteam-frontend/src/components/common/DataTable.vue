@@ -9,7 +9,7 @@
           class="global-filter-input"
         />
       </div>
-      <div class="column-toggler">
+      <div class="table-actions">
         <button @click="showColumnToggle = !showColumnToggle" class="btn-toggle-columns">
           <i class="fa-solid fa-eye"></i> Columnas
         </button>
@@ -76,10 +76,10 @@
 
     <div v-if="!loading && totalPages > 0" class="pagination-controls">
       <div class="page-size-selector">
-          <label for="pageSize">Filas por página:</label>
-          <select id="pageSize" v-model.number="pageSize">
-              <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
-          </select>
+        <label for="pageSize">Filas por página:</label>
+        <select id="pageSize" v-model.number="pageSize">
+          <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
+        </select>
       </div>
       <div class="pagination-nav">
         <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1">Anterior</button>
@@ -91,6 +91,8 @@
 </template>
 
 <script>
+import { tableConfigurationService } from '@/services/tableConfigurationService';
+
 export default {
   name: "DataTable",
   props: {
@@ -113,6 +115,10 @@ export default {
     defaultSortKey: {
       type: String,
       default: 'id',
+    },
+    tableName: {
+      type: String,
+      required: true
     }
   },
   data() {
@@ -125,6 +131,7 @@ export default {
       globalFilter: '',
       showColumnToggle: false,
       internalColumns: [],
+      userConfiguration: null
     };
   },
   computed: {
@@ -154,7 +161,7 @@ export default {
           const valB = this.getNestedValue(b, sortField);
           
           if (typeof valA === 'string' && typeof valB === 'string') {
-              return this.sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            return this.sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
           }
           
           if (valA < valB) return this.sortOrder === 'asc' ? -1 : 1;
@@ -182,6 +189,8 @@ export default {
         this.sortKey = key;
         this.sortOrder = 'asc';
       }
+      // Guardar automáticamente sin que se note
+      this.saveConfigurationSilently();
     },
     changePage(page) {
       if (page >= 1 && page <= this.totalPages) {
@@ -189,7 +198,95 @@ export default {
       }
     },
     getNestedValue(obj, path) {
-        return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+      return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+    },
+
+    async loadUserConfiguration() {
+      try {
+        this.userConfiguration = await tableConfigurationService.getTableConfiguration(this.tableName);
+      } catch (error) {
+        console.warn('No se pudo cargar configuración del usuario, usando valores por defecto');
+        // Usar configuración por defecto si falla
+        this.userConfiguration = tableConfigurationService.getDefaultConfiguration(this.tableName);
+      }
+    },
+
+    initializeTable() {
+      if (this.userConfiguration) {
+        // Aplicar configuración del usuario
+        this.pageSize = this.userConfiguration.pageSize;
+        this.sortKey = this.userConfiguration.defaultSortKey;
+        this.sortOrder = this.userConfiguration.defaultSortOrder.toLowerCase();
+        
+        // Aplicar configuración de columnas
+        this.applyColumnConfiguration();
+      } else {
+        // Usar configuración por defecto
+        this.internalColumns = this.columns.map(col => ({ ...col, visible: col.visible !== false }));
+      }
+    },
+
+    applyColumnConfiguration() {
+      if (!this.userConfiguration) return;
+
+      // Mapear configuración del usuario a las columnas
+      this.internalColumns = this.columns.map(col => {
+        const userColConfig = this.userConfiguration.columnConfigurations.find(
+          config => config.columnKey === col.key
+        );
+
+        if (userColConfig) {
+          return {
+            ...col,
+            visible: userColConfig.visible,
+            sortable: userColConfig.sortable,
+            width: userColConfig.width
+          };
+        } else {
+          return { ...col, visible: col.visible !== false };
+        }
+      });
+
+      // Ordenar columnas según la configuración del usuario
+      this.internalColumns.sort((a, b) => {
+        const configA = this.userConfiguration.columnConfigurations.find(
+          config => config.columnKey === a.key
+        );
+        const configB = this.userConfiguration.columnConfigurations.find(
+          config => config.columnKey === b.key
+        );
+        
+        const orderA = configA ? configA.sortOrder : 999;
+        const orderB = configB ? configB.sortOrder : 999;
+        
+        return orderA - orderB;
+      });
+    },
+
+    // Método invisible que guarda en background
+    async saveConfigurationSilently() {
+      try {
+        const configuration = {
+          tableName: this.tableName,
+          pageSize: this.pageSize,
+          defaultSortKey: this.sortKey,
+          defaultSortOrder: this.sortOrder.toUpperCase(),
+          columnConfigurations: this.internalColumns.map((col, index) => ({
+            columnKey: col.key,
+            columnLabel: col.label,
+            visible: col.visible,
+            sortable: col.sortable !== false,
+            sortOrder: index + 1,
+            width: col.width || '100px',
+            isDefault: false
+          }))
+        };
+
+        await tableConfigurationService.saveTableConfiguration(configuration);
+      } catch (error) {
+        // Silencioso, no mostrar al usuario
+        console.warn('No se pudo guardar configuración de tabla');
+      }
     }
   },
   watch: {
@@ -198,13 +295,25 @@ export default {
     },
     pageSize() {
       this.currentPage = 1;
+      // Guardar automáticamente cuando cambia el tamaño de página
+      this.saveConfigurationSilently();
     },
     items() {
       this.currentPage = 1;
+    },
+    // Observar cambios en las columnas internas para guardar automáticamente
+    internalColumns: {
+      handler() {
+        // Guardar automáticamente cuando cambian las columnas
+        this.saveConfigurationSilently();
+      },
+      deep: true
     }
   },
-  created() {
-      this.internalColumns = this.columns.map(col => ({ ...col, visible: col.visible !== false }));
+  async created() {
+    // Cargar configuración del usuario
+    await this.loadUserConfiguration();
+    this.initializeTable();
   },
 };
 </script>
@@ -231,6 +340,12 @@ export default {
   border-radius: 6px;
   font-size: 1rem;
 }
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+  position: relative;
+}
+
 .column-toggler {
   position: relative;
 }
@@ -241,7 +356,14 @@ export default {
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
+  transition: all 0.2s;
 }
+
+.btn-toggle-columns:hover {
+  background: #e9e9e9;
+  border-color: #ccc;
+}
+
 .column-list {
   position: absolute;
   top: 100%;
@@ -309,14 +431,14 @@ export default {
   gap: 1rem;
 }
 .page-size-selector {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 #pageSize {
-    padding: 0.25rem;
-    border-radius: 4px;
-    border: 1px solid #ddd;
+  padding: 0.25rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
 }
 .pagination-nav button {
   padding: 0.5rem 1rem;

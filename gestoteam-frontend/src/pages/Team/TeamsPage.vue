@@ -27,6 +27,7 @@
       v-else
       :items="teams"
       :columns="columns"
+      table-name="teams"
       @row-click="viewTeam"
     />
   </div>
@@ -78,6 +79,7 @@ export default {
     addTeam() {
       this.$router.push({ name: "NewTeam" });
     },
+
   },
   mounted() {
     this.fetchTeams();

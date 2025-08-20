@@ -27,6 +27,7 @@
       v-else
       :items="players"
       :columns="columns"
+      table-name="players"
       default-sort-key="fullName"
       @row-click="viewPlayerDetails"
     >

@@ -164,7 +164,7 @@ import api from "@/services/api";
 import { buildImageUrl } from "@/utils/imageUtils";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
-import notificationService from "@/services/notificationService";
+import { notificationService } from "@/services/notificationService";
 
 export default {
   components: {

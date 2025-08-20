@@ -45,6 +45,7 @@
       <BaseCard class="stats-card">
         <h2 class="section-title">Estadísticas de Jugadores</h2>
         <DataTable v-if="calledUpPlayers.length > 0" :items="calledUpPlayers" :columns="playerStatsColumns"
+          table-name="player-stats"
           default-sort-key="starter" :default-sort-asc="false">
           <template #cell-playerFullName="{ item }">
             <span :class="{ 'starter': item.starter }">{{ item.playerFullName }}</span>

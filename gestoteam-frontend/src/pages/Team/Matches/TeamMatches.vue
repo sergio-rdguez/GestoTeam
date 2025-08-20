@@ -27,6 +27,7 @@
       v-else
       :items="matches"
       :columns="columns"
+      table-name="matches"
       default-sort-key="date"
       :default-sort-asc="false"
       @row-click="viewMatchDetails"
