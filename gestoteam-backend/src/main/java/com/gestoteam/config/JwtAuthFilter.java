@@ -25,6 +25,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final UserDetailsServiceImpl userDetailsService;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        
+        // No filtrar solo login y register, pero SÍ filtrar profile para establecer autenticación
+        if (path.startsWith("/api/auth/")) {
+            // Solo excluir login y register, NO profile
+            return path.equals("/api/auth/login") || path.equals("/api/auth/register");
+        }
+        
+        // No filtrar otros endpoints estáticos
+        return path.startsWith("/api/health/") ||
+               // Solo permitir acceso sin auth para SERVIR archivos (GET), no para subirlos (POST)
+               (path.startsWith("/api/files/") && "GET".equals(request.getMethod())) ||
+               path.startsWith("/swagger-ui/") || 
+               path.startsWith("/v3/api-docs/");
+    }
+
+    @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,

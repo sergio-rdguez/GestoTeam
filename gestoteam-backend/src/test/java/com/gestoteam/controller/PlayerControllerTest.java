@@ -80,13 +80,40 @@ class PlayerControllerTest {
         playerRequest.setBirthDate(LocalDate.now().minusYears(20));
         playerRequest.setNumber(9);
 
-        doNothing().when(playerService).createPlayer(any(PlayerRequest.class));
+        // Mock del servicio para que devuelva el ID del jugador creado
+        given(playerService.createPlayer(any(PlayerRequest.class))).willReturn(1L);
 
         mockMvc.perform(post("/api/players")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(playerRequest)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").value(1L));
+    }
+
+    @Test
+    @WithMockUser(username = "testuser")
+    void createPlayer_ShouldReturnCorrectPlayerId() throws Exception {
+        PlayerRequest playerRequest = new PlayerRequest();
+        playerRequest.setName("Another Player");
+        playerRequest.setSurnameFirst("Another");
+        playerRequest.setTeamId(2L);
+        playerRequest.setPosition(Position.MC);
+        playerRequest.setStatus(PlayerStatus.ACTIVO);
+        playerRequest.setBirthDate(LocalDate.now().minusYears(22));
+        playerRequest.setNumber(10);
+
+        // Mock del servicio para que devuelva un ID diferente
+        given(playerService.createPlayer(any(PlayerRequest.class))).willReturn(42L);
+
+        mockMvc.perform(post("/api/players")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(playerRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").value(42L));
     }
 
     @Test

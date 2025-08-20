@@ -12,8 +12,11 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOriginPatterns("*") // Permite todos los orígenes
-                .allowedMethods("GET", "POST", "PUT", "DELETE")
-                .allowCredentials(true);
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Añadido OPTIONS para preflight
+                .allowedHeaders("*") // Permite todos los headers incluyendo Authorization
+                .exposedHeaders("Authorization") // Expone el header Authorization
+                .allowCredentials(true)
+                .maxAge(3600); // Cache preflight por 1 hora
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.gestoteam.controller;
 
+import com.gestoteam.exception.GestoServiceException;
 import com.gestoteam.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -68,15 +69,25 @@ public class FileController {
         @Parameter(description = "ID del jugador", required = true) @PathVariable Long playerId,
         @Parameter(description = "Archivo de imagen (JPG, PNG, GIF, WEBP)", required = true) @RequestParam("file") MultipartFile file
     ) {
-        Long userId = getCurrentUserId();
-        log.info("Subiendo foto para jugador {} por usuario {}", playerId, userId);
-
         try {
+            if (playerId == null || playerId <= 0) {
+                return ResponseEntity.badRequest().body("ID de jugador inválido");
+            }
+            
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body("El archivo es obligatorio y no puede estar vacío");
+            }
+            
+            Long userId = getCurrentUserId();
             String publicUrl = fileService.uploadPlayerPhoto(playerId, file, userId);
             return ResponseEntity.status(201).body(publicUrl);
+            
+        } catch (GestoServiceException e) {
+            log.warn("Error al subir foto para jugador {}: {}", playerId, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            log.error("Error al subir foto para jugador {}: {}", playerId, e.getMessage());
-            return ResponseEntity.status(500).body("Error al subir la foto: " + e.getMessage());
+            log.error("Error interno al subir foto para jugador {}: {}", playerId, e.getMessage());
+            return ResponseEntity.status(500).body("Error interno del servidor");
         }
     }
 

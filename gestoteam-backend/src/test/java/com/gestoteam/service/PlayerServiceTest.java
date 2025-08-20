@@ -133,13 +133,38 @@ class PlayerServiceTest {
         UserSettings settings = new UserSettings();
         settings.setMaxPlayersPerTeam(25);
 
+        Player savedPlayer = new Player();
+        savedPlayer.setId(1L);
+
         when(userSettingsRepository.findByUserId(USER_ID)).thenReturn(Optional.of(settings));
         when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTeam));
         when(playerRepository.countByTeamIdAndDeletedFalse(1L)).thenReturn(10L);
         when(modelMapper.map(any(PlayerRequest.class), eq(Player.class))).thenReturn(new Player());
+        when(playerRepository.save(any(Player.class))).thenReturn(savedPlayer);
 
-        playerService.createPlayer(testPlayerRequest);
+        Long playerId = playerService.createPlayer(testPlayerRequest);
 
+        assertThat(playerId).isEqualTo(1L);
+        verify(playerRepository).save(any(Player.class));
+    }
+
+    @Test
+    void createPlayer_ShouldReturnCorrectPlayerId_WhenPlayerIsSaved() {
+        UserSettings settings = new UserSettings();
+        settings.setMaxPlayersPerTeam(25);
+
+        Player savedPlayer = new Player();
+        savedPlayer.setId(99L); // ID diferente para el test
+
+        when(userSettingsRepository.findByUserId(USER_ID)).thenReturn(Optional.of(settings));
+        when(teamRepository.findByIdAndOwnerIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTeam));
+        when(playerRepository.countByTeamIdAndDeletedFalse(1L)).thenReturn(5L);
+        when(modelMapper.map(any(PlayerRequest.class), eq(Player.class))).thenReturn(new Player());
+        when(playerRepository.save(any(Player.class))).thenReturn(savedPlayer);
+
+        Long playerId = playerService.createPlayer(testPlayerRequest);
+
+        assertThat(playerId).isEqualTo(99L);
         verify(playerRepository).save(any(Player.class));
     }
 

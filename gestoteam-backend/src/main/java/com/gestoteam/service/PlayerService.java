@@ -82,7 +82,7 @@ public class PlayerService extends BaseService {
         return playerResponse;
     }
 
-    public void createPlayer(PlayerRequest playerRequest) {
+    public Long createPlayer(PlayerRequest playerRequest) {
         Long userId = getCurrentUserId();
         log.info("Creando jugador para el equipo con ID: {} por el usuario: {}", playerRequest.getTeamId(), userId);
 
@@ -103,10 +103,14 @@ public class PlayerService extends BaseService {
         Player player = modelMapper.map(playerRequest, Player.class);
         player.setTeam(team);
         player.setDeleted(false);
+        
+        // Asegurar que el ID está null para auto-generación
+        player.setId(null);
 
         try {
-            playerRepository.save(player);
+            Player savedPlayer = playerRepository.save(player);
             log.info("Jugador creado con éxito para el equipo ID: {} por el usuario: {}", teamId, userId);
+            return savedPlayer.getId();
         } catch (Exception e) {
             log.error("Error al crear el jugador para el equipo ID: {} por el usuario: {}", teamId, userId, e);
             throw new GestoServiceException("Error al crear el jugador. Por favor, inténtelo más tarde.");

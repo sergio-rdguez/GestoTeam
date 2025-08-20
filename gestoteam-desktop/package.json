@@ -13,17 +13,17 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "build": "electron-builder --win --x64",
-    "release": "electron-builder --win --x64 --publish always",
-    "clean": "rimraf dist-electron",
+    "clean": "rimraf dist-electron app",
     "postinstall": "electron-builder install-app-deps",
-    "build:packager": "electron-packager . GestoTeam --platform=win32 --arch=x64 --out=dist-electron --overwrite --ignore=node_modules/electron-builder",
-    "build:simple": "electron-packager . GestoTeam --platform=win32 --arch=x64 --out=dist-electron --overwrite",
-    "build:complete": "node build-complete.js && electron-packager . GestoTeam --platform=win32 --arch=x64 --out=dist-electron --overwrite",
-    "build:professional": "node build-professional.js",
-    "prepare": "node build-complete.js",
+    "build": "node build-complete.js",
+    "build:local": "node build-complete.js",
+    "build:professional": "node build-complete.js",
+    "compile-installer": "node compile-installer.js",
+    "check-nsis": "node check-nsis.js",
     "version:check": "node version-manager.js",
-    "version:sync": "node version-manager.js && npm run prepare"
+    "verify-java": "node verify-java-runtime.js",
+    "check-java-system": "node check-java-system.js",
+    "install-java": "node install-java-system.js"
   },
   "build": {
     "appId": "com.gestoteam.desktop",
@@ -32,6 +32,10 @@
       "output": "dist-electron",
       "buildResources": "build"
     },
+    "asar": true,
+    "asarUnpack": [
+      "app/**/*"
+    ],
     "files": [
       "**/*",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
@@ -46,17 +50,14 @@
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
     ],
-    "extraResources": [
-      {
-        "from": "app",
-        "to": "app"
-      }
-    ],
+
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/icon.ico"
@@ -71,11 +72,8 @@
       "uninstallerIcon": "assets/icon.ico",
       "installerHeaderIcon": "assets/icon.ico",
       "deleteAppDataOnUninstall": true,
-      "include": "build/installer.nsh"
-    },
-    "publish": {
-      "provider": "github",
-      "releaseType": "release"
+      "perMachine": false,
+      "allowElevation": false
     }
   },
   "dependencies": {
@@ -83,9 +81,7 @@
     "electron-updater": "^6.6.2"
   },
   "devDependencies": {
-    "@electron/packager": "^18.4.2",
     "electron": "^28.0.0",
-    "electron-builder": "^24.13.3",
-    "electron-packager": "^17.1.2"
+    "electron-builder": "^24.13.3"
   }
 }

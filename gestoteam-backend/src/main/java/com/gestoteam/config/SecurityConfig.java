@@ -16,8 +16,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 @Configuration
 @EnableMethodSecurity
@@ -31,13 +34,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> {})
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider()) // Asegúrate de que esto está aquí
+            .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/api/files/**").permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll() // Solo login y register
+                .requestMatchers("/api/health/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll() // Endpoints públicos
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/**").permitAll() // Solo GET para servir archivos
+                .anyRequest().authenticated() // Todo lo demás requiere autenticación
             );
 
         return http.build();
@@ -62,14 +67,30 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsFilter corsFilter() {
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        
+        // Permitir orígenes específicos para desarrollo y producción
+        configuration.setAllowedOriginPatterns(Collections.singletonList("*"));
+        
+        // Métodos HTTP permitidos (incluye OPTIONS para preflight)
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
+        
+        // Headers permitidos (crítico para Authorization)
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        
+        // Headers expuestos
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        
+        // Permitir credenciales (necesario para JWT)
+        configuration.setAllowCredentials(true);
+        
+        // Cache de preflight por 1 hora
+        configuration.setMaxAge(3600L);
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true);
-        config.addAllowedOriginPattern("*");
-        config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
-        source.registerCorsConfiguration("/**", config);
-        return new CorsFilter(source);
+        source.registerCorsConfiguration("/**", configuration);
+        
+        return source;
     }
 }
