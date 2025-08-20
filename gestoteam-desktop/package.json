@@ -6,6 +6,10 @@
   "author": "GestoTeam AI",
   "license": "UNLICENSED",
   "homepage": "./",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sergio-rdguez/GestoTeam.git"
+  },
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
@@ -41,7 +45,7 @@
         "target": "nsis",
         "arch": ["x64"]
       },
-      "icon": "build/icon.ico"
+      "icon": "./build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -52,11 +56,11 @@
       "shortcutName": "GestoTeam Desktop",
       "uninstallDisplayName": "GestoTeam Desktop",
       "artifactName": "GestoTeam-Setup-${version}.${ext}",
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico",
+      "installerIcon": "./build/icon.ico",
+      "uninstallerIcon": "./build/icon.ico",
+      "installerHeaderIcon": "./build/icon.ico",
       "deleteAppDataOnUninstall": true,
-      "include": "build/installer.nsh"
+      "include": "./build/installer.nsh"
     },
     "publish": {
       "provider": "github",
