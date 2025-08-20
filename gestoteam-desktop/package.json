@@ -41,6 +41,16 @@
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
     ],
+    "extraResources": [
+      {
+        "from": "node_modules/electron-updater",
+        "to": "node_modules/electron-updater"
+      }
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/electron-updater/**/*"
+    ],
     "win": {
       "target": "nsis"
     },
