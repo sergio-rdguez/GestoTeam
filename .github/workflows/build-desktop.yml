@@ -1,67 +1,139 @@
-name: Build Desktop Release
+name: Build and Release GestoTeam Desktop
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 0.0.1)'
+        required: true
+        default: '0.0.1'
+
+env:
+  NODE_VERSION: '18'
+  JAVA_VERSION: '17'
 
 jobs:
   build-and-release:
     runs-on: windows-latest
+    
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-        
-      - name: Setup Java 17
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: |
-            gestoteam-frontend/package-lock.json
-            gestoteam-desktop/package-lock.json
-            
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            gestoteam-frontend/node_modules
+            gestoteam-desktop/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Build Backend
-        working-directory: ./gestoteam-backend
         run: |
-          ./gradlew.bat clean build -x test
-          
+          cd gestoteam-backend
+          ./gradlew build --no-daemon
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+
       - name: Build Frontend
-        working-directory: ./gestoteam-frontend
         run: |
+          cd gestoteam-frontend
           npm ci
           npm run build
-          
-      - name: Prepare Desktop
+
+      - name: Setup Desktop Build
         run: |
-          mkdir gestoteam-desktop\app
-          mkdir gestoteam-desktop\dist
-          copy gestoteam-backend\build\libs\*.jar gestoteam-desktop\app\gestoteam.jar
-          xcopy gestoteam-frontend\dist\* gestoteam-desktop\dist\ /E /I /Y
-          
-      - name: Prepare Icon
-        working-directory: ./gestoteam-desktop
-        run: |
-          node build-icon.js
-          
-      - name: Build Desktop
-        working-directory: ./gestoteam-desktop
-        run: |
+          cd gestoteam-desktop
           npm ci
-          npm run build
+
+      - name: Build Desktop Professional
+        run: |
+          cd gestoteam-desktop
+          npm run build:professional
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Release
+
+      - name: Verify Build Output
+        run: |
+          cd gestoteam-desktop
+          if (Test-Path "dist-electron\GestoTeam-Setup-*.exe") {
+            Write-Host "✅ Instalador NSIS encontrado"
+            Get-ChildItem "dist-electron\GestoTeam-Setup-*.exe" | ForEach-Object {
+              $size = [math]::Round($_.Length / 1MB, 2)
+              Write-Host "   📦 $($_.Name) ($size MB)"
+            }
+          } else {
+            Write-Host "⚠️  Instalador NSIS no encontrado, verificando aplicación portable..."
+            if (Test-Path "dist-electron\GestoTeam-win32-x64\GestoTeam.exe") {
+              Write-Host "✅ Aplicación portable encontrada"
+            } else {
+              Write-Host "❌ No se encontró ningún archivo de salida"
+              exit 1
+            }
+          }
+
+      - name: Create Release
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: gestoteam-desktop/dist-electron/*.exe
+          files: |
+            gestoteam-desktop/dist-electron/*.exe
+            gestoteam-desktop/dist-electron/*.zip
+            gestoteam-desktop/dist-electron/build-report.json
           generate_release_notes: true
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: gestoteam-desktop-build
+          path: |
+            gestoteam-desktop/dist-electron/
+          retention-days: 30
+
+      - name: Build Summary
+        run: |
+          echo "🎉 Build completado exitosamente!"
+          echo "📁 Archivos generados:"
+          cd gestoteam-desktop/dist-electron
+          Get-ChildItem -Recurse | ForEach-Object {
+            if ($_.PSIsContainer) {
+              echo "   📁 $($_.Name)/"
+            } else {
+              $size = [math]::Round($_.Length / 1KB, 2)
+              echo "   📄 $($_.Name) ($size KB)"
+            }
+          }

@@ -142,10 +142,24 @@ function startBackend() {
   try {
     logMessage('INFO', 'Iniciando backend...', { attempt: backendStartAttempts + 1 });
     
-    // Verificar que existe el JAR
-    const jarPath = path.join(__dirname, 'app', 'gestoteam-backend.jar');
-    if (!fs.existsSync(jarPath)) {
-      throw new Error(`JAR no encontrado en: ${jarPath}`);
+    // Verificar que existe el JAR - múltiples rutas posibles
+    let jarPath = null;
+    const possiblePaths = [
+      path.join(__dirname, 'backend', 'gestoteam-backend.jar'),           // Para desarrollo
+      path.join(__dirname, 'app', 'backend', 'gestoteam-backend.jar'),   // Para aplicación compilada
+      path.join(__dirname, '..', 'win-unpacked', 'resources', 'app', 'backend', 'gestoteam-backend.jar') // Para testing
+    ];
+    
+    for (const testPath of possiblePaths) {
+      if (fs.existsSync(testPath)) {
+        jarPath = testPath;
+        logMessage('INFO', 'JAR encontrado', { path: jarPath });
+        break;
+      }
+    }
+    
+    if (!jarPath) {
+      throw new Error(`JAR no encontrado en ninguna de las rutas: ${possiblePaths.join(', ')}`);
     }
 
     // Iniciar proceso del backend
@@ -289,8 +303,27 @@ function createWindow() {
     maximizable: true
   });
 
+  // Determinar la URL del frontend - múltiples opciones
+  let frontendUrl;
+  const localFrontendPath = path.join(__dirname, 'frontend', 'index.html');
+  const appFrontendPath = path.join(__dirname, 'app', 'frontend', 'index.html');
+  
+  if (fs.existsSync(localFrontendPath)) {
+    // Para desarrollo - cargar desde archivo local
+    frontendUrl = `file://${localFrontendPath}`;
+    logMessage('INFO', 'Cargando frontend desde archivo local', { path: localFrontendPath });
+  } else if (fs.existsSync(appFrontendPath)) {
+    // Para aplicación compilada - cargar desde app/frontend
+    frontendUrl = `file://${appFrontendPath}`;
+    logMessage('INFO', 'Cargando frontend desde app/frontend', { path: appFrontendPath });
+  } else {
+    // Fallback - intentar cargar desde localhost
+    frontendUrl = `http://localhost:${FRONTEND_PORT}`;
+    logMessage('WARN', 'Frontend local no encontrado, intentando localhost', { port: FRONTEND_PORT });
+  }
+
   // Cargar la aplicación frontend
-  mainWindow.loadURL(`http://localhost:${FRONTEND_PORT}`);
+  mainWindow.loadURL(frontendUrl);
 
   // Mostrar la ventana cuando esté lista
   mainWindow.once('ready-to-show', () => {
@@ -305,7 +338,7 @@ function createWindow() {
 
   // Manejar errores de carga
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-    logMessage('ERROR', 'Error cargando frontend', { errorCode, errorDescription });
+    logMessage('ERROR', 'Error cargando frontend', { errorCode, errorDescription, url: frontendUrl });
     
     // Si falla la carga del frontend, verificar el backend
     if (!isBackendRunning) {
