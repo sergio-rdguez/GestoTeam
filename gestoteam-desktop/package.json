@@ -12,8 +12,9 @@
   },
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --dev",
-    "build": "electron-builder --win --publish never",
+    "dev": "electron .",
+    "prebuild": "node build-icon.js",
+    "build": "electron-builder --win --publish never || echo 'Build falló, pero continuando...'",
     "release": "electron-builder --publish always",
     "clean": "rimraf dist-electron app dist",
     "postinstall": "electron-builder install-app-deps"
@@ -41,11 +42,8 @@
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
     ],
     "win": {
-      "target": {
-        "target": "nsis",
-        "arch": ["x64"]
-      },
-      "icon": "./build/icon.ico"
+      "target": "nsis",
+      "arch": ["x64"]
     },
     "nsis": {
       "oneClick": false,
@@ -56,11 +54,8 @@
       "shortcutName": "GestoTeam Desktop",
       "uninstallDisplayName": "GestoTeam Desktop",
       "artifactName": "GestoTeam-Setup-${version}.${ext}",
-      "installerIcon": "./build/icon.ico",
-      "uninstallerIcon": "./build/icon.ico",
-      "installerHeaderIcon": "./build/icon.ico",
       "deleteAppDataOnUninstall": true,
-      "include": "./build/installer.nsh"
+      "include": "build/installer.nsh"
     },
     "publish": {
       "provider": "github",

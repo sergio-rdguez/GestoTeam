@@ -45,6 +45,11 @@ jobs:
           copy gestoteam-backend\build\libs\*.jar gestoteam-desktop\app\gestoteam.jar
           xcopy gestoteam-frontend\dist\* gestoteam-desktop\dist\ /E /I /Y
           
+      - name: Prepare Icon
+        working-directory: ./gestoteam-desktop
+        run: |
+          node build-icon.js
+          
       - name: Build Desktop
         working-directory: ./gestoteam-desktop
         run: |
