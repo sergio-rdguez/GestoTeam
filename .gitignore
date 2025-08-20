@@ -81,13 +81,20 @@ lerna-debug.log*
 .env.production.local
 
 # ===== ARCHIVOS DE BUILD Y DISTRIBUCIÓN =====
-build/
-dist/
-target/
-out/
+# Directorios de build generados automáticamente
+**/build/
+**/dist/
+**/target/
+**/out/
 *.jar
 *.war
 *.ear
+
+# Excepciones: archivos de configuración importantes
+!**/build/*.nsh
+!**/build/*.nsis
+!**/build/*.conf
+!**/build/*.config
 
 # ===== ARCHIVOS DE DEPENDENCIAS =====
 node_modules/
