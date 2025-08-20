@@ -44,7 +44,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('gestoteam-backend/*.gradle*', 'gestoteam-backend/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
@@ -54,7 +54,7 @@ jobs:
           path: |
             gestoteam-frontend/node_modules
             gestoteam-desktop/node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-npm-${{ hashFiles('gestoteam-frontend/package-lock.json', 'gestoteam-desktop/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
 
