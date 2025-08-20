@@ -38,7 +38,6 @@
 
 <script>
 import { notificationService } from '@/services/notificationService';
-import { buildImageUrl } from "@/utils/imageUtils";
 import api from "@/services/api";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseCard from "@/components/base/BaseCard.vue";
@@ -60,11 +59,11 @@ export default {
                 name: "",
                 surnameFirst: "",
                 surnameSecond: "",
-                birthDate: null,
+                birthDate: "",
                 number: null,
                 position: "",
                 foot: "DIESTRO",
-                status: "",
+                status: "ACTIVO",
                 teamId: this.$route.params.teamId,
             },
             positions: [],
@@ -106,19 +105,36 @@ export default {
             try {
                 const playerId = this.$route.params.playerId;
                 const response = await api.get(`/players/${playerId}`);
-                // El backend ya nos da el teamId, lo usamos directamente
-                this.player = response.data;
-                // Si no tiene pie asignado, asignar el valor por defecto
-                if (!this.player.foot) {
-                    this.player.foot = "DIESTRO";
+                
+                // Mapear los datos del jugador
+                this.player = {
+                    id: response.data.id,
+                    name: response.data.name || "",
+                    surnameFirst: response.data.surnameFirst || "",
+                    surnameSecond: response.data.surnameSecond || "",
+                    birthDate: response.data.birthDate ? response.data.birthDate.split('T')[0] : "",
+                    number: response.data.number || null,
+                    position: response.data.position || "",
+                    foot: response.data.foot || "DIESTRO",
+                    status: response.data.status || "ACTIVO",
+                    teamId: response.data.team ? response.data.team.id : this.$route.params.teamId,
+                    team: response.data.team
+                };
+                
+                // Asegurar que siempre tengamos un teamId válido
+                if (!this.player.teamId && this.$route.params.teamId) {
+                    this.player.teamId = this.$route.params.teamId;
                 }
                 
                 // Construir la URL de la foto actual
-                if (this.player.photoUrl) {
-                    this.currentPhotoUrl = buildImageUrl(this.player.photoUrl);
+                if (response.data.photoUrl) {
+                    this.currentPhotoUrl = response.data.photoUrl;
                 }
+                
+                console.log("Player data loaded:", this.player);
             } catch (error) {
                 notificationService.showError("Error al cargar los datos del jugador.");
+                console.error("Error fetching player:", error);
             }
         },
         onFileSelected(event) {
@@ -137,22 +153,29 @@ export default {
         async submitForm() {
             this.isSaving = true;
             try {
+                // Validar que los campos requeridos estén presentes
+                if (!this.player.name || !this.player.surnameFirst || !this.player.birthDate || 
+                    !this.player.position || !this.player.status || !this.player.teamId) {
+                    notificationService.showError("Por favor, completa todos los campos obligatorios.");
+                    return;
+                }
+
                 const payload = {
-                    name: this.player.name,
-                    surnameFirst: this.player.surnameFirst,
-                    surnameSecond: this.player.surnameSecond,
+                    name: this.player.name.trim(),
+                    surnameFirst: this.player.surnameFirst.trim(),
+                    surnameSecond: this.player.surnameSecond ? this.player.surnameSecond.trim() : null,
                     birthDate: this.player.birthDate,
                     number: this.player.number,
                     position: this.player.position,
                     foot: this.player.foot,
                     status: this.player.status,
-                    teamId: this.isEditMode
-                        ? (this.player.team && this.player.team.id ? this.player.team.id : this.$route.params.teamId)
-                        : (this.player.teamId || this.$route.params.teamId),
+                    teamId: this.player.teamId
                 };
 
                 if (this.isEditMode) {
                     await api.put(`/players/${this.player.id}`, payload);
+                    
+                    // Si se seleccionó una foto, subirla
                     if (this.selectedFile) {
                         const formData = new FormData();
                         formData.append('file', this.selectedFile);
@@ -160,48 +183,106 @@ export default {
                             headers: { 'Content-Type': 'multipart/form-data' }
                         });
                     }
+                    
                     notificationService.showSuccess('Jugador actualizado con éxito');
-                    this.$router.push({ name: "PlayerDetails", params: { playerId: this.player.id } });
+                    // Redirigir a PlayerDetails con el teamId
+                    this.$router.push({ 
+                        name: "PlayerDetails", 
+                        params: { 
+                            playerId: this.player.id 
+                        } 
+                    });
                 } else {
+                    // Crear el jugador
                     const response = await api.post("/players", payload);
-                    const newPlayerId = response.data.id;
+                    
+                    // Verificar que la respuesta sea válida
+                    if (!response || !response.data) {
+                        throw new Error("Respuesta inválida del servidor al crear el jugador");
+                    }
+                    
+                    // El backend ahora devuelve directamente el ID del jugador creado
+                    const newPlayerId = response.data;
+                    
+                    console.log("ID del jugador creado:", newPlayerId);
+                    
+                    if (!newPlayerId) {
+                        throw new Error("No se pudo obtener el ID del jugador creado");
+                    }
                     
                     // Si se seleccionó una foto, subirla
                     if (this.selectedFile) {
                         const formData = new FormData();
                         formData.append('file', this.selectedFile);
+                        
+                        console.log("Subiendo foto para el jugador ID:", newPlayerId);
+                        
                         await api.post(`/files/player/${newPlayerId}`, formData, {
                             headers: { 'Content-Type': 'multipart/form-data' }
                         });
+                        
+                        console.log("Foto subida exitosamente");
                     }
                     
                     notificationService.showSuccess('Jugador añadido con éxito');
-                    this.$router.push({ name: "TeamPlayers", params: { teamId: payload.teamId } });
+                    // Redirigir a TeamPlayers con el teamId
+                    this.$router.push({ 
+                        name: "TeamPlayers", 
+                        params: { 
+                            teamId: this.player.teamId 
+                        } 
+                    });
                 }
             } catch (error) {
-                // El interceptor de api.js se encarga de mostrar el error
+                console.error("Error submitting form:", error);
+                if (error.response && error.response.data && error.response.data.message) {
+                    notificationService.showError(error.response.data.message);
+                } else {
+                    notificationService.showError("Error al guardar el jugador. Por favor, inténtalo de nuevo.");
+                }
             } finally {
                 this.isSaving = false;
             }
         },
         goBack() {
+            // Intentar obtener el teamId de múltiples fuentes
             let teamId = null;
-            if (this.isEditMode) {
-                teamId = (this.player.team && this.player.team.id) ? this.player.team.id : this.$route.params.teamId;
-            } else {
+            
+            // 1. Del objeto player actual
+            if (this.player && this.player.teamId) {
+                teamId = this.player.teamId;
+            }
+            // 2. Del objeto team si existe
+            else if (this.player && this.player.team && this.player.team.id) {
+                teamId = this.player.team.id;
+            }
+            // 3. De los parámetros de la ruta
+            else if (this.$route.params.teamId) {
                 teamId = this.$route.params.teamId;
             }
             
             if (teamId) {
-                this.$router.push({ name: "TeamPlayers", params: { teamId: teamId } });
+                this.$router.push({ 
+                    name: "TeamPlayers", 
+                    params: { teamId: teamId } 
+                });
             } else {
                 console.error("No se puede volver: falta teamId");
+                // Fallback: ir a la lista de equipos
                 this.$router.push({ name: "Teams" });
             }
         },
     },
     created() {
         this.isEditMode = !!this.$route.params.playerId;
+        
+        // Asegurar que siempre tengamos un teamId válido desde el inicio
+        if (!this.player.teamId && this.$route.params.teamId) {
+            this.player.teamId = this.$route.params.teamId;
+        }
+        
+        console.log("PlayerForm created - Edit mode:", this.isEditMode, "TeamId:", this.player.teamId);
+        
         this.fetchEnums();
         if (this.isEditMode) {
             this.fetchPlayer();

@@ -12,6 +12,9 @@
         <router-link to="/settings" class="action-button" aria-label="Configuración">
           <i class="fas fa-cog"></i>
         </router-link>
+        <button @click="toggleSystemStatus" class="action-button" aria-label="Estado del Sistema">
+          <i class="fas fa-server"></i>
+        </button>
         <button @click="handleLogout" class="logout-button">
           <i class="fa-solid fa-right-from-bracket"></i>
           <span class="logout-text">Cerrar Sesión</span>
@@ -22,10 +25,21 @@
 </template>
 
 <script setup>
+import { ref } from 'vue';
 import authService from '@/services/auth';
+
+const showSystemStatus = ref(false);
 
 const handleLogout = () => {
   authService.logout();
+};
+
+const toggleSystemStatus = () => {
+  showSystemStatus.value = !showSystemStatus.value;
+  // Emitir evento para mostrar/ocultar el estado del sistema
+  window.dispatchEvent(new CustomEvent('toggle-system-status', { 
+    detail: { show: showSystemStatus.value } 
+  }));
 };
 </script>
 

@@ -33,10 +33,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> {})
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider()) // Asegúrate de que esto está aquí
+            .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/api/files/**").permitAll()
+                .requestMatchers("/api/auth/**", "/api/health/**", "/swagger-ui/**", "/v3/api-docs/**", "/api/files/**").permitAll()
                 .anyRequest().authenticated()
             );
 

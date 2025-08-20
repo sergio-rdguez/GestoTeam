@@ -38,8 +38,9 @@ public class PlayerController {
     @Operation(summary = "Crear un nuevo jugador", description = "Crea un nuevo jugador y lo asocia a un equipo del usuario.")
     @ApiResponse(responseCode = "201", description = "Jugador creado con éxito")
     @ApiResponse(responseCode = "400", description = "Datos inválidos o límite de jugadores alcanzado")
-    public void createPlayer(@Valid @RequestBody PlayerRequest playerRequest) {
-        playerService.createPlayer(playerRequest);
+    public ResponseEntity<Long> createPlayer(@Valid @RequestBody PlayerRequest playerRequest) {
+        Long playerId = playerService.createPlayer(playerRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(playerId);
     }
 
     @PutMapping("/{id}")

@@ -1,471 +1,462 @@
 <template>
   <div class="system-status">
-    <div class="status-header">
-      <h3>Estado del Sistema</h3>
-      <div class="status-indicator" :class="backendStatusClass">
-        <span class="status-dot"></span>
-        {{ backendStatusText }}
+    <!-- Estado del Backend -->
+    <div class="status-card backend-status" :class="backendStatusClass">
+      <div class="status-header">
+        <i class="fas fa-server"></i>
+        <span class="status-title">Estado del Backend</span>
+        <div class="status-indicator" :class="backendStatusClass"></div>
+      </div>
+      
+      <div class="status-details">
+        <div class="status-item">
+          <span class="label">Estado:</span>
+          <span class="value" :class="backendStatusClass">
+            {{ backendStatusText }}
+          </span>
+        </div>
+        
+        <div v-if="backendStatus.isRunning" class="status-item">
+          <span class="label">PID:</span>
+          <span class="value">{{ backendStatus.pid }}</span>
+        </div>
+        
+        <div v-if="backendStatus.attempts > 0" class="status-item">
+          <span class="label">Intentos:</span>
+          <span class="value">{{ backendStatus.attempts }}/{{ backendStatus.maxAttempts }}</span>
+        </div>
+        
+        <div class="status-item">
+          <span class="label">Puerto:</span>
+          <span class="value">{{ backendStatus.port }}</span>
+        </div>
+      </div>
+      
+      <div class="status-actions">
+        <button 
+          @click="testConnection" 
+          class="btn btn-sm btn-outline-primary"
+          :disabled="!backendStatus.isRunning"
+        >
+          <i class="fas fa-plug"></i> Probar Conexión
+        </button>
+        
+        <button 
+          @click="restartBackend" 
+          class="btn btn-sm btn-outline-warning"
+          :disabled="backendStatus.isRunning"
+        >
+          <i class="fas fa-redo"></i> Reiniciar
+        </button>
       </div>
     </div>
 
-    <div class="status-details">
-      <div class="status-item">
-        <span class="label">Backend:</span>
-        <span class="value" :class="backendStatusClass">
-          {{ backendStatusText }}
-        </span>
+    <!-- Estado del Frontend -->
+    <div class="status-card frontend-status" :class="frontendStatusClass">
+      <div class="status-header">
+        <i class="fas fa-desktop"></i>
+        <span class="status-title">Estado del Frontend</span>
+        <div class="status-indicator" :class="frontendStatusClass"></div>
       </div>
       
-      <div class="status-item" v-if="backendStatus.pid">
-        <span class="label">PID:</span>
-        <span class="value">{{ backendStatus.pid }}</span>
-      </div>
-      
-      <div class="status-item">
-        <span class="label">Puerto:</span>
-        <span class="value">{{ backendStatus.port }}</span>
-      </div>
-      
-      <div class="status-item" v-if="backendStatus.attempts > 0">
-        <span class="label">Intentos:</span>
-        <span class="value warning">{{ backendStatus.attempts }}</span>
+      <div class="status-details">
+        <div class="status-item">
+          <span class="label">Estado:</span>
+          <span class="value" :class="frontendStatusClass">
+            {{ frontendStatusText }}
+          </span>
+        </div>
+        
+        <div v-if="frontendConnection" class="status-item">
+          <span class="label">Conexión Backend:</span>
+          <span class="value" :class="frontendConnection.success ? 'text-success' : 'text-danger'">
+            {{ frontendConnection.success ? 'Conectado' : 'Desconectado' }}
+          </span>
+        </div>
       </div>
     </div>
 
-    <div class="status-actions">
-      <button 
-        @click="restartBackend" 
-        :disabled="isRestarting"
-        class="btn btn-secondary"
-      >
-        <span v-if="isRestarting">Reiniciando...</span>
-        <span v-else>Reiniciar Backend</span>
-      </button>
+    <!-- Errores del Sistema -->
+    <div v-if="systemErrors.length > 0" class="status-card error-status">
+      <div class="status-header">
+        <i class="fas fa-exclamation-triangle text-warning"></i>
+        <span class="status-title">Errores del Sistema</span>
+        <button @click="clearErrors" class="btn btn-sm btn-outline-secondary">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
       
-      <button @click="generateReport" class="btn btn-primary">
-        Generar Reporte
-      </button>
-      
-      <button @click="openLogsFolder" class="btn btn-outline">
-        Abrir Logs
-      </button>
+      <div class="error-list">
+        <div 
+          v-for="(error, index) in systemErrors" 
+          :key="index" 
+          class="error-item"
+        >
+          <div class="error-header">
+            <span class="error-time">{{ formatTime(error.timestamp) }}</span>
+            <span class="error-type">{{ error.type }}</span>
+          </div>
+          <div class="error-message">{{ error.message }}</div>
+          <div v-if="error.details" class="error-details">
+            {{ error.details }}
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Notificaciones del sistema -->
-    <div v-if="systemNotifications.length > 0" class="system-notifications">
-      <div 
-        v-for="notification in systemNotifications" 
-        :key="notification.id"
-        class="notification"
-        :class="notification.type"
-      >
-        <span class="notification-icon">
-          {{ getNotificationIcon(notification.type) }}
-        </span>
-        <span class="notification-message">{{ notification.message }}</span>
-        <button @click="dismissNotification(notification.id)" class="dismiss-btn">
-          ×
+    <!-- Acciones del Sistema -->
+    <div class="status-card actions-status">
+      <div class="status-header">
+        <i class="fas fa-tools"></i>
+        <span class="status-title">Acciones del Sistema</span>
+      </div>
+      
+      <div class="actions-grid">
+        <button @click="openLogsFolder" class="btn btn-outline-info">
+          <i class="fas fa-folder-open"></i> Abrir Logs
+        </button>
+        
+        <button @click="generateReport" class="btn btn-outline-secondary">
+          <i class="fas fa-file-alt"></i> Generar Reporte
+        </button>
+        
+        <button @click="refreshStatus" class="btn btn-outline-primary">
+          <i class="fas fa-sync-alt"></i> Actualizar Estado
         </button>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'SystemStatus',
-  data() {
-    return {
-      backendStatus: {
-        running: false,
-        port: 8081,
-        attempts: 0,
-        pid: null
-      },
-      isRestarting: false,
-      systemNotifications: [],
-      notificationId: 0
-    };
-  },
-  computed: {
-    backendStatusClass() {
-      if (this.backendStatus.running) return 'success';
-      if (this.backendStatus.attempts > 0) return 'warning';
-      return 'error';
-    },
-    backendStatusText() {
-      if (this.backendStatus.running) return 'Funcionando';
-      if (this.backendStatus.attempts > 0) return 'Reintentando';
-      return 'Detenido';
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+
+// Estado del sistema
+const backendStatus = ref({
+  isRunning: false,
+  pid: null,
+  attempts: 0,
+  maxAttempts: 3,
+  port: 8081
+});
+
+const frontendConnection = ref(null);
+const systemErrors = ref([]);
+
+// Computed properties
+const backendStatusClass = computed(() => {
+  if (backendStatus.value.isRunning) return 'success';
+  if (backendStatus.value.attempts >= backendStatus.value.maxAttempts) return 'danger';
+  if (backendStatus.value.attempts > 0) return 'warning';
+  return 'secondary';
+});
+
+const backendStatusText = computed(() => {
+  if (backendStatus.value.isRunning) return 'Ejecutándose';
+  if (backendStatus.value.attempts >= backendStatus.value.maxAttempts) return 'Falló';
+  if (backendStatus.value.attempts > 0) return 'Reintentando';
+  return 'Detenido';
+});
+
+const frontendStatusClass = computed(() => {
+  if (!frontendConnection.value) return 'secondary';
+  return frontendConnection.value.success ? 'success' : 'danger';
+});
+
+const frontendStatusText = computed(() => {
+  if (!frontendConnection.value) return 'Verificando...';
+  return frontendConnection.value.success ? 'Conectado' : 'Desconectado';
+});
+
+// Métodos
+const refreshStatus = async () => {
+  try {
+    const response = await window.electronAPI.invoke('get-backend-status');
+    if (response.success) {
+      backendStatus.value = response.status;
     }
-  },
-  mounted() {
-    this.initializeSystemStatus();
-    this.setupEventListeners();
-  },
-  beforeUnmount() {
-    this.cleanupEventListeners();
-  },
-  methods: {
-    async initializeSystemStatus() {
-      try {
-        if (window.electronAPI) {
-          this.backendStatus = await window.electronAPI.getBackendStatus();
-        }
-      } catch (error) {
-        console.error('Error obteniendo estado del sistema:', error);
-        this.addNotification('error', 'No se pudo obtener el estado del sistema');
-      }
-    },
-
-    setupEventListeners() {
-      if (window.electronAPI) {
-        // Escuchar cambios en el estado del backend
-        window.electronAPI.onBackendStatus((event, status) => {
-          this.backendStatus = status;
-          
-          if (status.status === 'running') {
-            this.addNotification('success', 'Backend iniciado correctamente');
-          } else if (status.status === 'error') {
-            this.addNotification('error', 'Error en el backend');
-          }
-        });
-
-        // Escuchar actualizaciones disponibles
-        window.electronAPI.onUpdateAvailable((event, info) => {
-          this.addNotification('info', `Actualización disponible: v${info.version}`);
-        });
-
-        // Escuchar actualizaciones descargadas
-        window.electronAPI.onUpdateDownloaded((event, info) => {
-          this.addNotification('success', 'Actualización descargada, se instalará al reiniciar');
-        });
-      }
-    },
-
-    cleanupEventListeners() {
-      if (window.electronAPI) {
-        window.electronAPI.removeAllListeners('backend-status');
-        window.electronAPI.removeAllListeners('update-available');
-        window.electronAPI.removeAllListeners('update-downloaded');
-      }
-    },
-
-    async restartBackend() {
-      if (!window.electronAPI) {
-        this.addNotification('error', 'API del sistema no disponible');
-        return;
-      }
-
-      this.isRestarting = true;
-      this.addNotification('info', 'Reiniciando backend...');
-
-      try {
-        const result = await window.electronAPI.restartBackend();
-        this.addNotification('success', result.message);
-        
-        // Actualizar estado después de un breve delay
-        setTimeout(() => {
-          this.initializeSystemStatus();
-        }, 3000);
-      } catch (error) {
-        this.addNotification('error', 'Error al reiniciar el backend');
-        console.error('Error reiniciando backend:', error);
-      } finally {
-        this.isRestarting = false;
-      }
-    },
-
-    async generateReport() {
-      if (!window.electronAPI) {
-        this.addNotification('error', 'API del sistema no disponible');
-        return;
-      }
-
-      try {
-        this.addNotification('info', 'Generando reporte del sistema...');
-        
-        const reportFile = await window.electronAPI.saveReport();
-        
-        if (reportFile) {
-          this.addNotification('success', `Reporte generado: ${reportFile}`);
-        } else {
-          this.addNotification('error', 'Error al generar el reporte');
-        }
-      } catch (error) {
-        this.addNotification('error', 'Error al generar el reporte');
-        console.error('Error generando reporte:', error);
-      }
-    },
-
-    openLogsFolder() {
-      if (window.electronAPI) {
-        // Enviar comando para abrir la carpeta de logs
-        window.electronAPI.openLogsFolder();
-      }
-    },
-
-    addNotification(type, message) {
-      const notification = {
-        id: ++this.notificationId,
-        type,
-        message,
-        timestamp: new Date()
-      };
-
-      this.systemNotifications.push(notification);
-
-      // Auto-remover notificaciones después de 5 segundos
-      setTimeout(() => {
-        this.dismissNotification(notification.id);
-      }, 5000);
-    },
-
-    dismissNotification(id) {
-      const index = this.systemNotifications.findIndex(n => n.id === id);
-      if (index > -1) {
-        this.systemNotifications.splice(index, 1);
-      }
-    },
-
-    getNotificationIcon(type) {
-      const icons = {
-        success: '✅',
-        error: '❌',
-        warning: '⚠️',
-        info: 'ℹ️'
-      };
-      return icons[type] || 'ℹ️';
-    }
+  } catch (error) {
+    console.error('Error obteniendo estado del backend:', error);
   }
 };
+
+const testConnection = async () => {
+  try {
+    const result = await window.electronAPI.invoke('test-backend-connection');
+    if (result.success) {
+      addSystemMessage('success', 'Conexión exitosa', 'El backend responde correctamente');
+    } else {
+      addSystemMessage('error', 'Error de conexión', result.message);
+    }
+  } catch (error) {
+    addSystemMessage('error', 'Error de conexión', error.message);
+  }
+};
+
+const restartBackend = async () => {
+  try {
+    const result = await window.electronAPI.invoke('restart-backend');
+    if (result.success) {
+      addSystemMessage('info', 'Backend reiniciándose', result.message);
+      // Esperar un poco y actualizar estado
+      setTimeout(refreshStatus, 3000);
+    } else {
+      addSystemMessage('error', 'Error reiniciando backend', result.error);
+    }
+  } catch (error) {
+    addSystemMessage('error', 'Error reiniciando backend', error.message);
+  }
+};
+
+const openLogsFolder = async () => {
+  try {
+    await window.electronAPI.invoke('open-logs-folder');
+  } catch (error) {
+    addSystemMessage('error', 'Error abriendo carpeta de logs', error.message);
+  }
+};
+
+const generateReport = async () => {
+  try {
+    const report = await window.electronAPI.invoke('get-system-report');
+    addSystemMessage('info', 'Reporte generado', 'Se ha generado un reporte del sistema');
+    console.log('Reporte del sistema:', report);
+  } catch (error) {
+    addSystemMessage('error', 'Error generando reporte', error.message);
+  }
+};
+
+const addSystemMessage = (type, title, message, details = null) => {
+  systemErrors.value.unshift({
+    type,
+    title,
+    message,
+    details,
+    timestamp: new Date()
+  });
+  
+  // Mantener solo los últimos 10 errores
+  if (systemErrors.value.length > 10) {
+    systemErrors.value = systemErrors.value.slice(0, 10);
+  }
+};
+
+const clearErrors = () => {
+  systemErrors.value = [];
+};
+
+const formatTime = (timestamp) => {
+  return new Date(timestamp).toLocaleTimeString();
+};
+
+// Event listeners
+const handleBackendStatus = (event, data) => {
+  backendStatus.value = { ...backendStatus.value, ...data };
+};
+
+const handleBackendError = (event, data) => {
+  addSystemMessage('error', 'Error del Backend', data.reason, 
+    `Intento ${data.attempts} de ${data.maxAttempts}`);
+};
+
+const handleFrontendConnection = (event, data) => {
+  frontendConnection.value = data;
+};
+
+// Lifecycle
+onMounted(() => {
+  // Configurar event listeners
+  window.electronAPI.on('backend-status', handleBackendStatus);
+  window.electronAPI.on('backend-error', handleBackendError);
+  window.electronAPI.on('frontend-backend-connection', handleFrontendConnection);
+  
+  // Cargar estado inicial
+  refreshStatus();
+  
+  // Actualizar estado cada 10 segundos
+  const interval = setInterval(refreshStatus, 10000);
+  
+  onUnmounted(() => {
+    clearInterval(interval);
+  });
+});
+
+onUnmounted(() => {
+  // Limpiar event listeners si es necesario
+});
 </script>
 
 <style scoped>
 .system-status {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
   padding: 20px;
-  margin: 20px 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.status-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
 .status-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 15px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
 }
 
-.status-header h3 {
-  margin: 0;
-  color: #495057;
-  font-size: 1.2rem;
+.status-header i {
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+.status-title {
+  font-weight: 600;
+  flex: 1;
 }
 
 .status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-}
-
-.status-dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #6c757d;
+  margin-left: 10px;
 }
 
-.status-indicator.success .status-dot {
-  background: #28a745;
-}
-
-.status-indicator.warning .status-dot {
-  background: #ffc107;
-}
-
-.status-indicator.error .status-dot {
-  background: #dc3545;
-}
+.status-indicator.success { background-color: #28a745; }
+.status-indicator.warning { background-color: #ffc107; }
+.status-indicator.danger { background-color: #dc3545; }
+.status-indicator.secondary { background-color: #6c757d; }
 
 .status-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px;
-  margin-bottom: 20px;
+  padding: 20px;
 }
 
 .status-item {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.status-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .status-item .label {
-  font-size: 0.9rem;
-  color: #6c757d;
   font-weight: 500;
+  color: #6c757d;
 }
 
 .status-item .value {
-  font-size: 1rem;
   font-weight: 600;
-  color: #495057;
 }
 
-.status-item .value.success {
-  color: #28a745;
-}
-
-.status-item .value.warning {
-  color: #ffc107;
-}
-
-.status-item .value.error {
-  color: #dc3545;
-}
+.status-item .value.success { color: #28a745; }
+.status-item .value.warning { color: #ffc107; }
+.status-item .value.danger { color: #dc3545; }
+.status-item .value.secondary { color: #6c757d; }
 
 .status-actions {
+  padding: 15px 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
 }
 
-.btn {
-  padding: 8px 16px;
-  border: none;
+.actions-grid {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.error-list {
+  padding: 20px;
+}
+
+.error-item {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
   border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.error-item:last-child {
+  margin-bottom: 0;
+}
+
+.error-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #0056b3;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #545b62;
-}
-
-.btn-outline {
-  background: transparent;
+.error-time {
+  font-size: 12px;
   color: #6c757d;
-  border: 1px solid #6c757d;
 }
 
-.btn-outline:hover:not(:disabled) {
-  background: #6c757d;
+.error-type {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #dc3545;
   color: white;
 }
 
-.system-notifications {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.error-message {
+  font-weight: 500;
+  color: #dc3545;
+  margin-bottom: 5px;
 }
 
-.notification {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  position: relative;
+.error-details {
+  font-size: 14px;
+  color: #6c757d;
+  font-style: italic;
 }
 
-.notification.success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
+/* Estados de las tarjetas */
+.backend-status.success .status-header { background: #d4edda; }
+.backend-status.warning .status-header { background: #fff3cd; }
+.backend-status.danger .status-header { background: #f8d7da; }
+.backend-status.secondary .status-header { background: #e2e3e5; }
 
-.notification.error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
+.frontend-status.success .status-header { background: #d4edda; }
+.frontend-status.danger .status-header { background: #f8d7da; }
+.frontend-status.secondary .status-header { background: #e2e3e5; }
 
-.notification.warning {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
-}
+.error-status .status-header { background: #f8d7da; }
 
-.notification.info {
-  background: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
-}
-
-.notification-icon {
-  font-size: 1.1rem;
-}
-
-.notification-message {
-  flex: 1;
-}
-
-.dismiss-btn {
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-}
-
-.dismiss-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
-}
-
+/* Responsive */
 @media (max-width: 768px) {
+  .system-status {
+    padding: 10px;
+  }
+  
   .status-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    padding: 12px 15px;
   }
   
   .status-details {
+    padding: 15px;
+  }
+  
+  .actions-grid {
     grid-template-columns: 1fr;
-  }
-  
-  .status-actions {
-    flex-direction: column;
-  }
-  
-  .btn {
-    width: 100%;
-    justify-content: center;
+    padding: 15px;
   }
 }
 </style>
