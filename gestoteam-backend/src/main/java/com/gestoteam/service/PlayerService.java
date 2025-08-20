@@ -103,6 +103,9 @@ public class PlayerService extends BaseService {
         Player player = modelMapper.map(playerRequest, Player.class);
         player.setTeam(team);
         player.setDeleted(false);
+        
+        // Asegurar que el ID está null para auto-generación
+        player.setId(null);
 
         try {
             Player savedPlayer = playerRepository.save(player);

@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <!-- Pantalla de carga mientras el backend se inicia -->
+    <!-- Pantalla de carga -->
     <div v-if="isLoading" class="loading-screen">
       <div class="loading-content">
         <div class="logo-container">
@@ -8,8 +8,7 @@
         </div>
         <div class="spinner"></div>
         <h2>Iniciando GestoTeam...</h2>
-        <p>Esperando a que el backend esté listo</p>
-        <div class="loading-status">{{ loadingStatus }}</div>
+        <p>Cargando aplicación...</p>
       </div>
     </div>
     
@@ -33,21 +32,18 @@ export default {
   },
   setup() {
     const isLoading = ref(true);
-    const loadingStatus = ref('Verificando conexión con el backend...');
 
     const checkBackendHealth = async () => {
       try {
-        loadingStatus.value = 'Conectando con el backend...';
         const response = await api.get('/health');
         if (response.status === 200) {
-          loadingStatus.value = 'Backend listo!';
+          // Pequeña pausa para que el usuario vea el logo
           setTimeout(() => {
             isLoading.value = false;
-          }, 1000);
+          }, 800);
         }
       } catch (error) {
-        console.log('Backend no está listo aún, reintentando...');
-        loadingStatus.value = 'Backend no disponible, reintentando...';
+        // Reintentar sin mostrar errores técnicos al usuario
         setTimeout(checkBackendHealth, 2000);
       }
     };
@@ -57,8 +53,7 @@ export default {
     });
 
     return {
-      isLoading,
-      loadingStatus
+      isLoading
     };
   }
 };

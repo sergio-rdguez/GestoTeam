@@ -218,9 +218,8 @@ const openLogsFolder = async () => {
 
 const generateReport = async () => {
   try {
-    const report = await window.electronAPI.invoke('get-system-report');
+    await window.electronAPI.invoke('get-system-report');
     addSystemMessage('info', 'Reporte generado', 'Se ha generado un reporte del sistema');
-    console.log('Reporte del sistema:', report);
   } catch (error) {
     addSystemMessage('error', 'Error generando reporte', error.message);
   }

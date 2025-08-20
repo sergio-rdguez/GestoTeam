@@ -130,8 +130,6 @@ export default {
                 if (response.data.photoUrl) {
                     this.currentPhotoUrl = response.data.photoUrl;
                 }
-                
-                console.log("Player data loaded:", this.player);
             } catch (error) {
                 notificationService.showError("Error al cargar los datos del jugador.");
                 console.error("Error fetching player:", error);
@@ -179,9 +177,7 @@ export default {
                     if (this.selectedFile) {
                         const formData = new FormData();
                         formData.append('file', this.selectedFile);
-                        await api.post(`/files/player/${this.player.id}`, formData, {
-                            headers: { 'Content-Type': 'multipart/form-data' }
-                        });
+                        await api.post(`/files/player/${this.player.id}`, formData);
                     }
                     
                     notificationService.showSuccess('Jugador actualizado con éxito');
@@ -204,8 +200,6 @@ export default {
                     // El backend ahora devuelve directamente el ID del jugador creado
                     const newPlayerId = response.data;
                     
-                    console.log("ID del jugador creado:", newPlayerId);
-                    
                     if (!newPlayerId) {
                         throw new Error("No se pudo obtener el ID del jugador creado");
                     }
@@ -214,14 +208,7 @@ export default {
                     if (this.selectedFile) {
                         const formData = new FormData();
                         formData.append('file', this.selectedFile);
-                        
-                        console.log("Subiendo foto para el jugador ID:", newPlayerId);
-                        
-                        await api.post(`/files/player/${newPlayerId}`, formData, {
-                            headers: { 'Content-Type': 'multipart/form-data' }
-                        });
-                        
-                        console.log("Foto subida exitosamente");
+                        await api.post(`/files/player/${newPlayerId}`, formData);
                     }
                     
                     notificationService.showSuccess('Jugador añadido con éxito');
@@ -235,8 +222,26 @@ export default {
                 }
             } catch (error) {
                 console.error("Error submitting form:", error);
-                if (error.response && error.response.data && error.response.data.message) {
-                    notificationService.showError(error.response.data.message);
+                
+                // Capturar más detalles del error
+                if (error.response) {
+                    console.error("Response status:", error.response.status);
+                    console.error("Response data:", error.response.data);
+                    console.error("Response headers:", error.response.headers);
+                    
+                    if (error.response.data) {
+                        if (typeof error.response.data === 'string') {
+                            notificationService.showError(error.response.data);
+                        } else if (error.response.data.message) {
+                            notificationService.showError(error.response.data.message);
+                        } else {
+                            notificationService.showError(`Error ${error.response.status}: ${JSON.stringify(error.response.data)}`);
+                        }
+                    } else {
+                        notificationService.showError(`Error ${error.response.status}: ${error.response.statusText}`);
+                    }
+                } else if (error.message) {
+                    notificationService.showError(error.message);
                 } else {
                     notificationService.showError("Error al guardar el jugador. Por favor, inténtalo de nuevo.");
                 }
@@ -280,8 +285,6 @@ export default {
         if (!this.player.teamId && this.$route.params.teamId) {
             this.player.teamId = this.$route.params.teamId;
         }
-        
-        console.log("PlayerForm created - Edit mode:", this.isEditMode, "TeamId:", this.player.teamId);
         
         this.fetchEnums();
         if (this.isEditMode) {

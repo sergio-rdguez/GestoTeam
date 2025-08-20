@@ -82,6 +82,63 @@ function logMessage(level, message, data = null) {
 // ============================================================================
 // VERIFICACIONES DEL SISTEMA
 // ============================================================================
+function diagnoseJarLocations() {
+  logMessage('INFO', 'Diagnosticando ubicaciones del JAR...');
+  
+  const locations = [
+    { path: path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'gestoteam.jar'), description: 'ASAR Desempaquetado' },
+    { path: path.join(process.resourcesPath, 'gestoteam.jar'), description: 'Resources (extraResources)' },
+    { path: path.join(__dirname, 'app', 'gestoteam.jar'), description: 'Desarrollo local' },
+    { path: path.join(process.resourcesPath, 'app.asar', 'app', 'gestoteam.jar'), description: 'Dentro de ASAR' },
+    { path: path.join(app.getPath('temp'), 'gestoteam-backend', 'gestoteam.jar'), description: 'Temporal extraído' }
+  ];
+  
+  const diagnosis = {
+    found: [],
+    missing: [],
+    canAccess: null
+  };
+  
+  for (const location of locations) {
+    try {
+      if (fs.existsSync(location.path)) {
+        const stats = fs.statSync(location.path);
+        diagnosis.found.push({
+          ...location,
+          size: stats.size,
+          modified: stats.mtime.toISOString()
+        });
+        logMessage('INFO', `✅ JAR encontrado: ${location.description}`, { 
+          path: location.path, 
+          size: stats.size 
+        });
+      } else {
+        diagnosis.missing.push(location);
+        logMessage('INFO', `❌ JAR NO encontrado: ${location.description}`, { 
+          path: location.path 
+        });
+      }
+    } catch (error) {
+      diagnosis.missing.push({ ...location, error: error.message });
+      logMessage('WARN', `⚠️ Error accediendo a JAR: ${location.description}`, { 
+        path: location.path, 
+        error: error.message 
+      });
+    }
+  }
+  
+  // Verificar cuál es accesible para Java
+  if (diagnosis.found.length > 0) {
+    diagnosis.canAccess = diagnosis.found[0].path;
+    logMessage('SUCCESS', 'JAR accesible encontrado para Java', { 
+      path: diagnosis.canAccess 
+    });
+  } else {
+    logMessage('ERROR', 'No se encontró ningún JAR accesible');
+  }
+  
+  return diagnosis;
+}
 function diagnoseEmbeddedJava() {
   const embeddedJava = path.join(process.resourcesPath, 'java-runtime', 'bin', 'java.exe');
   
@@ -110,6 +167,9 @@ function checkSystemRequirements() {
     jar: false,
     directories: false
   };
+  
+  // Diagnosticar ubicaciones del JAR
+  diagnoseJarLocations();
   
   // Verificar Java del sistema
   try {
@@ -187,23 +247,97 @@ function checkSystemRequirements() {
 }
 
 function findBackendJar() {
-  const possiblePaths = [
-    path.join(__dirname, 'app', 'gestoteam.jar'),
-    path.join(__dirname, 'app', 'backend', 'gestoteam-backend.jar'),
-    path.join(process.resourcesPath, 'gestoteam.jar'),
-    path.join(process.resourcesPath, 'app', 'gestoteam.jar'),
-    path.join(process.resourcesPath, 'app', 'backend', 'gestoteam-backend.jar'),
-    path.join(process.resourcesPath, '..', 'app', 'gestoteam.jar'),
-    path.join(process.resourcesPath, '..', 'app', 'backend', 'gestoteam-backend.jar')
-  ];
+  // Usar diagnóstico para encontrar el JAR más eficientemente
+  const diagnosis = diagnoseJarLocations();
   
-  for (const jarPath of possiblePaths) {
-    if (fs.existsSync(jarPath)) {
-      return jarPath;
-    }
+  if (diagnosis.canAccess) {
+    logMessage('INFO', 'JAR encontrado mediante diagnóstico', { path: diagnosis.canAccess });
+    return diagnosis.canAccess;
   }
   
+  // Si el diagnóstico no encontró JAR accesible pero hay JAR en ASAR, extraer
+  const asarJar = diagnosis.found.find(jar => jar.description === 'Dentro de ASAR');
+  if (asarJar) {
+    logMessage('INFO', 'JAR encontrado en ASAR, extrayendo...');
+    return extractJarFromAsar();
+  }
+  
+  logMessage('ERROR', 'No se encontró JAR en ninguna ubicación');
   return null;
+}
+
+// ============================================================================
+// EXTRACCIÓN DEL JAR DESDE ASAR
+// ============================================================================
+function extractJarFromAsar() {
+  try {
+    logMessage('INFO', 'Intentando extraer JAR del ASAR...');
+    
+    // Ubicaciones posibles del JAR dentro del ASAR
+    const asarJarPaths = [
+      path.join(__dirname, 'app', 'gestoteam.jar'),
+      path.join(process.resourcesPath, 'app.asar', 'app', 'gestoteam.jar')
+    ];
+    
+    // Directorio temporal donde extraer el JAR
+    const tempDir = path.join(app.getPath('temp'), 'gestoteam-backend');
+    const tempJarPath = path.join(tempDir, 'gestoteam.jar');
+    
+    // Crear directorio temporal si no existe
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    
+    // Si ya existe el JAR extraído y es reciente (menos de 1 hora), usarlo
+    if (fs.existsSync(tempJarPath)) {
+      const stats = fs.statSync(tempJarPath);
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      
+      if (stats.mtime > oneHourAgo) {
+        logMessage('INFO', 'Usando JAR extraído previamente', { path: tempJarPath });
+        return tempJarPath;
+      }
+    }
+    
+    // Buscar el JAR en el ASAR
+    let sourceJarPath = null;
+    for (const jarPath of asarJarPaths) {
+      if (fs.existsSync(jarPath)) {
+        sourceJarPath = jarPath;
+        break;
+      }
+    }
+    
+    if (!sourceJarPath) {
+      logMessage('ERROR', 'JAR no encontrado en ninguna ubicación del ASAR');
+      return null;
+    }
+    
+    // Extraer el JAR
+    logMessage('INFO', 'Extrayendo JAR del ASAR', { 
+      source: sourceJarPath, 
+      target: tempJarPath 
+    });
+    
+    fs.copyFileSync(sourceJarPath, tempJarPath);
+    
+    // Verificar que se extrajo correctamente
+    if (fs.existsSync(tempJarPath)) {
+      const stats = fs.statSync(tempJarPath);
+      logMessage('SUCCESS', 'JAR extraído correctamente del ASAR', { 
+        path: tempJarPath,
+        size: stats.size 
+      });
+      return tempJarPath;
+    } else {
+      logMessage('ERROR', 'Error al extraer JAR del ASAR');
+      return null;
+    }
+    
+  } catch (error) {
+    logMessage('ERROR', 'Error extrayendo JAR del ASAR', error.message);
+    return null;
+  }
 }
 
 // ============================================================================

@@ -99,7 +99,7 @@ export default {
         const opponentId = this.$route.params.opponentId;
         const response = await api.get(`/matches/opponent/${opponentId}`);
         this.matches = response.data || [];
-        console.log("Partidos cargados:", this.matches);
+        
       } catch (error) {
         console.error("Error al cargar los partidos:", error);
         this.matches = [];

@@ -9,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -64,7 +62,11 @@ public class FileService {
         }
 
         try {
-            String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.trim().isEmpty()) {
+                throw new GestoServiceException("Nombre de archivo inválido");
+            }
+            originalFilename = StringUtils.cleanPath(originalFilename);
             String extension = "";
             int dot = originalFilename.lastIndexOf('.');
             if (dot >= 0) {
@@ -83,7 +85,7 @@ public class FileService {
             playerRepository.save(player);
 
             String publicUrl = "/api/files/" + relativePath;
-            log.info("Foto subida exitosamente para jugador {}: {}", playerId, publicUrl);
+            log.info("Foto subida exitosamente para jugador {}", playerId);
             return publicUrl;
         } catch (IOException ex) {
             log.error("Error guardando fichero de foto para jugador {}", playerId, ex);

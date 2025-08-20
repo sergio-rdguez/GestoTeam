@@ -34,8 +34,7 @@
     },
     "asar": true,
     "asarUnpack": [
-      "frontend/**/*",
-      "java-runtime/**/*"
+      "app/**/*"
     ],
     "files": [
       "**/*",
@@ -51,25 +50,7 @@
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
     ],
-    "extraResources": [
-      {
-        "from": "app/java-runtime",
-        "to": "java-runtime",
-        "filter": ["**/*"]
-      },
-      {
-        "from": "app/gestoteam.jar",
-        "to": "gestoteam.jar"
-      },
-      {
-        "from": "app/frontend",
-        "to": "frontend"
-      },
-      {
-        "from": "app/app-config.json",
-        "to": "app-config.json"
-      }
-    ],
+
     "win": {
       "target": [
         {

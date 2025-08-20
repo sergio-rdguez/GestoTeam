@@ -36,7 +36,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         
         // No filtrar otros endpoints estáticos
         return path.startsWith("/api/health/") ||
-               path.startsWith("/api/files/") || 
+               // Solo permitir acceso sin auth para SERVIR archivos (GET), no para subirlos (POST)
+               (path.startsWith("/api/files/") && "GET".equals(request.getMethod())) ||
                path.startsWith("/swagger-ui/") || 
                path.startsWith("/v3/api-docs/");
     }

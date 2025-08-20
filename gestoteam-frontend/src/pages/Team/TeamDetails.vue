@@ -84,7 +84,7 @@ export default {
         const teamId = this.$route.params.teamId;
                     const response = await api.get(`/teams/${teamId}`);
         this.team = response.data;
-        console.log("Equipo cargado:", this.team);
+        
       } catch (error) {
         console.error("Error al cargar los detalles del equipo:", error);
       } finally {
