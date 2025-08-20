@@ -85,15 +85,15 @@ jobs:
       - name: Verify Build Output
         run: |
           cd gestoteam-desktop
-          if (Test-Path "dist-electron\GestoTeam-Setup-*.exe") {
+          if (Test-Path "dist-electron\GestoTeam Desktop Setup *.exe") {
             Write-Host "✅ Instalador NSIS encontrado"
-            Get-ChildItem "dist-electron\GestoTeam-Setup-*.exe" | ForEach-Object {
+            Get-ChildItem "dist-electron\GestoTeam Desktop Setup *.exe" | ForEach-Object {
               $size = [math]::Round($_.Length / 1MB, 2)
               Write-Host "   📦 $($_.Name) ($size MB)"
             }
           } else {
             Write-Host "⚠️  Instalador NSIS no encontrado, verificando aplicación portable..."
-            if (Test-Path "dist-electron\GestoTeam-win32-x64\GestoTeam.exe") {
+            if (Test-Path "dist-electron\win-unpacked\GestoTeam Desktop.exe") {
               Write-Host "✅ Aplicación portable encontrada"
             } else {
               Write-Host "❌ No se encontró ningún archivo de salida"
