@@ -10,9 +10,8 @@
   # Crear directorio de configuración
   CreateDirectory "$APPDATA\GestoTeam"
   
-  # Configurar permisos de escritura
-  AccessControl::GrantOnFile "$LOCALAPPDATA\GestoTeam" "(BU)" "FullAccess"
-  AccessControl::GrantOnFile "$APPDATA\GestoTeam" "(BU)" "FullAccess"
+  # Nota: Los permisos se configuran automáticamente por el sistema
+  # No es necesario usar AccessControl::GrantOnFile
 !macroend
 
 !macro customUnInstall
