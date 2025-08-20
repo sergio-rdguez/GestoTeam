@@ -28,6 +28,9 @@ function prepareIcon() {
       return true;
     } else {
       console.log('⚠️  Icono muy pequeño, puede estar corrupto');
+      // Eliminar icono corrupto
+      fs.unlinkSync(iconPath);
+      console.log('🗑️  Icono corrupto eliminado');
     }
   } else {
     console.log('❌ Icono no encontrado');
@@ -44,12 +47,11 @@ function createSimpleIcon() {
   
   // Solo crear si no existe
   if (!fs.existsSync(iconPath)) {
-    console.log('🔄 Creando icono simple...');
+    console.log('🔄 Creando icono placeholder...');
     
-    // Crear un archivo de icono mínimo (esto es solo un placeholder)
-    // En la práctica, electron-builder usará el icono por defecto
     try {
-      // Crear un archivo vacío como marcador
+      // Crear un archivo de icono mínimo (esto es solo un marcador)
+      // En la práctica, electron-builder usará el icono por defecto
       fs.writeFileSync(iconPath, '');
       console.log('✅ Icono placeholder creado');
     } catch (error) {
@@ -58,18 +60,53 @@ function createSimpleIcon() {
   }
 }
 
+// Función para verificar que el directorio build tenga los archivos necesarios
+function verifyBuildDirectory() {
+  const buildDir = path.join(__dirname, 'build');
+  const installerNshPath = path.join(buildDir, 'installer.nsh');
+  
+  console.log('🔍 Verificando directorio build...');
+  
+  if (!fs.existsSync(buildDir)) {
+    console.log('⚠️  Directorio build no existe, creando...');
+    fs.mkdirSync(buildDir, { recursive: true });
+  }
+  
+  // Verificar si existe installer.nsh
+  if (!fs.existsSync(installerNshPath)) {
+    console.log('⚠️  installer.nsh no encontrado, creando básico...');
+    const basicNsh = `!macro customInstall
+  ; Aquí puedes agregar instalaciones personalizadas si es necesario
+!macroend`;
+    fs.writeFileSync(installerNshPath, basicNsh);
+    console.log('✅ installer.nsh básico creado');
+  } else {
+    console.log('✅ installer.nsh encontrado');
+  }
+}
+
 // Función principal
 function main() {
   console.log('🚀 Preparando build de GestoTeam Desktop...');
   
-  const iconExists = prepareIcon();
-  
-  if (!iconExists) {
-    createSimpleIcon();
+  try {
+    // Verificar directorio build
+    verifyBuildDirectory();
+    
+    // Preparar icono
+    const iconExists = prepareIcon();
+    
+    if (!iconExists) {
+      createSimpleIcon();
+    }
+    
+    console.log('✅ Preparación del icono completada');
+    console.log('📦 Continuando con el build...');
+    
+  } catch (error) {
+    console.error('❌ Error durante la preparación:', error.message);
+    console.log('⚠️  Continuando con configuración por defecto...');
   }
-  
-  console.log('✅ Preparación del icono completada');
-  console.log('📦 Continuando con el build...');
 }
 
 // Ejecutar si se llama directamente
@@ -77,4 +114,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { prepareIcon, createSimpleIcon, main };
+module.exports = { prepareIcon, createSimpleIcon, verifyBuildDirectory, main };

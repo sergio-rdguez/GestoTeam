@@ -14,8 +14,8 @@
     "start": "electron .",
     "dev": "electron .",
     "prebuild": "node build-icon.js",
-    "build": "electron-builder --win --publish never || echo 'Build falló, pero continuando...'",
-    "release": "electron-builder --publish always",
+    "build": "electron-builder --win --x64",
+    "release": "electron-builder --win --x64 --publish always",
     "clean": "rimraf dist-electron app dist",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -43,7 +43,7 @@
     ],
     "win": {
       "target": "nsis",
-      "arch": ["x64"]
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
