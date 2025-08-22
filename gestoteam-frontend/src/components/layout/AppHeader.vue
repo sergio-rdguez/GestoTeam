@@ -1,13 +1,16 @@
 <template>
   <header class="app-header">
     <div class="header-content">
-      <router-link to="/teams" class="logo-container">
+      <router-link to="/dashboard" class="logo-container">
         <img src="@/assets/logo.png" alt="GestoTeam Logo" class="logo">
         <h1 class="app-title">GestoTeam</h1>
       </router-link>
       <div class="header-actions">
-        <router-link to="/teams" class="action-button" aria-label="Inicio">
-          <i class="fas fa-home"></i>
+        <router-link to="/my-resources" class="action-button" aria-label="Mis Recursos">
+          <i class="fas fa-folder-open"></i>
+        </router-link>
+        <router-link to="/teams" class="action-button" aria-label="Mis Equipos">
+          <i class="fas fa-users"></i>
         </router-link>
         <router-link to="/settings" class="action-button" aria-label="Configuración">
           <i class="fas fa-cog"></i>

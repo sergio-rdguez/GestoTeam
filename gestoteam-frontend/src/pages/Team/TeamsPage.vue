@@ -1,6 +1,6 @@
 <template>
   <div class="teams-page">
-    <PageHeader title="Mis Equipos">
+    <PageHeader title="Mis Equipos" :show-back-button="true" @back="goBack">
       <BaseButton v-if="teams.length > 0" @click="addTeam">
         <i class="fa-solid fa-plus"></i> Añadir Equipo
       </BaseButton>
@@ -72,6 +72,9 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    goBack() {
+      this.$router.push('/dashboard');
     },
     viewTeam(team) {
       this.$router.push({ name: "TeamDetails", params: { teamId: team.id } });

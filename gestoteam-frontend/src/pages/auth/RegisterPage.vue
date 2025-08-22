@@ -25,7 +25,7 @@ const handleRegister = async () => {
   try {
     await authService.register({ username: form.value.username, password: form.value.password });
     await authService.login({ username: form.value.username, password: form.value.password });
-    await router.replace({ name: 'Teams' });
+    await router.replace({ name: 'Dashboard' });
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || 'No se pudo completar el registro';
   } finally {

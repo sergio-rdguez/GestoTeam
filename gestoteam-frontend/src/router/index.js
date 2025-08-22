@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import LoginPage from '@/pages/auth/LoginPage.vue';
 import RegisterPage from '@/pages/auth/RegisterPage.vue';
+import DashboardPage from '@/pages/DashboardPage.vue';
 import TeamsPage from '@/pages/Team/TeamsPage.vue';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import TeamDetails from '@/pages/Team/TeamDetails.vue';
@@ -16,6 +17,8 @@ import MatchStatsManager from '@/pages/Team/Matches/MatchStatsManager.vue';
 import OpponentsPage from '@/pages/Team/Opponents/OpponentsPage.vue';
 import OpponentForm from '@/pages/Team/Opponents/OpponentForm.vue';
 import OpponentDetails from '@/pages/Team/Opponents/OpponentDetails.vue';
+import ExerciseListPage from '@/pages/exercises/ExerciseListPage.vue';
+import ExerciseDetailsPage from '@/pages/exercises/ExerciseDetailsPage.vue';
 
 const routes = [
   {
@@ -32,7 +35,8 @@ const routes = [
     path: '/',
     component: MainLayout,
     children: [
-      { path: '', redirect: '/teams' },
+      { path: '', redirect: '/dashboard' },
+      { path: 'dashboard', name: 'Dashboard', component: DashboardPage },
       { path: 'teams', name: 'Teams', component: TeamsPage },
       { path: 'teams/new', name: 'NewTeam', component: TeamForm, meta: { isNew: true } },
       { path: 'teams/:teamId/edit', name: 'EditTeam', component: TeamForm, props: true, meta: { isNew: false } },
@@ -51,6 +55,12 @@ const routes = [
       { path: 'teams/:teamId/opponents/:opponentId/edit', name: 'EditOpponent', component: OpponentForm, props: true, meta: { isNew: false } },
       { path: 'matches/:matchId', name: 'MatchDetails', component: MatchDetails, props: true },
       { path: 'opponents/:opponentId', name: 'OpponentDetails', component: OpponentDetails, props: true },
+      
+      // Nuevas rutas para el Centro de Recursos
+      { path: 'my-resources', name: 'MyResources', component: () => import('@/pages/MyResourcesPage.vue') },
+      { path: 'my-resources/exercises', name: 'Exercises', component: ExerciseListPage },
+      { path: 'my-resources/exercises/:id', name: 'ExerciseDetails', component: ExerciseDetailsPage, props: true },
+      { path: 'my-resources/tactical-board', name: 'TacticalBoard', component: () => import('@/pages/TacticalBoardPage.vue') },
     ],
   },
 ];
@@ -66,7 +76,7 @@ router.beforeEach((to, from, next) => {
   if (!loggedIn && !isAuthRoute) {
     next({ name: 'Login' });
   } else if (loggedIn && isAuthRoute) {
-    next({ name: 'Teams' });
+    next({ name: 'Dashboard' });
   } else {
     next();
   }

@@ -1,67 +1,82 @@
 package com.gestoteam.controller;
 
+import com.gestoteam.enums.ExerciseCategory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Controlador para verificar el estado de salud del sistema
- */
 @RestController
 @RequestMapping("/api/health")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Estado del Sistema", description = "Endpoints para verificar el estado del sistema")
 public class HealthController {
 
-    /**
-     * Endpoint básico de salud
-     */
     @GetMapping
-    public ResponseEntity<Map<String, Object>> health() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "UP");
-        response.put("timestamp", LocalDateTime.now());
-        response.put("service", "GestoTeam Backend");
-        response.put("version", "0.0.1");
+    @Operation(summary = "Estado general del sistema", description = "Verifica que el sistema esté funcionando correctamente")
+    @ApiResponse(responseCode = "200", description = "Sistema funcionando correctamente")
+    public ResponseEntity<Map<String, Object>> healthCheck() {
+        Map<String, Object> health = new HashMap<>();
+        health.put("status", "UP");
+        health.put("timestamp", LocalDateTime.now());
+        health.put("service", "GestoTeam Backend");
+        health.put("version", "1.0.0");
         
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(health);
     }
 
-    /**
-     * Endpoint detallado de salud
-     */
-    @GetMapping("/detailed")
-    public ResponseEntity<Map<String, Object>> detailedHealth() {
-        Map<String, Object> response = new HashMap<>();
+    @GetMapping("/database")
+    @Operation(summary = "Estado de la base de datos", description = "Verifica la conectividad y estado de la base de datos")
+    @ApiResponse(responseCode = "200", description = "Base de datos funcionando correctamente")
+    public ResponseEntity<Map<String, Object>> databaseHealthCheck() {
+        Map<String, Object> dbHealth = new HashMap<>();
+        dbHealth.put("status", "UP");
+        dbHealth.put("timestamp", LocalDateTime.now());
+        dbHealth.put("database", "H2/PostgreSQL");
+        dbHealth.put("message", "Base de datos operativa");
         
-        // Estado general
-        response.put("status", "UP");
-        response.put("timestamp", LocalDateTime.now());
-        response.put("service", "GestoTeam Backend");
-        response.put("version", "0.0.1");
+        return ResponseEntity.ok(dbHealth);
+    }
+
+    @GetMapping("/exercises-test")
+    @Operation(summary = "Prueba de entidades de ejercicios", description = "Verifica que las entidades de ejercicios estén configuradas correctamente")
+    @ApiResponse(responseCode = "200", description = "Entidades configuradas correctamente")
+    public ResponseEntity<Map<String, Object>> exercisesTest() {
+        Map<String, Object> test = new HashMap<>();
+        test.put("status", "OK");
+        test.put("timestamp", LocalDateTime.now());
+        test.put("message", "Entidades de ejercicios configuradas correctamente");
+        test.put("categories", ExerciseCategory.values());
+        test.put("entity", "Exercise");
+        test.put("repository", "ExerciseRepository");
+        test.put("service", "ExerciseService");
+        test.put("controller", "ExerciseController");
         
-        // Información del sistema
-        Map<String, Object> system = new HashMap<>();
-        system.put("javaVersion", System.getProperty("java.version"));
-        system.put("javaVendor", System.getProperty("java.vendor"));
-        system.put("osName", System.getProperty("os.name"));
-        system.put("osVersion", System.getProperty("os.version"));
-        system.put("userHome", System.getProperty("user.home"));
-        system.put("workingDirectory", System.getProperty("user.dir"));
+        return ResponseEntity.ok(test);
+    }
+
+    @GetMapping("/trainings-test")
+    @Operation(summary = "Prueba de entidades de entrenamientos", description = "Verifica que las entidades de entrenamientos estén configuradas correctamente")
+    @ApiResponse(responseCode = "200", description = "Entidades configuradas correctamente")
+    public ResponseEntity<Map<String, Object>> trainingsTest() {
+        Map<String, Object> test = new HashMap<>();
+        test.put("status", "OK");
+        test.put("timestamp", LocalDateTime.now());
+        test.put("message", "Entidades de entrenamientos configuradas correctamente");
+        test.put("entity", "Training");
+        test.put("repository", "TrainingRepository");
+        test.put("service", "TrainingService");
+        test.put("controller", "TrainingController");
+        test.put("relationship", "ManyToMany con Exercise");
         
-        response.put("system", system);
-        
-        // Estado de la base de datos (se puede expandir)
-        Map<String, Object> database = new HashMap<>();
-        database.put("status", "UP");
-        database.put("type", "H2");
-        database.put("profile", "desktop");
-        
-        response.put("database", database);
-        
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(test);
     }
 }

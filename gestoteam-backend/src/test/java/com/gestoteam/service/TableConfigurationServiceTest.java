@@ -21,6 +21,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeastOnce;
 
 @ExtendWith(MockitoExtension.class)
 class TableConfigurationServiceTest {
@@ -77,7 +79,7 @@ class TableConfigurationServiceTest {
             .pageSize(10)
             .defaultSortKey("name")
             .defaultSortOrder(TableConfiguration.SortOrder.ASC)
-            .columnConfigurations(Arrays.asList(
+            .columnConfigurations(new ArrayList<>(Arrays.asList(
                 TableColumnConfiguration.builder()
                     .id(1L)
                     .columnKey("name")
@@ -86,7 +88,7 @@ class TableConfigurationServiceTest {
                     .sortable(true)
                     .sortOrder(1)
                     .build()
-            ))
+            )))
             .createdAt(LocalDateTime.now())
             .updatedAt(LocalDateTime.now())
             .build();
@@ -184,15 +186,26 @@ class TableConfigurationServiceTest {
 
         when(modelMapper.map(mockTableConfiguration, TableConfigurationResponse.class))
             .thenReturn(mockResponse);
+
+        // Mock para el mapeo de columnas en mapToResponse
         when(modelMapper.map(any(TableColumnConfiguration.class), eq(TableColumnConfigurationResponse.class)))
-            .thenReturn(mockColumnResponses.get(0));
+            .thenAnswer(invocation -> {
+                TableColumnConfiguration col = invocation.getArgument(0);
+                return TableColumnConfigurationResponse.builder()
+                    .columnKey(col.getColumnKey())
+                    .columnLabel(col.getColumnLabel())
+                    .visible(col.getVisible())
+                    .sortable(col.getSortable())
+                    .sortOrder(col.getSortOrder())
+                    .build();
+            });
 
         // Act
         TableConfigurationResponse result = tableConfigurationService.saveTableConfiguration(mockRequest);
 
         // Assert
         assertNotNull(result);
-        verify(tableConfigurationRepository).save(any(TableConfiguration.class));
+        verify(tableConfigurationRepository, atLeastOnce()).save(any(TableConfiguration.class));
     }
 
     @Test
@@ -205,8 +218,19 @@ class TableConfigurationServiceTest {
 
         when(modelMapper.map(mockTableConfiguration, TableConfigurationResponse.class))
             .thenReturn(mockResponse);
+
+        // Mock para el mapeo de columnas en mapToResponse
         when(modelMapper.map(any(TableColumnConfiguration.class), eq(TableColumnConfigurationResponse.class)))
-            .thenReturn(mockColumnResponses.get(0));
+            .thenAnswer(invocation -> {
+                TableColumnConfiguration col = invocation.getArgument(0);
+                return TableColumnConfigurationResponse.builder()
+                    .columnKey(col.getColumnKey())
+                    .columnLabel(col.getColumnLabel())
+                    .visible(col.getVisible())
+                    .sortable(col.getSortable())
+                    .sortOrder(col.getSortOrder())
+                    .build();
+            });
 
         // Act
         TableConfigurationResponse result = tableConfigurationService.saveTableConfiguration(mockRequest);

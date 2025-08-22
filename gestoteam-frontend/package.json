@@ -13,6 +13,7 @@
     "bootstrap": "^5.3.0-alpha3",
     "core-js": "^3.8.3",
     "crypto-js": "^4.2.0",
+    "fabric": "^6.7.1",
     "mitt": "^3.0.1",
     "vue-final-modal": "^4.5.5",
     "vue-router": "^4.4.5"
@@ -25,7 +26,7 @@
     "@vue/cli-service": "~5.0.0",
     "@vue/compiler-sfc": "^3.5.13",
     "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.7.1",
+    "eslint-plugin-vue": "^9.33.0",
     "vue": "^3.5.13"
   },
   "eslintConfig": {
@@ -40,7 +41,13 @@
     "parserOptions": {
       "parser": "@babel/eslint-parser"
     },
-    "rules": {}
+    "rules": {},
+    "globals": {
+      "defineProps": "readonly",
+      "defineEmits": "readonly",
+      "defineExpose": "readonly",
+      "withDefaults": "readonly"
+    }
   },
   "browserslist": [
     "> 1%",

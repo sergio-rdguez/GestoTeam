@@ -17,7 +17,7 @@ const handleLogin = async () => {
   isLoading.value = true;
   try {
     await authService.login(credentials.value);
-    await router.replace({ name: 'Teams' });
+    await router.replace({ name: 'Dashboard' });
 
   } catch (error) {
     console.error("Error en el login desde la página:", error);
