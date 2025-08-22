@@ -1,7 +1,9 @@
 package com.gestoteam.repository;
 
+import com.gestoteam.enums.Category;
 import com.gestoteam.enums.ExerciseCategory;
 import com.gestoteam.model.Exercise;
+import com.gestoteam.model.Team;
 import com.gestoteam.model.Training;
 import com.gestoteam.model.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +35,7 @@ class TrainingRepositoryTest {
     private ExerciseRepository exerciseRepository;
 
     private User testUser;
+    private Team testTeam;
     private Exercise testExercise;
     private Training testTraining1;
     private Training testTraining2;
@@ -48,6 +51,16 @@ class TrainingRepositoryTest {
         testUser.setUsername("testuser");
         testUser.setPassword("password");
         testUser = entityManager.persistAndFlush(testUser);
+
+        // Crear equipo de prueba
+        testTeam = new Team();
+        testTeam.setName("Test Team");
+        testTeam.setCategory(Category.SENIOR);
+        testTeam.setOwnerId(testUser.getId());
+        testTeam.setDeleted(false);
+        testTeam.setCreatedAt(LocalDateTime.now());
+        testTeam.setUpdatedAt(LocalDateTime.now());
+        testTeam = entityManager.persistAndFlush(testTeam);
 
         // Crear ejercicio de prueba
         testExercise = new Exercise();
@@ -70,6 +83,7 @@ class TrainingRepositoryTest {
         testTraining1.setLocation("Field 1");
         testTraining1.setTrainingType("Technical");
         testTraining1.setUser(testUser);
+        testTraining1.setTeam(testTeam);
         testTraining1.setExercises(List.of(testExercise));
         testTraining1.setDeleted(false);
         testTraining1.setCreatedAt(LocalDateTime.now());
@@ -81,6 +95,7 @@ class TrainingRepositoryTest {
         testTraining2.setLocation("Field 2");
         testTraining2.setTrainingType("Tactical");
         testTraining2.setUser(testUser);
+        testTraining2.setTeam(testTeam);
         testTraining2.setExercises(List.of());
         testTraining2.setDeleted(false);
         testTraining2.setCreatedAt(LocalDateTime.now());
@@ -92,6 +107,7 @@ class TrainingRepositoryTest {
         testTraining3.setLocation("Field 3");
         testTraining3.setTrainingType("Physical");
         testTraining3.setUser(testUser);
+        testTraining3.setTeam(testTeam);
         testTraining3.setExercises(List.of());
         testTraining3.setDeleted(true); // Este está marcado como eliminado
         testTraining3.setCreatedAt(LocalDateTime.now());
@@ -142,15 +158,24 @@ class TrainingRepositoryTest {
         // Arrange
         User userWithDeletedTrainings = new User();
         userWithDeletedTrainings.setUsername("deleteduser");
-        userWithDeletedTrainings.setUsername("deleteduser");
         userWithDeletedTrainings.setPassword("password");
         userWithDeletedTrainings = entityManager.persistAndFlush(userWithDeletedTrainings);
+
+        Team teamForDeletedUser = new Team();
+        teamForDeletedUser.setName("Deleted User Team");
+        teamForDeletedUser.setCategory(Category.SENIOR);
+        teamForDeletedUser.setOwnerId(userWithDeletedTrainings.getId());
+        teamForDeletedUser.setDeleted(false);
+        teamForDeletedUser.setCreatedAt(LocalDateTime.now());
+        teamForDeletedUser.setUpdatedAt(LocalDateTime.now());
+        teamForDeletedUser = entityManager.persistAndFlush(teamForDeletedUser);
 
         Training deletedTraining = new Training();
         deletedTraining.setDate(LocalDateTime.now());
         deletedTraining.setLocation("Deleted Field");
         deletedTraining.setTrainingType("Deleted Type");
         deletedTraining.setUser(userWithDeletedTrainings);
+        deletedTraining.setTeam(teamForDeletedUser);
         deletedTraining.setExercises(List.of());
         deletedTraining.setDeleted(true);
         deletedTraining.setCreatedAt(LocalDateTime.now());
@@ -187,7 +212,6 @@ class TrainingRepositoryTest {
     void findByIdAndUserIdAndDeletedFalse_ShouldReturnEmpty_WhenTrainingDoesNotBelongToUser() {
         // Arrange
         User otherUser = new User();
-        otherUser.setUsername("otheruser");
         otherUser.setUsername("otheruser");
         otherUser.setPassword("password");
         otherUser = entityManager.persistAndFlush(otherUser);
@@ -228,6 +252,7 @@ class TrainingRepositoryTest {
         newTraining.setLocation("New Field");
         newTraining.setTrainingType("New Type");
         newTraining.setUser(testUser);
+        newTraining.setTeam(testTeam);
         newTraining.setExercises(List.of(testExercise));
         newTraining.setDeleted(false);
         newTraining.setCreatedAt(LocalDateTime.now());

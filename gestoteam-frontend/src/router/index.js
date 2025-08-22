@@ -53,6 +53,10 @@ const routes = [
       { path: 'teams/:teamId/opponents', name: 'Opponents', component: OpponentsPage, props: true },
       { path: 'teams/:teamId/opponents/new', name: 'NewOpponent', component: OpponentForm, props: true, meta: { isNew: true } },
       { path: 'teams/:teamId/opponents/:opponentId/edit', name: 'EditOpponent', component: OpponentForm, props: true, meta: { isNew: false } },
+      { path: 'teams/:teamId/trainings', name: 'TeamTrainings', component: () => import('@/pages/Team/TeamTrainings.vue'), props: true },
+      { path: 'teams/:teamId/trainings/new', name: 'NewTraining', component: () => import('@/pages/Team/TrainingForm.vue'), props: true, meta: { isNew: true } },
+      { path: 'teams/:teamId/trainings/:trainingId/edit', name: 'EditTraining', component: () => import('@/pages/Team/TrainingForm.vue'), props: true, meta: { isNew: false } },
+      { path: 'teams/:teamId/trainings/:trainingId', name: 'TrainingDetails', component: () => import('@/pages/Team/TrainingDetails.vue'), props: true },
       { path: 'matches/:matchId', name: 'MatchDetails', component: MatchDetails, props: true },
       { path: 'opponents/:opponentId', name: 'OpponentDetails', component: OpponentDetails, props: true },
       

@@ -128,6 +128,41 @@ export const tableConfigurationService = {
           { columnKey: 'assists', columnLabel: 'Asist.', visible: true, sortable: true, sortOrder: 4, width: '80px' },
           { columnKey: 'cards', columnLabel: 'Tarjetas', visible: true, sortable: false, sortOrder: 5, width: '100px' }
         ]
+      },
+      trainings: {
+        tableName: 'trainings',
+        pageSize: 10,
+        defaultSortKey: 'date',
+        defaultSortOrder: 'DESC',
+        columnConfigurations: [
+          { columnKey: 'date', columnLabel: 'Fecha', visible: true, sortable: true, sortOrder: 1, width: '120px' },
+          { columnKey: 'trainingType', columnLabel: 'Tipo', visible: true, sortable: true, sortOrder: 2, width: '120px' },
+          { columnKey: 'location', columnLabel: 'Ubicación', visible: true, sortable: true, sortOrder: 3, width: '150px' },
+          { columnKey: 'observations', columnLabel: 'Observaciones', visible: true, sortable: false, sortOrder: 4, width: '200px' }
+        ]
+      },
+      attendance: {
+        tableName: 'attendance',
+        pageSize: 10,
+        defaultSortKey: 'playerName',
+        defaultSortOrder: 'ASC',
+        columnConfigurations: [
+          { columnKey: 'playerName', columnLabel: 'Jugador', visible: true, sortable: true, sortOrder: 1, width: '200px' },
+          { columnKey: 'status', columnLabel: 'Estado', visible: true, sortable: true, sortOrder: 2, width: '120px' },
+          { columnKey: 'notes', columnLabel: 'Notas', visible: true, sortable: false, sortOrder: 3, width: '200px' }
+        ]
+      },
+      exercises: {
+        tableName: 'exercises',
+        pageSize: 10,
+        defaultSortKey: 'title',
+        defaultSortOrder: 'ASC',
+        columnConfigurations: [
+          { columnKey: 'title', columnLabel: 'Título', visible: true, sortable: true, sortOrder: 1, width: '200px' },
+          { columnKey: 'category', columnLabel: 'Categoría', visible: true, sortable: true, sortOrder: 2, width: '120px' },
+          { columnKey: 'description', columnLabel: 'Descripción', visible: true, sortable: false, sortOrder: 3, width: '250px' },
+          { columnKey: 'tacticalObjectives', columnLabel: 'Obj. Tácticos', visible: true, sortable: false, sortOrder: 4, width: '150px' }
+        ]
       }
     };
 

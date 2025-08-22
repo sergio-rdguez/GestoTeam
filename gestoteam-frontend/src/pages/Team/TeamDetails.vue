@@ -51,6 +51,11 @@
             <span class="nav-title">Oponentes</span>
             <p class="nav-description">Gestiona los equipos rivales</p>
           </router-link>
+          <router-link :to="{ name: 'TeamTrainings', params: { teamId : team.id } }" class="nav-card">
+            <i class="fa-solid fa-dumbbell nav-icon"></i>
+            <span class="nav-title">Entrenamientos</span>
+            <p class="nav-description">Gestiona las sesiones de entrenamiento</p>
+          </router-link>
         </div>
       </div>
     </div>

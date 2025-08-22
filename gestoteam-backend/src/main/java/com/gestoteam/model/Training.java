@@ -44,7 +44,7 @@ public class Training {
     private Team team;
 
     @Column(columnDefinition = "TEXT")
-    private String observations; // Observaciones del entrenamiento
+    private String observations;
 
     @OneToMany(mappedBy = "training", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TrainingAttendance> attendance = new ArrayList<>();

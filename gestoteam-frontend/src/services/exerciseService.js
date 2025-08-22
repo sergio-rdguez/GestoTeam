@@ -1,64 +1,50 @@
 import api from './api';
 
-class ExerciseService {
-  async getAllExercises() {
-    try {
-      const response = await api.get('/exercises');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching exercises:', error);
-      throw error;
-    }
-  }
+export const exerciseService = {
+  /**
+   * Obtiene todos los ejercicios del usuario autenticado
+   */
+  async getExercises() {
+    const response = await api.get('/exercises');
+    return response.data;
+  },
 
+  /**
+   * Obtiene un ejercicio específico por ID
+   */
   async getExerciseById(id) {
-    try {
-      const response = await api.get(`/exercises/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching exercise:', error);
-      throw error;
-    }
-  }
+    const response = await api.get(`/exercises/${id}`);
+    return response.data;
+  },
 
+  /**
+   * Crea un nuevo ejercicio
+   */
   async createExercise(exerciseData) {
-    try {
-      const response = await api.post('/exercises', exerciseData);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating exercise:', error);
-      throw error;
-    }
-  }
+    const response = await api.post('/exercises', exerciseData);
+    return response.data;
+  },
 
+  /**
+   * Actualiza un ejercicio existente
+   */
   async updateExercise(id, exerciseData) {
-    try {
-      const response = await api.put(`/exercises/${id}`, exerciseData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating exercise:', error);
-      throw error;
-    }
-  }
+    const response = await api.put(`/exercises/${id}`, exerciseData);
+    return response.data;
+  },
 
+  /**
+   * Elimina un ejercicio (borrado lógico)
+   */
   async deleteExercise(id) {
-    try {
-      await api.delete(`/exercises/${id}`);
-    } catch (error) {
-      console.error('Error deleting exercise:', error);
-      throw error;
-    }
-  }
+    await api.delete(`/exercises/${id}`);
+  },
 
-  async getExercisesByCategory(category) {
-    try {
-      const response = await api.get(`/exercises/category/${category}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching exercises by category:', error);
-      throw error;
-    }
+  /**
+   * Obtiene las categorías de ejercicios disponibles
+   */
+  async getExerciseCategories() {
+    const response = await api.get('/enums/exercise-categories');
+    return response.data;
   }
-}
-
-export default new ExerciseService();
+};

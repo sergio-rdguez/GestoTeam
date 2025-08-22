@@ -3,6 +3,7 @@ package com.gestoteam.service;
 import com.gestoteam.dto.request.TrainingRequest;
 import com.gestoteam.dto.response.TrainingResponse;
 import com.gestoteam.exception.ResourceNotFoundException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import com.gestoteam.model.Exercise;
 import com.gestoteam.dto.response.ExerciseResponse;
 import com.gestoteam.model.Training;
@@ -11,6 +12,9 @@ import com.gestoteam.model.Team;
 import com.gestoteam.repository.ExerciseRepository;
 import com.gestoteam.repository.TrainingRepository;
 import com.gestoteam.repository.UserRepository;
+import com.gestoteam.repository.TeamRepository;
+import com.gestoteam.repository.PlayerRepository;
+import com.gestoteam.repository.TrainingAttendanceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +48,15 @@ class TrainingServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private TeamRepository teamRepository;
+
+    @Mock
+    private PlayerRepository playerRepository;
+
+    @Mock
+    private TrainingAttendanceRepository attendanceRepository;
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
@@ -73,8 +86,6 @@ class TrainingServiceTest {
         testUser = new User();
         testUser.setId(USER_ID);
         testUser.setUsername(USERNAME);
-        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(testUser));
 
         // Mock del equipo
         testTeam = new Team();
@@ -110,6 +121,9 @@ class TrainingServiceTest {
     @Test
     void createTraining_WithValidData_ShouldCreateTraining() {
         // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(testUser));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(testTeam));
         when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
         when(exerciseRepository.findAllById(Arrays.asList(1L))).thenReturn(Arrays.asList(testExercise));
 
@@ -125,10 +139,10 @@ class TrainingServiceTest {
     @Test
     void createTraining_WithInvalidUser_ShouldThrowException() {
         // Arrange
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> {
+        assertThrows(UsernameNotFoundException.class, () -> {
             trainingService.createTraining(testTrainingRequest);
         });
     }
@@ -136,6 +150,7 @@ class TrainingServiceTest {
     @Test
     void getUserTrainings_ShouldReturnTrainings() {
         // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
         when(trainingRepository.findByUserIdAndDeletedFalse(USER_ID)).thenReturn(Arrays.asList(testTraining));
 
         // Act
@@ -150,6 +165,7 @@ class TrainingServiceTest {
     @Test
     void getTrainingById_ShouldReturnTraining() {
         // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
         when(trainingRepository.findByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTraining));
 
         // Act
@@ -163,6 +179,7 @@ class TrainingServiceTest {
     @Test
     void getTrainingById_WithInvalidId_ShouldThrowException() {
         // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
         when(trainingRepository.findByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -174,6 +191,7 @@ class TrainingServiceTest {
     @Test
     void updateTraining_ShouldUpdateTraining() {
         // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
         when(trainingRepository.findByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTraining));
         when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
 
@@ -188,6 +206,7 @@ class TrainingServiceTest {
     @Test
     void deleteTraining_ShouldDeleteTraining() {
         // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
         when(trainingRepository.findByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTraining));
         when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
 
@@ -201,6 +220,7 @@ class TrainingServiceTest {
     @Test
     void addExercisesToTraining_ShouldAddExercises() {
         // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
         when(trainingRepository.findByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTraining));
         when(exerciseRepository.findAllById(Arrays.asList(1L))).thenReturn(Arrays.asList(testExercise));
         when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
@@ -217,6 +237,7 @@ class TrainingServiceTest {
     void removeExercisesFromTraining_ShouldRemoveExercises() {
         // Arrange
         testTraining.setExercises(new ArrayList<>(Arrays.asList(testExercise)));
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
         when(trainingRepository.findByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTraining));
         when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
 
@@ -232,6 +253,7 @@ class TrainingServiceTest {
     void getTrainingExercises_ShouldReturnExercises() {
         // Arrange
         testTraining.setExercises(Arrays.asList(testExercise));
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
         when(trainingRepository.findByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTraining));
 
         // Act
