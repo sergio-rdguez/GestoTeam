@@ -1,6 +1,7 @@
 package com.gestoteam.dto.response;
 
 import com.gestoteam.enums.AttendanceStatus;
+import com.gestoteam.enums.Position;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -12,6 +13,8 @@ public class TrainingAttendanceResponse {
     private String playerName;
     private String playerSurname;
     private String playerFullName;
+    private String position;
+    private int positionOrder;
     private AttendanceStatus status;
     private String notes;
     private LocalDateTime createdAt;

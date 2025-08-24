@@ -58,7 +58,7 @@ class ExerciseControllerTest {
         exerciseRequest.setTechnicalObjectives("Improve technique");
         exerciseRequest.setPhysicalObjectives("Improve fitness");
         exerciseRequest.setMaterials("Cones, balls");
-        exerciseRequest.setTacticalDiagramId(1L);
+
 
         exerciseResponse = new ExerciseResponse();
         exerciseResponse.setId(1L);
@@ -255,33 +255,5 @@ class ExerciseControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    @WithMockUser
-    void assignTacticalDiagram_ShouldAssignDiagramToExercise() throws Exception {
-        // Arrange
-        doNothing().when(exerciseService).assignTacticalDiagram(1L, 1L);
 
-        // Act & Assert
-        mockMvc.perform(post("/api/exercises/1/assign-diagram/1")
-                        .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Diagrama táctico asignado con éxito"));
-
-        verify(exerciseService).assignTacticalDiagram(1L, 1L);
-    }
-
-    @Test
-    @WithMockUser
-    void removeTacticalDiagram_ShouldRemoveDiagramFromExercise() throws Exception {
-        // Arrange
-        doNothing().when(exerciseService).removeTacticalDiagram(1L);
-
-        // Act & Assert
-        mockMvc.perform(delete("/api/exercises/1/remove-diagram")
-                        .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Diagrama táctico removido con éxito"));
-
-        verify(exerciseService).removeTacticalDiagram(1L);
-    }
 }

@@ -12,9 +12,12 @@ import java.util.Optional;
 @Repository
 public interface TrainingRepository extends JpaRepository<Training, Long> {
 
-    @Query("SELECT t FROM Training t WHERE t.user.id = :userId AND t.deleted = false")
+    @Query("SELECT t FROM Training t WHERE t.user.id = :userId AND t.deleted = false ORDER BY t.date ASC")
     List<Training> findByUserIdAndDeletedFalse(@Param("userId") Long userId);
 
     @Query("SELECT t FROM Training t WHERE t.id = :id AND t.user.id = :userId AND t.deleted = false")
     Optional<Training> findByIdAndUserIdAndDeletedFalse(@Param("id") Long id, @Param("userId") Long userId);
+
+    @Query("SELECT t FROM Training t WHERE t.team.id = :teamId AND t.deleted = false ORDER BY t.date ASC")
+    List<Training> findByTeamIdAndDeletedFalse(@Param("teamId") Long teamId);
 }

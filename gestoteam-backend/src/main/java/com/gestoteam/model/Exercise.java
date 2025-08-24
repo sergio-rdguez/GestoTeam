@@ -44,9 +44,7 @@ public class Exercise {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tactical_diagram_id", unique = true)
-    private TacticalDiagram tacticalDiagram;
+    private String imagePath;
 
     @Column(nullable = false)
     private Boolean deleted = false;

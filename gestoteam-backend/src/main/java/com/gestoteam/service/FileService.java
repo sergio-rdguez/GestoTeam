@@ -3,8 +3,10 @@ package com.gestoteam.service;
 import com.gestoteam.exception.GestoServiceException;
 import com.gestoteam.model.Player;
 import com.gestoteam.model.User;
+import com.gestoteam.model.Exercise;
 import com.gestoteam.repository.PlayerRepository;
 import com.gestoteam.repository.UserRepository;
+import com.gestoteam.repository.ExerciseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -27,6 +29,7 @@ public class FileService {
 
     private final PlayerRepository playerRepository;
     private final UserRepository userRepository;
+    private final ExerciseRepository exerciseRepository;
 
     /**
      * Obtiene el ID del usuario actual basado en el username
@@ -183,17 +186,20 @@ public class FileService {
     }
 
     /**
-     * Sube un diagrama táctico
+     * Sube una imagen para un ejercicio específico
      * 
+     * @param exerciseId ID del ejercicio
      * @param file Archivo de imagen a subir
-     * @param title Título del diagrama
-     * @param description Descripción del diagrama
      * @param userId ID del usuario que realiza la subida
      * @return URL pública de la imagen subida
-     * @throws GestoServiceException si hay error en la subida
+     * @throws GestoServiceException si el ejercicio no existe o no hay permisos
      */
-    public String uploadTacticalDiagram(MultipartFile file, String title, String description, Long userId) {
-        log.info("Subiendo diagrama táctico por usuario {}", userId);
+    public String uploadExerciseImage(Long exerciseId, MultipartFile file, Long userId) {
+        log.info("Subiendo imagen para ejercicio {} por usuario {}", exerciseId, userId);
+
+        // Verificar que el ejercicio existe
+        Exercise exercise = exerciseRepository.findById(exerciseId)
+                .orElseThrow(() -> new GestoServiceException("Ejercicio no encontrado"));
 
         if (file.isEmpty()) {
             throw new GestoServiceException("El fichero está vacío");
@@ -204,39 +210,47 @@ public class FileService {
             if (originalFilename == null || originalFilename.trim().isEmpty()) {
                 throw new GestoServiceException("Nombre de archivo inválido");
             }
-            
-            String extension = getFileExtension(originalFilename);
-            String newFilename = "tactical-diagram-" + UUID.randomUUID() + extension;
+            originalFilename = StringUtils.cleanPath(originalFilename);
+            String extension = "";
+            int dot = originalFilename.lastIndexOf('.');
+            if (dot >= 0) {
+                extension = originalFilename.substring(dot);
+            }
+            String newFilename = "exercise-" + exerciseId + "-" + UUID.randomUUID() + extension;
 
-            Path uploadDir = Paths.get("uploads", "tactical-diagrams");
+            Path uploadDir = Paths.get("uploads", "exercises");
             Files.createDirectories(uploadDir);
 
             Path target = uploadDir.resolve(newFilename);
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
-            String relativePath = Paths.get("tactical-diagrams", newFilename).toString().replace('\\', '/');
+            String relativePath = Paths.get("exercises", newFilename).toString().replace('\\', '/');
             
-            String publicUrl = "/api/files/tactical-diagrams/" + newFilename;
-            log.info("Diagrama táctico subido exitosamente");
+            // Actualizar el campo imagePath del ejercicio en la base de datos
+            exercise.setImagePath(relativePath);
+            exerciseRepository.save(exercise);
+            
+            String publicUrl = "/api/files/" + relativePath;
+            log.info("Imagen subida exitosamente para ejercicio {} y guardada en BD", exerciseId);
             return publicUrl;
         } catch (IOException ex) {
-            log.error("Error guardando diagrama táctico", ex);
+            log.error("Error guardando imagen para ejercicio {}", exerciseId, ex);
             throw new GestoServiceException("No se pudo guardar el fichero: " + ex.getMessage());
         }
     }
 
     /**
-     * Sirve un diagrama táctico desde el sistema de archivos
+     * Sirve una imagen de ejercicio desde el sistema de archivos
      * 
      * @param filename Nombre del archivo
      * @return Resource del archivo
      * @throws GestoServiceException si el archivo no existe o no es legible
      */
-    public Resource serveTacticalDiagram(String filename) {
-        log.info("Sirviendo diagrama táctico: {}", filename);
+    public Resource serveExerciseFile(String filename) {
+        log.info("Sirviendo imagen de ejercicio: {}", filename);
         
         try {
-            Path filePath = Paths.get("uploads", "tactical-diagrams", filename);
+            Path filePath = Paths.get("uploads", "exercises", filename);
             log.debug("Ruta del archivo: {}", filePath.toAbsolutePath());
             
             Resource resource = new UrlResource(filePath.toUri());
@@ -253,22 +267,8 @@ public class FileService {
         } catch (GestoServiceException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Error sirviendo diagrama táctico: {}", filename, e);
+            log.error("Error sirviendo imagen de ejercicio: {}", filename, e);
             throw new GestoServiceException("Error al servir el archivo: " + e.getMessage());
         }
-    }
-
-    /**
-     * Obtiene la extensión de un archivo
-     * 
-     * @param filename Nombre del archivo
-     * @return Extensión del archivo
-     */
-    private String getFileExtension(String filename) {
-        int dot = filename.lastIndexOf('.');
-        if (dot >= 0) {
-            return filename.substring(dot);
-        }
-        return "";
     }
 }

@@ -1,6 +1,8 @@
 package com.gestoteam.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -23,9 +25,16 @@ public class Training {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El título del entrenamiento es obligatorio")
+    @Size(min = 3, max = 255, message = "El título debe tener entre 3 y 255 caracteres")
+    private String title;
+
     private LocalDateTime date;
     private String location;
     private String trainingType;
+    
+    @Column(nullable = false)
+    private Integer sessionNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

@@ -12,6 +12,10 @@ import java.util.List;
 @Data
 public class TrainingRequest {
     
+    @NotBlank(message = "El título del entrenamiento es obligatorio")
+    @Size(min = 3, max = 255, message = "El título debe tener entre 3 y 255 caracteres")
+    private String title;
+    
     @NotNull(message = "La fecha es obligatoria")
     private LocalDateTime date;
     

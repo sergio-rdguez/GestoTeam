@@ -1,7 +1,7 @@
 <template>
   <div class="exercise-list-page">
     <PageHeader title="Mis Ejercicios" :show-back-button="true" @back="goBack">
-      <BaseButton v-if="exercises.length > 0" @click="showCreateModal = true">
+      <BaseButton v-if="exercises.length > 0" @click="createExercise">
         <i class="fa-solid fa-plus"></i> Añadir Ejercicio
       </BaseButton>
     </PageHeader>
@@ -17,7 +17,7 @@
       icon="fa-dumbbell"
     >
       <template #actions>
-        <BaseButton @click="showCreateModal = true">
+        <BaseButton @click="createExercise">
           <i class="fa-solid fa-plus"></i> Crear mi primer ejercicio
         </BaseButton>
       </template>
@@ -39,14 +39,7 @@
       </template>
     </DataTable>
 
-    <!-- Modal de creación/edición -->
-    <ExerciseFormModal
-      v-if="showCreateModal"
-      :exercise="editingExercise"
-      :is-edit="!!editingExercise"
-      @close="closeModal"
-      @saved="onExerciseSaved"
-    />
+
   </div>
 </template>
 
@@ -57,7 +50,7 @@ import PageHeader from "@/components/layout/PageHeader.vue";
 import BaseButton from "@/components/base/BaseButton.vue";
 import EmptyState from "@/components/common/EmptyState.vue";
 import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
-import ExerciseFormModal from "@/components/exercises/ExerciseFormModal.vue";
+
 
 export default {
   components: {
@@ -65,15 +58,13 @@ export default {
     PageHeader,
     BaseButton,
     EmptyState,
-    LoadingSpinner,
-    ExerciseFormModal
+    LoadingSpinner
   },
   data() {
     return {
       exercises: [],
       loading: true,
-      showCreateModal: false,
-      editingExercise: null,
+
       columns: [
         { key: 'title', label: 'Título', sortable: true },
         { key: 'category', label: 'Categoría', sortable: true },
@@ -99,13 +90,11 @@ export default {
     viewExercise(exercise) {
       this.$router.push(`/my-resources/exercises/${exercise.id}`);
     },
-    closeModal() {
-      this.showCreateModal = false;
-      this.editingExercise = null;
+    createExercise() {
+      this.$router.push('/my-resources/exercises/new');
     },
     editExercise(exercise) {
-      this.editingExercise = exercise;
-      this.showCreateModal = true;
+      this.$router.push(`/my-resources/exercises/${exercise.id}/edit`);
     },
     async deleteExercise(exercise) {
       if (!confirm(`¿Estás seguro de que quieres eliminar el ejercicio "${exercise.title}"?`)) {
@@ -119,11 +108,6 @@ export default {
       } catch (error) {
         console.error("Error al eliminar el ejercicio:", error);
       }
-    },
-    async onExerciseSaved() {
-      await this.fetchExercises();
-      this.closeModal();
-      // Aquí podrías usar el sistema de notificaciones si lo tienes
     },
     getCategoryLabel(category) {
       const categoryMap = {
@@ -165,7 +149,3 @@ export default {
   font-size: var(--font-size-sm);
 }
 </style>
-
-
-
-

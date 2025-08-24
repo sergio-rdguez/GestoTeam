@@ -11,7 +11,7 @@
     >
       <option v-if="placeholder" disabled value="">{{ placeholder }}</option>
       <option v-for="option in options" :key="option.value" :value="option.value">
-        {{ option.text }}
+        {{ option.label || option.text }}
       </option>
     </select>
     <p v-if="error" class="error-message">{{ error }}</p>

@@ -5,10 +5,10 @@ import com.gestoteam.dto.response.ExerciseResponse;
 import com.gestoteam.enums.ExerciseCategory;
 import com.gestoteam.exception.ResourceNotFoundException;
 import com.gestoteam.model.Exercise;
-import com.gestoteam.model.TacticalDiagram;
+
 import com.gestoteam.model.User;
 import com.gestoteam.repository.ExerciseRepository;
-import com.gestoteam.repository.TacticalDiagramRepository;
+
 import com.gestoteam.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,8 +42,7 @@ class ExerciseServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private TacticalDiagramRepository tacticalDiagramRepository;
+
 
     @Mock
     private SecurityContext securityContext;
@@ -57,7 +56,7 @@ class ExerciseServiceTest {
     private User testUser;
     private Exercise testExercise;
     private ExerciseRequest exerciseRequest;
-    private TacticalDiagram testDiagram;
+
 
     @BeforeEach
     void setUp() {
@@ -74,10 +73,7 @@ class ExerciseServiceTest {
         testExercise.setCreatedAt(LocalDateTime.now());
         testExercise.setUpdatedAt(LocalDateTime.now());
 
-        testDiagram = new TacticalDiagram();
-        testDiagram.setId(1L);
-        testDiagram.setTitle("Test Diagram");
-        testDiagram.setCreatedBy(testUser);
+
 
         exerciseRequest = new ExerciseRequest();
         exerciseRequest.setTitle("New Exercise");
@@ -87,7 +83,7 @@ class ExerciseServiceTest {
         exerciseRequest.setTechnicalObjectives("Improve technique");
         exerciseRequest.setPhysicalObjectives("Improve fitness");
         exerciseRequest.setMaterials("Cones, balls");
-        exerciseRequest.setTacticalDiagramId(1L);
+
 
         // Mock SecurityContext
         when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -289,78 +285,13 @@ class ExerciseServiceTest {
         verify(exerciseRepository).findByIdAndUserIdAndNotDeleted(eq(1L), anyLong());
     }
 
-    @Test
-    void assignTacticalDiagram_ShouldAssignDiagramToExercise_WhenValid() {
-        // Arrange
-        when(exerciseRepository.findByIdAndUserIdAndNotDeleted(eq(1L), anyLong()))
-                .thenReturn(Optional.of(testExercise));
-        when(tacticalDiagramRepository.findByIdAndDeletedFalse(1L))
-                .thenReturn(Optional.of(testDiagram));
-        when(exerciseRepository.save(any(Exercise.class))).thenReturn(testExercise);
 
-        // Act
-        exerciseService.assignTacticalDiagram(1L, 1L);
 
-        // Assert
-        verify(exerciseRepository).findByIdAndUserIdAndNotDeleted(eq(1L), anyLong());
-        verify(tacticalDiagramRepository).findByIdAndDeletedFalse(1L);
-        verify(exerciseRepository).save(any(Exercise.class));
-        assertEquals(testDiagram, testExercise.getTacticalDiagram());
-    }
 
-    @Test
-    void assignTacticalDiagram_ShouldThrowException_WhenExerciseNotFound() {
-        // Arrange
-        when(exerciseRepository.findByIdAndUserIdAndNotDeleted(eq(1L), anyLong()))
-                .thenReturn(Optional.empty());
 
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> exerciseService.assignTacticalDiagram(1L, 1L));
-        verify(exerciseRepository).findByIdAndUserIdAndNotDeleted(eq(1L), anyLong());
-        verify(tacticalDiagramRepository, never()).findByIdAndDeletedFalse(anyLong());
-    }
 
-    @Test
-    void assignTacticalDiagram_ShouldThrowException_WhenDiagramNotFound() {
-        // Arrange
-        when(exerciseRepository.findByIdAndUserIdAndNotDeleted(eq(1L), anyLong()))
-                .thenReturn(Optional.of(testExercise));
-        when(tacticalDiagramRepository.findByIdAndDeletedFalse(1L))
-                .thenReturn(Optional.empty());
 
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> exerciseService.assignTacticalDiagram(1L, 1L));
-        verify(exerciseRepository).findByIdAndUserIdAndNotDeleted(eq(1L), anyLong());
-        verify(tacticalDiagramRepository).findByIdAndDeletedFalse(1L);
-        verify(exerciseRepository, never()).save(any(Exercise.class));
-    }
 
-    @Test
-    void removeTacticalDiagram_ShouldRemoveDiagramFromExercise_WhenValid() {
-        // Arrange
-        testExercise.setTacticalDiagram(testDiagram);
-        when(exerciseRepository.findByIdAndUserIdAndNotDeleted(eq(1L), anyLong()))
-                .thenReturn(Optional.of(testExercise));
-        when(exerciseRepository.save(any(Exercise.class))).thenReturn(testExercise);
 
-        // Act
-        exerciseService.removeTacticalDiagram(1L);
 
-        // Assert
-        verify(exerciseRepository).findByIdAndUserIdAndNotDeleted(eq(1L), anyLong());
-        verify(exerciseRepository).save(any(Exercise.class));
-        assertNull(testExercise.getTacticalDiagram());
-    }
-
-    @Test
-    void removeTacticalDiagram_ShouldThrowException_WhenExerciseNotFound() {
-        // Arrange
-        when(exerciseRepository.findByIdAndUserIdAndNotDeleted(eq(1L), anyLong()))
-                .thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> exerciseService.removeTacticalDiagram(1L));
-        verify(exerciseRepository).findByIdAndUserIdAndNotDeleted(eq(1L), anyLong());
-        verify(exerciseRepository, never()).save(any(Exercise.class));
-    }
 }

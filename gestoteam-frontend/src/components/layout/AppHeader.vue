@@ -9,6 +9,9 @@
         <router-link to="/my-resources" class="action-button" aria-label="Mis Recursos">
           <i class="fas fa-folder-open"></i>
         </router-link>
+        <button @click="openTacticalBoard" class="action-button" aria-label="Pizarra Táctica">
+          <i class="fas fa-chalkboard"></i>
+        </button>
         <router-link to="/teams" class="action-button" aria-label="Mis Equipos">
           <i class="fas fa-users"></i>
         </router-link>
@@ -43,6 +46,12 @@ const toggleSystemStatus = () => {
   window.dispatchEvent(new CustomEvent('toggle-system-status', { 
     detail: { show: showSystemStatus.value } 
   }));
+};
+
+const openTacticalBoard = () => {
+  // Abrir la pizarra táctica en una nueva ventana con parámetro de versión para forzar recarga
+  window.open('/tactical-board.html?v=' + Date.now(), 'TacticalBoard', 
+    'width=1200,height=800,scrollbars=yes,resizable=yes');
 };
 </script>
 

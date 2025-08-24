@@ -10,6 +10,15 @@
       <form @submit.prevent="submitForm">
         <div class="form-grid">
           <BaseInput
+            v-model="training.title"
+            label="Título del Entrenamiento"
+            id="title"
+            placeholder="Ej: Entrenamiento Táctico - Presión Alta"
+            required
+            class="form-grid-span-2"
+          />
+          
+          <BaseInput
             v-model="training.date"
             label="Fecha y Hora"
             id="date"
@@ -77,6 +86,7 @@ export default {
       isEditMode: false,
       isSaving: false,
       training: {
+        title: '',
         date: '',
         location: '',
         trainingType: '',
@@ -91,6 +101,7 @@ export default {
         const response = await trainingService.getTrainingById(this.trainingId);
         this.training = {
           ...response,
+          title: response.title || '',
           date: this.formatDateForInput(response.date)
         };
       } catch (error) {

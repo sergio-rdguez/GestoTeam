@@ -54,6 +54,24 @@ public class TrainingService {
     }
 
     /**
+     * Obtiene todos los entrenamientos de un equipo específico
+     */
+    public List<TrainingResponse> getTeamTrainings(Long teamId) {
+        Long userId = getCurrentUserId();
+        
+        // Verificar que el equipo existe y pertenece al usuario
+        Team team = teamRepository.findById(teamId)
+            .orElseThrow(() -> new ResourceNotFoundException("Equipo no encontrado"));
+        
+        if (!team.getOwnerId().equals(userId)) {
+            throw new AccessDeniedException("No tienes acceso a este equipo");
+        }
+        
+        List<Training> trainings = trainingRepository.findByTeamIdAndDeletedFalse(teamId);
+        return trainings.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    /**
      * Obtiene un entrenamiento específico del usuario autenticado
      */
     public TrainingResponse getTrainingById(Long id) {
@@ -80,13 +98,19 @@ public class TrainingService {
         }
 
         Training training = new Training();
+        training.setTitle(trainingRequest.getTitle());
         training.setDate(trainingRequest.getDate());
         training.setLocation(trainingRequest.getLocation());
         training.setTrainingType(trainingRequest.getTrainingType());
-        training.setTeam(team);
         training.setObservations(trainingRequest.getObservations());
         training.setUser(user);
+        training.setTeam(team);
         training.setDeleted(false);
+        
+        // Calcular número de sesión automáticamente
+        Integer sessionNumber = calculateSessionNumber(team.getId(), trainingRequest.getDate());
+        training.setSessionNumber(sessionNumber);
+        
         training.setCreatedAt(LocalDateTime.now());
         training.setUpdatedAt(LocalDateTime.now());
 
@@ -121,6 +145,7 @@ public class TrainingService {
         Training training = trainingRepository.findByIdAndUserIdAndDeletedFalse(id, userId)
             .orElseThrow(() -> new ResourceNotFoundException("Entrenamiento no encontrado con id: " + id));
 
+        training.setTitle(trainingRequest.getTitle());
         training.setDate(trainingRequest.getDate());
         training.setLocation(trainingRequest.getLocation());
         training.setTrainingType(trainingRequest.getTrainingType());
@@ -229,9 +254,11 @@ public class TrainingService {
     private TrainingResponse mapToResponse(Training training) {
         TrainingResponse response = new TrainingResponse();
         response.setId(training.getId());
+        response.setTitle(training.getTitle());
         response.setDate(training.getDate());
         response.setLocation(training.getLocation());
         response.setTrainingType(training.getTrainingType());
+        response.setSessionNumber(training.getSessionNumber());
         response.setUserId(training.getUser().getId());
         response.setTeamId(training.getTeam().getId());
         response.setTeamName(training.getTeam().getName());
@@ -368,10 +395,34 @@ public class TrainingService {
         response.setPlayerName(attendance.getPlayer().getName());
         response.setPlayerSurname(attendance.getPlayer().getSurnameFirst());
         response.setPlayerFullName(attendance.getPlayer().getFullName());
+        response.setPosition(attendance.getPlayer().getPosition() != null ? attendance.getPlayer().getPosition().name() : null);
+        response.setPositionOrder(attendance.getPlayer().getPosition() != null ? attendance.getPlayer().getPosition().getOrder() : 999);
         response.setStatus(attendance.getStatus());
         response.setNotes(attendance.getNotes());
         response.setCreatedAt(attendance.getCreatedAt());
         response.setUpdatedAt(attendance.getUpdatedAt());
         return response;
+    }
+    
+    /**
+     * Calcula el número de sesión automáticamente basado en la fecha
+     * La sesión más antigua será la número 1
+     */
+    private Integer calculateSessionNumber(Long teamId, LocalDateTime trainingDate) {
+        // Obtener todos los entrenamientos del equipo ordenados por fecha (más antiguos primero)
+        List<Training> existingTrainings = trainingRepository.findByTeamIdAndDeletedFalse(teamId);
+        
+        // Si no hay entrenamientos previos, esta será la sesión 1
+        if (existingTrainings.isEmpty()) {
+            return 1;
+        }
+        
+        // Contar cuántos entrenamientos tienen fecha anterior o igual a la fecha del nuevo entrenamiento
+        long sessionsBefore = existingTrainings.stream()
+            .filter(training -> !training.getDate().isAfter(trainingDate))
+            .count();
+        
+        // El número de sesión será el siguiente al último existente
+        return (int) (sessionsBefore + 1);
     }
 }

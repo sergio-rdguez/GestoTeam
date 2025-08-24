@@ -19,21 +19,22 @@
         </div>
       </BaseCard>
 
-      <!-- Tactical Board -->
-      <BaseCard class="resource-card" @click="goToTacticalBoard">
+      <!-- Pizarra Táctica -->
+      <BaseCard class="resource-card" @click="openTacticalBoard">
         <div class="card-content">
           <div class="card-icon">
-            <i class="fas fa-draw-polygon"></i>
+            <i class="fas fa-chalkboard"></i>
           </div>
           <div class="card-info">
-            <h3>Tactical Board</h3>
-            <p>Usa la pizarra táctica para crear diagramas en modo libre</p>
+            <h3>Pizarra Táctica</h3>
+            <p>Herramienta avanzada para crear diagramas tácticos</p>
           </div>
           <div class="card-arrow">
             <i class="fas fa-arrow-right"></i>
           </div>
         </div>
       </BaseCard>
+
     </div>
   </div>
 </template>
@@ -53,9 +54,13 @@ const goToExercises = () => {
   router.push('/my-resources/exercises');
 };
 
-const goToTacticalBoard = () => {
-  router.push('/my-resources/tactical-board');
+const openTacticalBoard = () => {
+  // Abrir la pizarra táctica en una nueva ventana con parámetro de versión para forzar recarga
+  window.open('/tactical-board.html?v=' + Date.now(), 'TacticalBoard', 
+    'width=1200,height=800,scrollbars=yes,resizable=yes');
 };
+
+
 </script>
 
 <style scoped>

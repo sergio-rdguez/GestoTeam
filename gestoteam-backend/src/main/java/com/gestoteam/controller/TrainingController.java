@@ -40,6 +40,19 @@ public class TrainingController {
     }
 
     /**
+     * Obtiene todos los entrenamientos de un equipo específico
+     */
+    @GetMapping("/team/{teamId}")
+    @Operation(summary = "Obtener entrenamientos por equipo", description = "Devuelve todos los entrenamientos no eliminados de un equipo específico que pertenece al usuario autenticado.")
+    @ApiResponse(responseCode = "200", description = "Lista de entrenamientos del equipo obtenida con éxito")
+    @ApiResponse(responseCode = "401", description = "Usuario no autenticado")
+    @ApiResponse(responseCode = "404", description = "Equipo no encontrado o no pertenece al usuario")
+    public ResponseEntity<List<TrainingResponse>> getTeamTrainings(@PathVariable Long teamId) {
+        List<TrainingResponse> trainings = trainingService.getTeamTrainings(teamId);
+        return ResponseEntity.ok(trainings);
+    }
+
+    /**
      * Obtiene un entrenamiento específico del usuario autenticado
      */
     @GetMapping("/{id}")

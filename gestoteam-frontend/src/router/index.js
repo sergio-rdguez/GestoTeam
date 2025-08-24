@@ -19,6 +19,7 @@ import OpponentForm from '@/pages/Team/Opponents/OpponentForm.vue';
 import OpponentDetails from '@/pages/Team/Opponents/OpponentDetails.vue';
 import ExerciseListPage from '@/pages/exercises/ExerciseListPage.vue';
 import ExerciseDetailsPage from '@/pages/exercises/ExerciseDetailsPage.vue';
+import ExerciseFormPage from '@/pages/exercises/ExerciseFormPage.vue';
 
 const routes = [
   {
@@ -57,14 +58,17 @@ const routes = [
       { path: 'teams/:teamId/trainings/new', name: 'NewTraining', component: () => import('@/pages/Team/TrainingForm.vue'), props: true, meta: { isNew: true } },
       { path: 'teams/:teamId/trainings/:trainingId/edit', name: 'EditTraining', component: () => import('@/pages/Team/TrainingForm.vue'), props: true, meta: { isNew: false } },
       { path: 'teams/:teamId/trainings/:trainingId', name: 'TrainingDetails', component: () => import('@/pages/Team/TrainingDetails.vue'), props: true },
+      { path: 'teams/:teamId/trainings/:trainingId/attendance', name: 'TrainingAttendance', component: () => import('@/pages/Team/TrainingAttendance.vue'), props: true },
       { path: 'matches/:matchId', name: 'MatchDetails', component: MatchDetails, props: true },
       { path: 'opponents/:opponentId', name: 'OpponentDetails', component: OpponentDetails, props: true },
       
       // Nuevas rutas para el Centro de Recursos
       { path: 'my-resources', name: 'MyResources', component: () => import('@/pages/MyResourcesPage.vue') },
       { path: 'my-resources/exercises', name: 'Exercises', component: ExerciseListPage },
+      { path: 'my-resources/exercises/new', name: 'NewExercise', component: ExerciseFormPage, meta: { isNew: true } },
+      { path: 'my-resources/exercises/:id/edit', name: 'EditExercise', component: ExerciseFormPage, props: true, meta: { isNew: false } },
       { path: 'my-resources/exercises/:id', name: 'ExerciseDetails', component: ExerciseDetailsPage, props: true },
-      { path: 'my-resources/tactical-board', name: 'TacticalBoard', component: () => import('@/pages/TacticalBoardPage.vue') },
+    
     ],
   },
 ];

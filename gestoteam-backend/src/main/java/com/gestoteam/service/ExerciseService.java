@@ -20,8 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.gestoteam.model.TacticalDiagram;
-import com.gestoteam.repository.TacticalDiagramRepository;
+
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +30,7 @@ public class ExerciseService {
 
     private final ExerciseRepository exerciseRepository;
     private final UserRepository userRepository;
-    private final TacticalDiagramRepository tacticalDiagramRepository;
+
 
 
     /**
@@ -92,21 +91,7 @@ public class ExerciseService {
         exercise.setCreatedAt(LocalDateTime.now());
         exercise.setUpdatedAt(LocalDateTime.now());
 
-        // Asignar diagrama táctico si se proporciona
-        if (exerciseRequest.getTacticalDiagramId() != null) {
-            try {
-                TacticalDiagram diagram = tacticalDiagramRepository.findByIdAndDeletedFalse(exerciseRequest.getTacticalDiagramId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Diagrama táctico no encontrado"));
-                
-                if (!diagram.getCreatedBy().getId().equals(userId)) {
-                    log.warn("Usuario {} no tiene permisos para el diagrama {}", userId, exerciseRequest.getTacticalDiagramId());
-                } else {
-                    exercise.setTacticalDiagram(diagram);
-                }
-            } catch (Exception e) {
-                log.warn("No se pudo asignar el diagrama táctico: {}", e.getMessage());
-            }
-        }
+
 
         Exercise savedExercise = exerciseRepository.save(exercise);
         log.info("Ejercicio creado: {} por usuario: {}", savedExercise.getId(), userId);
@@ -129,21 +114,7 @@ public class ExerciseService {
         exercise.setMaterials(exerciseRequest.getMaterials());
         exercise.setCategory(exerciseRequest.getCategory());
         
-        // Actualizar diagrama táctico si se proporciona
-        if (exerciseRequest.getTacticalDiagramId() != null) {
-            try {
-                TacticalDiagram diagram = tacticalDiagramRepository.findByIdAndDeletedFalse(exerciseRequest.getTacticalDiagramId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Diagrama táctico no encontrado"));
-                
-                if (!diagram.getCreatedBy().getId().equals(userId)) {
-                    log.warn("Usuario {} no tiene permisos para el diagrama {}", userId, exerciseRequest.getTacticalDiagramId());
-                } else {
-                    exercise.setTacticalDiagram(diagram);
-                }
-            } catch (Exception e) {
-                log.warn("No se pudo asignar el diagrama táctico: {}", e.getMessage());
-            }
-        }
+
         
         exercise.setUpdatedAt(LocalDateTime.now());
 
@@ -174,44 +145,7 @@ public class ExerciseService {
         return exerciseRepository.findByIdAndUserIdAndNotDeleted(exerciseId, userId).isPresent();
     }
 
-    /**
-     * Asigna un diagrama táctico a un ejercicio
-     */
-    public void assignTacticalDiagram(Long exerciseId, Long diagramId) {
-        Long userId = getCurrentUserId();
-        Exercise exercise = exerciseRepository.findByIdAndUserIdAndNotDeleted(exerciseId, userId)
-            .orElseThrow(() -> new ResourceNotFoundException("Ejercicio no encontrado con id: " + exerciseId));
-        
-        // Verificar que el diagrama existe y pertenece al usuario
-        TacticalDiagram diagram = tacticalDiagramRepository.findByIdAndDeletedFalse(diagramId)
-            .orElseThrow(() -> new ResourceNotFoundException("Diagrama táctico no encontrado"));
-        
-        if (!diagram.getCreatedBy().getId().equals(userId)) {
-            throw new AccessDeniedException("No tienes permisos para acceder a este diagrama");
-        }
-        
-        // Verificar que el diagrama no esté ya asignado a otro ejercicio
-        if (diagram.getExercise() != null && !diagram.getExercise().getId().equals(exerciseId)) {
-            throw new AccessDeniedException("Este diagrama táctico ya está asignado a otro ejercicio");
-        }
-        
-        exercise.setTacticalDiagram(diagram);
-        exerciseRepository.save(exercise);
-        log.info("Diagrama táctico {} asignado al ejercicio {}", diagramId, exerciseId);
-    }
 
-    /**
-     * Remueve el diagrama táctico de un ejercicio
-     */
-    public void removeTacticalDiagram(Long exerciseId) {
-        Long userId = getCurrentUserId();
-        Exercise exercise = exerciseRepository.findByIdAndUserIdAndNotDeleted(exerciseId, userId)
-            .orElseThrow(() -> new ResourceNotFoundException("Ejercicio no encontrado con id: " + exerciseId));
-        
-        exercise.setTacticalDiagram(null);
-        exerciseRepository.save(exercise);
-        log.info("Diagrama táctico removido del ejercicio {}", exerciseId);
-    }
 
     /**
      * Obtiene el ID del usuario autenticado desde el contexto de seguridad
@@ -240,11 +174,9 @@ public class ExerciseService {
         response.setCreatedAt(exercise.getCreatedAt());
         response.setUpdatedAt(exercise.getUpdatedAt());
         
-        // Incluir información del diagrama táctico si existe
-        if (exercise.getTacticalDiagram() != null) {
-            response.setTacticalDiagramId(exercise.getTacticalDiagram().getId());
-            response.setTacticalDiagramTitle(exercise.getTacticalDiagram().getTitle());
-            response.setTacticalDiagramImageUrl(exercise.getTacticalDiagram().getFilePath());
+        // Incluir información de la imagen del ejercicio si existe
+        if (exercise.getImagePath() != null && !exercise.getImagePath().isBlank()) {
+            response.setImageUrl("/api/files/" + exercise.getImagePath());
         }
         
         return response;

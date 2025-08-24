@@ -10,6 +10,14 @@ export const trainingService = {
   },
 
   /**
+   * Obtiene todos los entrenamientos de un equipo específico
+   */
+  async getTeamTrainings(teamId) {
+    const response = await api.get(`/trainings/team/${teamId}`);
+    return response.data;
+  },
+
+  /**
    * Obtiene un entrenamiento específico por ID
    */
   async getTrainingById(id) {

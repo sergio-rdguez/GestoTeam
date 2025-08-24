@@ -32,6 +32,5 @@ public class ExerciseRequest {
     @NotNull(message = "La categoría es obligatoria")
     private ExerciseCategory category;
     
-    // ID del diagrama táctico a asignar (opcional)
-    private Long tacticalDiagramId;
+
 }

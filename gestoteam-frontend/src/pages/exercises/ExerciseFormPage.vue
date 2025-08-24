@@ -1,14 +1,13 @@
 <template>
-  <div class="modal-overlay" @click="closeModal">
-    <div class="modal-content" @click.stop>
-      <div class="modal-header">
-        <h2>{{ isEdit ? 'Editar Ejercicio' : 'Nuevo Ejercicio' }}</h2>
-        <button @click="closeModal" class="close-button">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
+  <div class="exercise-form-page">
+    <PageHeader 
+      :title="isEdit ? 'Editar Ejercicio' : 'Nuevo Ejercicio'" 
+      show-back-button 
+      @back="goBack" 
+    />
 
-      <div class="modal-body">
+    <div class="form-container">
+      <BaseCard class="form-card">
         <form @submit.prevent="saveExercise" class="exercise-form">
           <!-- Información básica -->
           <div class="form-section">
@@ -100,16 +99,24 @@
             </div>
           </div>
 
-          <!-- Pizarra Táctica -->
+          <!-- Imagen del Ejercicio -->
           <div class="form-section">
-            <h3>Diagrama Táctico</h3>
+            <h3>Imagen del Ejercicio</h3>
             
-            <div class="tactical-board-container">
-              <TacticalBoard
-                :initial-data="form.drawingData"
-                :read-only="false"
-                @drawing-exported="onDrawingExported"
+            <div v-if="currentImageUrl" class="current-image">
+              <img :src="currentImageUrl" alt="Imagen actual" class="preview-image" />
+              <small>Imagen actual del ejercicio</small>
+            </div>
+            
+            <div class="form-group">
+              <label for="imageFile">Seleccionar Imagen</label>
+              <input 
+                id="imageFile" 
+                type="file" 
+                accept="image/*" 
+                @change="onImageSelected" 
               />
+              <small class="form-help">Formatos soportados: JPG, PNG, GIF, WEBP</small>
             </div>
           </div>
 
@@ -118,7 +125,7 @@
             <BaseButton
               type="button"
               variant="secondary"
-              @click="closeModal"
+              @click="goBack"
             >
               Cancelar
             </BaseButton>
@@ -132,40 +139,36 @@
             </BaseButton>
           </div>
         </form>
-      </div>
+      </BaseCard>
     </div>
   </div>
 </template>
 
 <script setup>
-/* eslint-disable no-undef */
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import BaseInput from '@/components/base/BaseInput.vue';
 import BaseSelect from '@/components/base/BaseSelect.vue';
 import BaseTextarea from '@/components/base/BaseTextarea.vue';
 import BaseButton from '@/components/base/BaseButton.vue';
+import BaseCard from '@/components/base/BaseCard.vue';
+import PageHeader from '@/components/layout/PageHeader.vue';
 
-import TacticalBoard from './TacticalBoard.vue';
-import exerciseService from '@/services/exerciseService';
+import { exerciseService } from '@/services/exerciseService';
 import { useNotification } from '@/composables/useNotification';
+import api from '@/services/api';
+import { buildImageUrl } from '@/utils/imageUtils';
 
-const props = defineProps({
-  exercise: {
-    type: Object,
-    default: null
-  },
-  isEdit: {
-    type: Boolean,
-    default: false
-  }
-});
-
-const emit = defineEmits(['close', 'saved']);
-
+const route = useRoute();
+const router = useRouter();
 const { showNotification } = useNotification();
+
+const isEdit = computed(() => route.params.id !== undefined);
 
 // Estado del formulario
 const saving = ref(false);
+const selectedImageFile = ref(null);
+const currentImageUrl = ref(null);
 const form = reactive({
   title: '',
   description: '',
@@ -173,27 +176,35 @@ const form = reactive({
   tacticalObjectives: '',
   technicalObjectives: '',
   physicalObjectives: '',
-  material: '',
-  drawingData: null
+  material: ''
 });
 
-// Opciones de categoría
+// Opciones de categoría - Corregido para usar 'text' en lugar de 'label'
 const categoryOptions = [
-  { value: 'CALENTAMIENTO', label: 'Calentamiento' },
-  { value: 'TECNICO', label: 'Técnico' },
-  { value: 'TACTICO', label: 'Táctico' },
-  { value: 'FISICO', label: 'Físico' },
-  { value: 'PARTIDO_MODIFICADO', label: 'Partido Modificado' },
-  { value: 'OTRO', label: 'Otro' }
+  { value: 'CALENTAMIENTO', text: 'Calentamiento' },
+  { value: 'TECNICO', text: 'Técnico' },
+  { value: 'TACTICO', text: 'Táctico' },
+  { value: 'FISICO', text: 'Físico' },
+  { value: 'PARTIDO_MODIFICADO', text: 'Partido Modificado' },
+  { value: 'OTRO', text: 'Otro' }
 ];
 
 // Métodos
-const closeModal = () => {
-  emit('close');
+const goBack = () => {
+  router.push('/my-resources/exercises');
 };
 
-const onDrawingExported = (drawingData) => {
-  form.drawingData = drawingData;
+const onImageSelected = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    selectedImageFile.value = file;
+    // Crear preview de la imagen
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      currentImageUrl.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
 };
 
 const saveExercise = async () => {
@@ -213,22 +224,52 @@ const saveExercise = async () => {
       tacticalObjectives: form.tacticalObjectives || null,
       technicalObjectives: form.technicalObjectives || null,
       physicalObjectives: form.physicalObjectives || null,
-      material: form.material || null,
-      drawingData: form.drawingData ? JSON.stringify(form.drawingData) : null
+      materials: form.material || null
     };
     
-    if (props.isEdit) {
-      await exerciseService.updateExercise(props.exercise.id, exerciseData);
+    let response;
+    if (isEdit.value) {
+      response = await exerciseService.updateExercise(route.params.id, exerciseData);
     } else {
-      await exerciseService.createExercise(exerciseData);
+      response = await exerciseService.createExercise(exerciseData);
+    }
+
+    // Subir imagen si se seleccionó una nueva
+    if (selectedImageFile.value) {
+      try {
+        const formData = new FormData();
+        formData.append('file', selectedImageFile.value);
+        
+        const imageResponse = await api.post(`/files/exercises/${response.id}/image`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        showNotification('Imagen subida correctamente', 'success');
+        
+        // Actualizar la URL de la imagen actual
+        if (imageResponse.data) {
+          currentImageUrl.value = buildImageUrl(imageResponse.data);
+        }
+      } catch (imageError) {
+        console.error('Error al subir imagen:', imageError);
+        showNotification(`Error al subir la imagen: ${imageError.message || 'Error desconocido'}`, 'error');
+      }
     }
     
-    emit('saved');
+    showNotification(
+      `Ejercicio ${isEdit.value ? 'actualizado' : 'creado'} correctamente`, 
+      'success'
+    );
+    
+    // Redirigir a la lista de ejercicios
+    router.push('/my-resources/exercises');
     
   } catch (error) {
     console.error('Error saving exercise:', error);
     showNotification(
-      `Error al ${props.isEdit ? 'actualizar' : 'crear'} el ejercicio`, 
+      `Error al ${isEdit.value ? 'actualizar' : 'crear'} el ejercicio`, 
       'error'
     );
   } finally {
@@ -236,131 +277,63 @@ const saveExercise = async () => {
   }
 };
 
-const loadExerciseData = (exercise) => {
-  if (!exercise) return;
+const loadExerciseData = async () => {
+  if (!isEdit.value) return;
   
-  form.title = exercise.title || '';
-  form.description = exercise.description || '';
-  form.category = exercise.category || '';
-  form.tacticalObjectives = exercise.tacticalObjectives || '';
-  form.technicalObjectives = exercise.technicalObjectives || '';
-  form.physicalObjectives = exercise.physicalObjectives || '';
-  form.material = exercise.material || '';
-  
-  // Cargar datos del diagrama si existe
-  if (exercise.drawingData) {
-    try {
-      form.drawingData = JSON.parse(exercise.drawingData);
-    } catch (e) {
-      console.warn('Error parsing drawing data:', e);
-      form.drawingData = null;
+  try {
+    const exercise = await exerciseService.getExerciseById(route.params.id);
+    
+    form.title = exercise.title || '';
+    form.description = exercise.description || '';
+    form.category = exercise.category || '';
+    form.tacticalObjectives = exercise.tacticalObjectives || '';
+    form.technicalObjectives = exercise.technicalObjectives || '';
+    form.physicalObjectives = exercise.physicalObjectives || '';
+    form.material = exercise.materials || '';
+    
+    // Cargar imagen existente si existe
+    if (exercise.imageUrl) {
+      currentImageUrl.value = buildImageUrl(exercise.imageUrl);
+    } else {
+      currentImageUrl.value = null;
     }
-  } else {
-    form.drawingData = null;
+    
+    // Limpiar imagen seleccionada al cargar ejercicio existente
+    selectedImageFile.value = null;
+  } catch (error) {
+    console.error('Error loading exercise:', error);
+    showNotification('Error al cargar el ejercicio', 'error');
+    router.push('/my-resources/exercises');
   }
-};
-
-const resetForm = () => {
-  form.title = '';
-  form.description = '';
-  form.category = '';
-  form.tacticalObjectives = '';
-  form.technicalObjectives = '';
-  form.physicalObjectives = '';
-  form.material = '';
-  form.drawingData = null;
 };
 
 // Lifecycle
 onMounted(() => {
-  if (props.exercise) {
-    loadExerciseData(props.exercise);
-  } else {
-    resetForm();
-  }
+  loadExerciseData();
 });
-
-// Observar cambios en el ejercicio
-watch(() => props.exercise, (newExercise) => {
-  if (newExercise) {
-    loadExerciseData(newExercise);
-  } else {
-    resetForm();
-  }
-}, { immediate: true });
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1000;
+.exercise-form-page {
+  min-height: 100vh;
+  background: var(--color-background);
+  padding: var(--spacing-6);
 }
 
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  max-width: 1000px;
-  max-height: 90vh;
-  width: 100%;
+.form-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form-card {
+  background: var(--color-background-white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  animation: slideIn 0.3s ease-out;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e0e0e0;
-  background: #f8f9fa;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-}
-
-.close-button {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 6px;
-  background: #f0f0f0;
-  color: #666;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.close-button:hover {
-  background: #e0e0e0;
-  color: #333;
-}
-
-.modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  max-height: calc(90vh - 80px);
 }
 
 .exercise-form {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  padding: var(--spacing-6);
 }
 
 .form-section {
@@ -399,11 +372,24 @@ watch(() => props.exercise, (newExercise) => {
   font-size: 14px;
 }
 
-.tactical-board-container {
-  height: 500px;
-  border: 2px solid #e0e0e0;
+.current-image {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.preview-image {
+  max-width: 200px;
+  max-height: 150px;
   border-radius: 8px;
-  overflow: hidden;
+  border: 2px solid #e0e0e0;
+  object-fit: cover;
+}
+
+.current-image small {
+  display: block;
+  margin-top: 8px;
+  color: #666;
+  font-size: 0.875rem;
 }
 
 .form-actions {
@@ -414,34 +400,14 @@ watch(() => props.exercise, (newExercise) => {
   border-top: 1px solid #e0e0e0;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @media (max-width: 768px) {
-  .modal-content {
-    max-width: 95vw;
-    max-height: 95vh;
-  }
-  
-  .modal-body {
-    padding: 16px;
+  .exercise-form-page {
+    padding: var(--spacing-4);
   }
   
   .form-row {
     grid-template-columns: 1fr;
     gap: 12px;
-  }
-  
-  .tactical-board-container {
-    height: 400px;
   }
   
   .form-actions {

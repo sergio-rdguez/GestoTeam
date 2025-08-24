@@ -130,62 +130,15 @@ public class FileController {
         }
     }
 
-    @PostMapping("/tactical-diagram")
+    @GetMapping("/exercises/{filename:.+}")
     @Operation(
-        summary = "Subir diagrama táctico",
-        description = "Sube un diagrama táctico como imagen PNG"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201",
-            description = "Diagrama subido exitosamente",
-            content = @Content(schema = @Schema(example = "/api/files/tactical-diagrams/diagram-uuid.png"))
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Archivo vacío o inválido"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor"
-        )
-    })
-    public ResponseEntity<String> uploadTacticalDiagram(
-        @Parameter(description = "Archivo de imagen (PNG)", required = true) @RequestParam("file") MultipartFile file,
-        @Parameter(description = "Título del diagrama", required = true) @RequestParam("title") String title,
-        @Parameter(description = "Descripción del diagrama") @RequestParam(value = "description", required = false) String description
-    ) {
-        try {
-            if (file == null || file.isEmpty()) {
-                return ResponseEntity.badRequest().body("El archivo es obligatorio y no puede estar vacío");
-            }
-            
-            if (title == null || title.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("El título es obligatorio");
-            }
-            
-            Long userId = getCurrentUserId();
-            String publicUrl = fileService.uploadTacticalDiagram(file, title, description, userId);
-            return ResponseEntity.status(201).body(publicUrl);
-            
-        } catch (GestoServiceException e) {
-            log.warn("Error al subir diagrama táctico: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            log.error("Error interno al subir diagrama táctico: {}", e.getMessage());
-            return ResponseEntity.status(500).body("Error interno del servidor");
-        }
-    }
-
-    @GetMapping("/tactical-diagrams/{filename:.+}")
-    @Operation(
-        summary = "Obtener diagrama táctico",
-        description = "Sirve un diagrama táctico desde el sistema de archivos"
+        summary = "Obtener imagen de ejercicio",
+        description = "Sirve una imagen de ejercicio desde el sistema de archivos"
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
-            description = "Diagrama obtenido exitosamente",
+            description = "Imagen obtenida exitosamente",
             content = @Content(mediaType = "image/*")
         ),
         @ApiResponse(
@@ -197,13 +150,13 @@ public class FileController {
             description = "Error interno del servidor"
         )
     })
-    public ResponseEntity<Resource> serveTacticalDiagram(
+    public ResponseEntity<Resource> serveExerciseFile(
         @Parameter(description = "Nombre del archivo", required = true) @PathVariable String filename
     ) {
-        log.info("Sirviendo diagrama táctico: {}", filename);
+        log.info("Sirviendo imagen de ejercicio: {}", filename);
         
         try {
-            Resource resource = fileService.serveTacticalDiagram(filename);
+            Resource resource = fileService.serveExerciseFile(filename);
             String contentType = fileService.determineContentType(filename);
             
             return ResponseEntity.ok()
@@ -211,10 +164,62 @@ public class FileController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
         } catch (Exception e) {
-            log.error("Error al servir diagrama táctico {}: {}", filename, e.getMessage());
+            log.error("Error al servir imagen de ejercicio {}: {}", filename, e.getMessage());
             return ResponseEntity.status(500).build();
         }
     }
+
+    @PostMapping("/exercises/{exerciseId}/image")
+    @Operation(
+        summary = "Subir imagen de ejercicio",
+        description = "Sube una imagen para un ejercicio específico"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Imagen subida exitosamente",
+            content = @Content(schema = @Schema(example = "/api/files/exercises/exercise-1-uuid.png"))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Archivo vacío o inválido"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Ejercicio no encontrado"
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Error interno del servidor"
+        )
+    })
+    public ResponseEntity<String> uploadExerciseImage(
+        @Parameter(description = "ID del ejercicio", required = true) @PathVariable Long exerciseId,
+        @Parameter(description = "Archivo de imagen (JPG, PNG, GIF, WEBP)", required = true) @RequestParam("file") MultipartFile file
+    ) {
+        try {
+            if (exerciseId == null || exerciseId <= 0) {
+                return ResponseEntity.badRequest().body("ID de ejercicio inválido");
+                }
+            
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body("El archivo es obligatorio y no puede estar vacío");
+            }
+            
+            Long userId = getCurrentUserId();
+            String publicUrl = fileService.uploadExerciseImage(exerciseId, file, userId);
+            return ResponseEntity.status(201).body(publicUrl);
+            
+        } catch (GestoServiceException e) {
+            log.warn("Error al subir imagen para ejercicio {}: {}", exerciseId, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error interno al subir imagen para ejercicio {}: {}", exerciseId, e.getMessage());
+            return ResponseEntity.status(500).body("Error interno del servidor");
+        }
+    }
+
+
 
     @GetMapping("/{filename:.+}")
     @Operation(

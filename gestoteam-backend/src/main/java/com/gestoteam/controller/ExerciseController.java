@@ -154,33 +154,7 @@ public class ExerciseController {
         return ResponseEntity.ok("Ejercicio eliminado con éxito");
     }
 
-    /**
-     * Asigna un diagrama táctico a un ejercicio
-     */
-    @PostMapping("/{id}/assign-diagram/{diagramId}")
-    @Operation(summary = "Asignar diagrama táctico", description = "Asigna un diagrama táctico existente a un ejercicio.")
-    @ApiResponse(responseCode = "200", description = "Diagrama asignado con éxito")
-    @ApiResponse(responseCode = "404", description = "Ejercicio o diagrama no encontrado")
-    @ApiResponse(responseCode = "401", description = "Usuario no autenticado")
-    public ResponseEntity<String> assignTacticalDiagram(
-            @PathVariable Long id,
-            @PathVariable Long diagramId) {
-        exerciseService.assignTacticalDiagram(id, diagramId);
-        return ResponseEntity.ok("Diagrama táctico asignado con éxito");
-    }
 
-    /**
-     * Remueve el diagrama táctico de un ejercicio
-     */
-    @DeleteMapping("/{id}/remove-diagram")
-    @Operation(summary = "Remover diagrama táctico", description = "Remueve el diagrama táctico asignado a un ejercicio.")
-    @ApiResponse(responseCode = "200", description = "Diagrama removido con éxito")
-    @ApiResponse(responseCode = "404", description = "Ejercicio no encontrado")
-    @ApiResponse(responseCode = "401", description = "Usuario no autenticado")
-    public ResponseEntity<String> removeTacticalDiagram(@PathVariable Long id) {
-        exerciseService.removeTacticalDiagram(id);
-        return ResponseEntity.ok("Diagrama táctico removido con éxito");
-    }
 
     /**
      * Obtiene todas las categorías de ejercicios disponibles

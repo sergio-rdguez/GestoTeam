@@ -317,38 +317,40 @@ public class DevDataInitializer {
     }
 
     private void createTrainingsForTeam1(Team team, User user, Map<String, Player> players, List<Exercise> exercises) {
-        // Entrenamiento pasado - Táctico
-        Training training1 = createTraining(user, team, LocalDateTime.now().minusDays(5),
-                "Ciudad Deportiva GestoTeam", "Táctico",
+        // Entrenamiento pasado - Táctico (Sesión 1)
+        Training training1 = createTraining(user, team, "Entrenamiento Táctico - Posesión y Pressing", 1,
+                LocalDateTime.now().minusDays(5), "Ciudad Deportiva GestoTeam", "Táctico",
                 "Trabajo de posesión y pressing. Equipo muy concentrado.");
         addExercisesToTraining(training1, Arrays.asList(exercises.get(0), exercises.get(2), exercises.get(6)));
         createAttendanceForTraining(training1, players);
 
-        // Entrenamiento pasado - Técnico
-        Training training2 = createTraining(user, team, LocalDateTime.now().minusDays(3),
-                "Ciudad Deportiva GestoTeam", "Técnico",
+        // Entrenamiento pasado - Técnico (Sesión 2)
+        Training training2 = createTraining(user, team, "Entrenamiento Técnico - Finalización", 2,
+                LocalDateTime.now().minusDays(3), "Ciudad Deportiva GestoTeam", "Técnico",
                 "Sesión de finalización y técnica individual.");
         addExercisesToTraining(training2, Arrays.asList(exercises.get(1), exercises.get(3), exercises.get(7)));
         createAttendanceForTraining(training2, players);
 
-        // Entrenamiento de hoy
-        Training training3 = createTraining(user, team, LocalDateTime.now().plusHours(2),
-                "Ciudad Deportiva GestoTeam", "Físico",
+        // Entrenamiento de hoy (Sesión 3)
+        Training training3 = createTraining(user, team, "Entrenamiento Físico - Preparación Partido", 3,
+                LocalDateTime.now().plusHours(2), "Ciudad Deportiva GestoTeam", "Físico",
                 "Trabajo de resistencia y fuerza. Preparación para el próximo partido.");
         addExercisesToTraining(training3, Arrays.asList(exercises.get(5), exercises.get(4), exercises.get(9)));
 
-        // Entrenamiento futuro
-        Training training4 = createTraining(user, team, LocalDateTime.now().plusDays(2),
-                "Ciudad Deportiva GestoTeam", "Táctico",
+        // Entrenamiento futuro (Sesión 4)
+        Training training4 = createTraining(user, team, "Entrenamiento Táctico - Preparación Rival", 4,
+                LocalDateTime.now().plusDays(2), "Ciudad Deportiva GestoTeam", "Táctico",
                 "Preparación específica para el rival del domingo.");
         addExercisesToTraining(training4, Arrays.asList(exercises.get(6), exercises.get(2), exercises.get(8)));
 
         log.info("Creados 4 entrenamientos para el equipo {}", team.getName());
     }
 
-    private Training createTraining(User user, Team team, LocalDateTime date, String location,
-                                  String trainingType, String observations) {
+    private Training createTraining(User user, Team team, String title, Integer sessionNumber,
+                                  LocalDateTime date, String location, String trainingType, String observations) {
         Training training = new Training();
+        training.setTitle(title);
+        training.setSessionNumber(sessionNumber);
         training.setDate(date);
         training.setLocation(location);
         training.setTrainingType(trainingType);
@@ -496,14 +498,17 @@ public class DevDataInitializer {
             .userId(user.getId())
             .tableName("trainings")
             .pageSize(10)
-            .defaultSortKey("date")
-            .defaultSortOrder(TableConfiguration.SortOrder.DESC)
+            .defaultSortKey("sessionNumber")
+            .defaultSortOrder(TableConfiguration.SortOrder.ASC)
             .build();
         
-        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "date", "Fecha", true, true, 1, "120px"));
-        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "trainingType", "Tipo", true, true, 2, "120px"));
-        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "location", "Ubicación", true, true, 3, "150px"));
-        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "observations", "Observaciones", true, false, 4, "200px"));
+        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "sessionNumber", "Sesión", true, true, 1, "80px"));
+        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "title", "Título", true, true, 2, "200px"));
+        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "date", "Fecha", true, true, 3, "120px"));
+        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "location", "Ubicación", true, true, 4, "150px"));
+        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "trainingType", "Tipo", true, true, 5, "120px"));
+        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "exercises", "Ejercicios", true, false, 6, "100px"));
+        trainingsConfig.addColumnConfiguration(createTableColumn(trainingsConfig, "actions", "Acciones", true, false, 7, "120px"));
         
         tableConfigurationRepository.save(trainingsConfig);
         

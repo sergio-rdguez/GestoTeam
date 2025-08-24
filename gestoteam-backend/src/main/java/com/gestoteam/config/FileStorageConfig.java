@@ -31,6 +31,13 @@ public class FileStorageConfig {
                     log.info("Directorio de fotos de jugadores creado: {}", playersDir.toAbsolutePath());
                 }
 
+                // Crear subdirectorio para ejercicios
+                Path exercisesDir = uploadsDir.resolve("exercises");
+                if (!Files.exists(exercisesDir)) {
+                    Files.createDirectories(exercisesDir);
+                    log.info("Directorio de imágenes de ejercicios creado: {}", exercisesDir.toAbsolutePath());
+                }
+
                 log.info("Sistema de archivos inicializado correctamente");
             } catch (Exception e) {
                 log.error("Error al inicializar el sistema de archivos", e);

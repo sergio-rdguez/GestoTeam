@@ -19,8 +19,6 @@ public class ExerciseResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
-    // Información del diagrama táctico
-    private Long tacticalDiagramId;
-    private String tacticalDiagramTitle;
-    private String tacticalDiagramImageUrl;
+    // Información de la imagen del ejercicio
+    private String imageUrl;
 }

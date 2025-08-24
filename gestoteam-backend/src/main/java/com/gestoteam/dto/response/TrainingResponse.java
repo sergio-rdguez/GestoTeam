@@ -8,8 +8,10 @@ import java.util.List;
 @Data
 public class TrainingResponse {
     private Long id;
+    private String title;
     private LocalDateTime date;
     private String location;
+    private Integer sessionNumber;
     private String trainingType;
     private Long userId;
     private Long teamId;
