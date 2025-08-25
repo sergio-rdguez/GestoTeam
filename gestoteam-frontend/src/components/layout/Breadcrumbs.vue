@@ -36,6 +36,11 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 
+// Definir el nombre del componente para cumplir con ESLint
+defineOptions({
+  name: 'NavigationBreadcrumbs'
+});
+
 const route = useRoute();
 
 const breadcrumbs = computed(() => {

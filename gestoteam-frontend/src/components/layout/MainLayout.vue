@@ -2,7 +2,7 @@
   <AuthGuard>
     <div class="main-layout">
       <AppHeader />
-      <Breadcrumbs />
+      <NavigationBreadcrumbs />
       
       <main class="main-content">
         <div class="content-wrapper">
@@ -22,7 +22,7 @@
 <script setup>
 
 import AppHeader from './AppHeader.vue';
-import Breadcrumbs from './Breadcrumbs.vue';
+import NavigationBreadcrumbs from './Breadcrumbs.vue';
 import QuickActions from './QuickActions.vue';
 import AuthGuard from '@/components/common/AuthGuard.vue';
 </script>
