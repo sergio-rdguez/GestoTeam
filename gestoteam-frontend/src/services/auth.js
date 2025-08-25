@@ -1,11 +1,12 @@
 import { reactive, readonly } from 'vue';
 import api from './api';
 import router from '@/router';
+import config from '@/config';
 
 // Estado reactivo y privado para la autenticación
 const state = reactive({
   user: null,
-  token: localStorage.getItem('authToken') || null,
+  token: localStorage.getItem(config.auth.tokenKey) || null,
   isAuthenticated: false,
 });
 
@@ -15,20 +16,46 @@ const authService = {
   state: readonly(state),
 
   /**
+   * Valida si el token actual es válido
+   * @returns {Promise<boolean>}
+   */
+  async validateToken() {
+    if (!state.token) {
+      return false;
+    }
+    
+    try {
+      api.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
+      const response = await api.get('/auth/profile');
+      return response.status === 200;
+    } catch (error) {
+      console.error("Token inválido:", error);
+      return false;
+    }
+  },
+
+  /**
    * Intenta autenticar al usuario al iniciar la aplicación
    * si existe un token.
    */
   async checkAuth() {
-    if (state.token) {
+    if (!state.token) {
+      return false;
+    }
+    
+    try {
       api.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
-      try {
-        const response = await api.get('/auth/profile'); 
-        state.user = response.data;
-        state.isAuthenticated = true;
-      } catch (error) {
-        console.error("Fallo de auto-login:", error);
+      const response = await api.get('/auth/profile'); 
+      state.user = response.data;
+      state.isAuthenticated = true;
+      return true;
+    } catch (error) {
+      console.error("Fallo de auto-login:", error);
+      // Si el token es inválido o expirado, limpiar el estado
+      if (error.response?.status === 401 || error.response?.status === 403) {
         this.logout();
       }
+      return false;
     }
   },
 
@@ -37,13 +64,13 @@ const authService = {
    * @param {object} credentials - { email, password }
    */
   async login(credentials) {
-  const response = await api.post('/auth/login', credentials);
-  const { token } = response.data;
+    const response = await api.post('/auth/login', credentials);
+    const { token } = response.data;
 
-  localStorage.setItem('authToken', token);
-  state.token = token;
-  
-  await this.checkAuth();
+    localStorage.setItem(config.auth.tokenKey, token);
+    state.token = token;
+    
+    await this.checkAuth();
   },
 
   /**
@@ -58,7 +85,7 @@ const authService = {
    * Cierra la sesión, limpia todo y redirige.
    */
   logout() {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(config.auth.tokenKey);
     delete api.defaults.headers.common['Authorization'];
     
     state.token = null;
@@ -68,6 +95,14 @@ const authService = {
     // Usamos el router para una navegación más limpia
     router.push({ name: 'Login' });
   },
+
+  /**
+   * Verifica si el usuario está autenticado y tiene un token válido
+   * @returns {boolean}
+   */
+  isUserAuthenticated() {
+    return state.isAuthenticated && state.token !== null;
+  }
 };
 
 export default authService;
@@ -75,5 +110,5 @@ export default authService;
 // Función auxiliar para que otros módulos (como el interceptor de axios)
 // puedan obtener el token actual sin acoplarse al estado interno
 export function getToken() {
-  return localStorage.getItem('authToken');
+  return localStorage.getItem(config.auth.tokenKey);
 }

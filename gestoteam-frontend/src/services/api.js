@@ -1,9 +1,12 @@
 import axios from 'axios';
 import { getToken } from './auth';
+import authService from './auth';
 import router from '@/router';
+import config from '@/config';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8081/api',
+  baseURL: config.api.baseURL,
+  timeout: config.api.timeout,
 });
 
 api.interceptors.request.use(
@@ -22,9 +25,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('authToken');
-      router.push({ name: 'Login' });
+    // Manejar errores de autenticación
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      console.error('Error de autenticación:', error.response.status, error.response.data);
+      
+      // Limpiar el estado de autenticación y redirigir al login
+      authService.logout();
+      
+      // Solo redirigir si no estamos ya en la página de login
+      if (router.currentRoute.value.name !== 'Login') {
+        router.push({ name: 'Login' });
+      }
     }
     return Promise.reject(error);
   }

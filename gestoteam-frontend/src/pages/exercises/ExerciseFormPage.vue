@@ -191,7 +191,12 @@ const categoryOptions = [
 
 // Métodos
 const goBack = () => {
-  router.push('/my-resources/exercises');
+  // Si es edición, volver al detalle del ejercicio; si es creación, ir a la lista
+  if (isEdit.value) {
+    router.push(`/my-resources/exercises/${route.params.id}`);
+  } else {
+    router.push('/my-resources/exercises');
+  }
 };
 
 const onImageSelected = (event) => {
@@ -263,8 +268,37 @@ const saveExercise = async () => {
       'success'
     );
     
-    // Redirigir a la lista de ejercicios
-    router.push('/my-resources/exercises');
+    // Verificar si se está creando desde un contexto específico
+    const creationContext = sessionStorage.getItem('exerciseCreationContext');
+    if (creationContext && !isEdit.value) {
+      try {
+        const context = JSON.parse(creationContext);
+        
+        // Limpiar el contexto
+        sessionStorage.removeItem('exerciseCreationContext');
+        
+        // Si se creó desde un entrenamiento, regresar ahí
+        if (context.from === 'training') {
+          router.push({
+            name: context.returnRoute,
+            params: { 
+              teamId: context.teamId, 
+              trainingId: context.trainingId 
+            }
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing creation context:', error);
+      }
+    }
+    
+    // Si es edición, volver al detalle del ejercicio; si es creación, ir a la lista
+    if (isEdit.value) {
+      router.push(`/my-resources/exercises/${route.params.id}`);
+    } else {
+      router.push('/my-resources/exercises');
+    }
     
   } catch (error) {
     console.error('Error saving exercise:', error);

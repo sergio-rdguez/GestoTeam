@@ -362,7 +362,10 @@ public class DevDataInitializer {
     }
 
     private void addExercisesToTraining(Training training, List<Exercise> exercises) {
-        training.setExercises(exercises);
+        // Limpiar ejercicios existentes para evitar duplicados
+        training.getExercises().clear();
+        // Añadir los nuevos ejercicios
+        training.getExercises().addAll(exercises);
         trainingRepository.save(training);
     }
 

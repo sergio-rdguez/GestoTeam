@@ -8,6 +8,8 @@ import com.gestoteam.model.Player;
 import com.gestoteam.model.PlayerMatchStats;
 import com.gestoteam.model.Team;
 import com.gestoteam.model.UserSettings;
+import com.gestoteam.model.TrainingAttendance;
+import com.gestoteam.enums.AttendanceStatus;
 import com.gestoteam.repository.*;
 import com.gestoteam.util.GlobalUtil;
 
@@ -30,15 +32,17 @@ public class PlayerService extends BaseService {
 
     private final PlayerRepository playerRepository;
     private final PlayerMatchStatsRepository playerMatchStatsRepository;
+    private final TrainingAttendanceRepository trainingAttendanceRepository;
     private final UserSettingsRepository userSettingsRepository;
     private final TeamRepository teamRepository;
     private final ModelMapper modelMapper;
     private final GlobalUtil globalUtil;
 
-    public PlayerService(UserRepository userRepository, PlayerRepository playerRepository, PlayerMatchStatsRepository playerMatchStatsRepository, UserSettingsRepository userSettingsRepository, TeamRepository teamRepository, ModelMapper modelMapper, GlobalUtil globalUtil) {
+    public PlayerService(UserRepository userRepository, PlayerRepository playerRepository, PlayerMatchStatsRepository playerMatchStatsRepository, TrainingAttendanceRepository trainingAttendanceRepository, UserSettingsRepository userSettingsRepository, TeamRepository teamRepository, ModelMapper modelMapper, GlobalUtil globalUtil) {
         super(userRepository);
         this.playerRepository = playerRepository;
         this.playerMatchStatsRepository = playerMatchStatsRepository;
+        this.trainingAttendanceRepository = trainingAttendanceRepository;
         this.userSettingsRepository = userSettingsRepository;
         this.teamRepository = teamRepository;
         this.modelMapper = modelMapper;
@@ -234,10 +238,49 @@ public class PlayerService extends BaseService {
         cardsStats.setRed(redCards);
         cardsStats.setDoubleYellow(doubleYellowCards);
 
+        // Estadísticas de entrenamiento
+        List<TrainingAttendance> trainingAttendanceList = trainingAttendanceRepository.findByPlayerIdAndNotDeleted(playerId);
+        List<TrainingAttendance> validTrainingAttendance = trainingAttendanceList.stream()
+                .filter(ta -> !ta.getTraining().getDeleted())
+                .toList();
+
+        int totalTrainings = validTrainingAttendance.size();
+        int present = (int) validTrainingAttendance.stream()
+                .filter(ta -> ta.getStatus() == AttendanceStatus.PRESENT)
+                .count();
+        int absent = (int) validTrainingAttendance.stream()
+                .filter(ta -> ta.getStatus() == AttendanceStatus.ABSENT)
+                .count();
+        int injured = (int) validTrainingAttendance.stream()
+                .filter(ta -> ta.getStatus() == AttendanceStatus.INJURED)
+                .count();
+        int late = (int) validTrainingAttendance.stream()
+                .filter(ta -> ta.getStatus() == AttendanceStatus.LATE)
+                .count();
+        int unjustifiedAbsence = (int) validTrainingAttendance.stream()
+                .filter(ta -> ta.getStatus() == AttendanceStatus.UNJUSTIFIED_ABSENCE)
+                .count();
+        int justifiedAbsence = (int) validTrainingAttendance.stream()
+                .filter(ta -> ta.getStatus() == AttendanceStatus.JUSTIFIED_ABSENCE)
+                .count();
+        
+        double attendanceRate = totalTrainings > 0 ? (double) present / totalTrainings * 100 : 0.0;
+
+        PlayerResponse.StatsResponse.TrainingStats trainingStats = new PlayerResponse.StatsResponse.TrainingStats();
+        trainingStats.setTotal(totalTrainings);
+        trainingStats.setPresent(present);
+        trainingStats.setAbsent(absent);
+        trainingStats.setInjured(injured);
+        trainingStats.setLate(late);
+        trainingStats.setUnjustifiedAbsence(unjustifiedAbsence);
+        trainingStats.setJustifiedAbsence(justifiedAbsence);
+        trainingStats.setAttendanceRate(attendanceRate);
+
         PlayerResponse.StatsResponse statsResponse = new PlayerResponse.StatsResponse();
         statsResponse.setMatches(matchesStats);
         statsResponse.setGoals(goalsStats);
         statsResponse.setCards(cardsStats);
+        statsResponse.setTraining(trainingStats);
 
         response.setStats(statsResponse);
         log.debug("Estadísticas de temporada calculadas para el jugador ID: {}", playerId);

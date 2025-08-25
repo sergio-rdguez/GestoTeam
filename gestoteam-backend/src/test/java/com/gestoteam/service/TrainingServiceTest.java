@@ -2,13 +2,19 @@ package com.gestoteam.service;
 
 import com.gestoteam.dto.request.TrainingRequest;
 import com.gestoteam.dto.response.TrainingResponse;
+import com.gestoteam.dto.response.TrainingAttendanceResponse;
 import com.gestoteam.exception.ResourceNotFoundException;
+import com.gestoteam.exception.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import com.gestoteam.model.Exercise;
 import com.gestoteam.dto.response.ExerciseResponse;
 import com.gestoteam.model.Training;
 import com.gestoteam.model.User;
 import com.gestoteam.model.Team;
+import com.gestoteam.model.Player;
+import com.gestoteam.model.TrainingAttendance;
+import com.gestoteam.enums.AttendanceStatus;
+import com.gestoteam.dto.request.TrainingAttendanceRequest;
 import com.gestoteam.repository.ExerciseRepository;
 import com.gestoteam.repository.TrainingRepository;
 import com.gestoteam.repository.UserRepository;
@@ -74,6 +80,8 @@ class TrainingServiceTest {
     private Training testTraining;
     private Exercise testExercise;
     private TrainingRequest testTrainingRequest;
+    private Player testPlayer;
+    private TrainingAttendance testAttendance;
 
     @BeforeEach
     void setUp() {
@@ -93,23 +101,45 @@ class TrainingServiceTest {
         testTeam.setName("Test Team");
         testTeam.setOwnerId(USER_ID);
 
+        // Mock del jugador
+        testPlayer = new Player();
+        testPlayer.setId(1L);
+        testPlayer.setName("John");
+        testPlayer.setSurnameFirst("Doe");
+        testPlayer.setTeam(testTeam);
+        testPlayer.setDeleted(false);
+
+        // Mock del ejercicio
         testExercise = new Exercise();
         testExercise.setId(1L);
         testExercise.setTitle("Test Exercise");
         testExercise.setUser(testUser);
 
+        // Mock del entrenamiento
         testTraining = new Training();
         testTraining.setId(1L);
+        testTraining.setTitle("Test Training");
         testTraining.setDate(LocalDateTime.now());
         testTraining.setLocation("Test Field");
         testTraining.setTrainingType("Technical");
+        testTraining.setSessionNumber(1);
         testTraining.setUser(testUser);
         testTraining.setTeam(testTeam);
         testTraining.setObservations("Test observations");
         testTraining.setDeleted(false);
         testTraining.setExercises(new ArrayList<>());
 
+        // Mock de la asistencia
+        testAttendance = new TrainingAttendance();
+        testAttendance.setId(1L);
+        testAttendance.setTraining(testTraining);
+        testAttendance.setPlayer(testPlayer);
+        testAttendance.setStatus(AttendanceStatus.PRESENT);
+        testAttendance.setDeleted(false);
+
+        // Mock del request
         testTrainingRequest = new TrainingRequest();
+        testTrainingRequest.setTitle("Test Training");
         testTrainingRequest.setDate(LocalDateTime.now());
         testTrainingRequest.setLocation("Test Field");
         testTrainingRequest.setTrainingType("Technical");
@@ -124,8 +154,11 @@ class TrainingServiceTest {
         when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(testUser));
         when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(testTeam));
+        when(trainingRepository.findByTeamIdAndDeletedFalse(TEAM_ID)).thenReturn(new ArrayList<>());
         when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
         when(exerciseRepository.findAllById(Arrays.asList(1L))).thenReturn(Arrays.asList(testExercise));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(testTeam));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(testTeam));
 
         // Act
         TrainingResponse result = trainingService.createTraining(testTrainingRequest);
@@ -148,6 +181,36 @@ class TrainingServiceTest {
     }
 
     @Test
+    void createTraining_WithInvalidTeam_ShouldThrowException() {
+        // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(testUser));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> {
+            trainingService.createTraining(testTrainingRequest);
+        });
+    }
+
+    @Test
+    void createTraining_WithUnauthorizedTeam_ShouldThrowException() {
+        // Arrange
+        Team unauthorizedTeam = new Team();
+        unauthorizedTeam.setId(TEAM_ID);
+        unauthorizedTeam.setOwnerId(999L); // Diferente usuario
+
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(testUser));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(unauthorizedTeam));
+
+        // Act & Assert
+        assertThrows(AccessDeniedException.class, () -> {
+            trainingService.createTraining(testTrainingRequest);
+        });
+    }
+
+    @Test
     void getUserTrainings_ShouldReturnTrainings() {
         // Arrange
         when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
@@ -160,6 +223,50 @@ class TrainingServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(testTraining.getId(), result.get(0).getId());
+    }
+
+    @Test
+    void getTeamTrainings_ShouldReturnTrainings() {
+        // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(testTeam));
+        when(trainingRepository.findByTeamIdAndDeletedFalse(TEAM_ID)).thenReturn(Arrays.asList(testTraining));
+
+        // Act
+        List<TrainingResponse> result = trainingService.getTeamTrainings(TEAM_ID);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(testTraining.getId(), result.get(0).getId());
+    }
+
+    @Test
+    void getTeamTrainings_WithInvalidTeam_ShouldThrowException() {
+        // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> {
+            trainingService.getTeamTrainings(TEAM_ID);
+        });
+    }
+
+    @Test
+    void getTeamTrainings_WithUnauthorizedTeam_ShouldThrowException() {
+        // Arrange
+        Team unauthorizedTeam = new Team();
+        unauthorizedTeam.setId(TEAM_ID);
+        unauthorizedTeam.setOwnerId(999L); // Diferente usuario
+
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(unauthorizedTeam));
+
+        // Act & Assert
+        assertThrows(AccessDeniedException.class, () -> {
+            trainingService.getTeamTrainings(TEAM_ID);
+        });
     }
 
     @Test
@@ -263,5 +370,63 @@ class TrainingServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(testExercise.getId(), result.get(0).getId());
+    }
+
+    @Test
+    void getTrainingAttendance_ShouldReturnAttendanceList() {
+        // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
+        when(trainingRepository.findByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTraining));
+        when(attendanceRepository.findByTrainingIdAndNotDeleted(1L)).thenReturn(Arrays.asList(testAttendance));
+
+        // Act
+        List<TrainingAttendanceResponse> result = trainingService.getTrainingAttendance(1L);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(testAttendance.getId(), result.get(0).getId());
+    }
+
+    @Test
+    void updatePlayerAttendance_ShouldUpdateAttendance() {
+        // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
+        when(trainingRepository.findByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(testTraining));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(testPlayer));
+        when(attendanceRepository.findByTrainingIdAndPlayerIdAndNotDeleted(1L, 1L)).thenReturn(Optional.of(testAttendance));
+        when(attendanceRepository.save(any(TrainingAttendance.class))).thenReturn(testAttendance);
+
+        // Act
+        TrainingAttendanceResponse result = trainingService.updatePlayerAttendance(1L, 1L, 
+            createAttendanceRequest(AttendanceStatus.PRESENT, "Player arrived on time"));
+
+        // Assert
+        assertNotNull(result);
+        verify(attendanceRepository).save(any(TrainingAttendance.class));
+    }
+
+    @Test
+    void getPlayerAbsentTrainings_ShouldReturnAbsentTrainings() {
+        // Arrange
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(testUser));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(testPlayer));
+        when(attendanceRepository.findByPlayerIdAndNotDeleted(1L)).thenReturn(Arrays.asList(testAttendance));
+
+        // Act
+        List<TrainingResponse> result = trainingService.getPlayerAbsentTrainings(1L);
+
+        // Assert
+        assertNotNull(result);
+        // Como el testAttendance tiene status PRESENT, no debería aparecer en ausencias
+        assertEquals(0, result.size());
+    }
+
+    private TrainingAttendanceRequest createAttendanceRequest(AttendanceStatus status, String notes) {
+        TrainingAttendanceRequest request = new TrainingAttendanceRequest();
+        request.setPlayerId(1L);
+        request.setStatus(status);
+        request.setNotes(notes);
+        return request;
     }
 }

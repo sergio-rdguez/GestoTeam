@@ -20,6 +20,7 @@ import OpponentDetails from '@/pages/Team/Opponents/OpponentDetails.vue';
 import ExerciseListPage from '@/pages/exercises/ExerciseListPage.vue';
 import ExerciseDetailsPage from '@/pages/exercises/ExerciseDetailsPage.vue';
 import ExerciseFormPage from '@/pages/exercises/ExerciseFormPage.vue';
+import authService from '@/services/auth';
 
 const routes = [
   {
@@ -78,16 +79,44 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  const loggedIn = localStorage.getItem('authToken');
+router.beforeEach(async (to, from, next) => {
   const isAuthRoute = to.name === 'Login' || to.name === 'Register';
-  if (!loggedIn && !isAuthRoute) {
-    next({ name: 'Login' });
-  } else if (loggedIn && isAuthRoute) {
-    next({ name: 'Dashboard' });
-  } else {
-    next();
+  
+  // Si es una ruta de autenticación, permitir acceso
+  if (isAuthRoute) {
+    // Si ya está autenticado, redirigir al dashboard
+    if (authService.state.isAuthenticated) {
+      next({ name: 'Dashboard' });
+    } else {
+      next();
+    }
+    return;
   }
+  
+  // Para rutas protegidas, verificar autenticación
+  if (!authService.state.isAuthenticated) {
+    // Intentar validar el token si existe
+    if (authService.state.token) {
+      try {
+        await authService.checkAuth();
+        // Si la validación es exitosa, continuar
+        next();
+        return;
+      } catch (error) {
+        // Si falla la validación, limpiar y redirigir al login
+        authService.logout();
+        next({ name: 'Login' });
+        return;
+      }
+    } else {
+      // No hay token, redirigir al login
+      next({ name: 'Login' });
+      return;
+    }
+  }
+  
+  // Usuario autenticado, permitir acceso
+  next();
 });
 
 export default router;

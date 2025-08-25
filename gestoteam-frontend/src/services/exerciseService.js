@@ -1,4 +1,5 @@
 import api from './api';
+import { fileService } from './fileService';
 
 export const exerciseService = {
   /**
@@ -44,7 +45,22 @@ export const exerciseService = {
    * Obtiene las categorías de ejercicios disponibles
    */
   async getExerciseCategories() {
-    const response = await api.get('/enums/exercise-categories');
+    const response = await api.get('/enums/exercises/categories');
     return response.data;
+  },
+
+  /**
+   * Sube una imagen para un ejercicio específico
+   */
+  async uploadImage(exerciseId, imageFile) {
+    return await fileService.uploadExerciseImage(exerciseId, imageFile);
+  },
+
+  /**
+   * Exporta un canvas como imagen a un ejercicio
+   */
+  async exportCanvasToExercise(exerciseId, canvas) {
+    const imageFile = await fileService.canvasToFile(canvas, 'pizarra-tactica.png');
+    return await this.uploadImage(exerciseId, imageFile);
   }
 };

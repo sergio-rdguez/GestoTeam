@@ -1,5 +1,6 @@
 package com.gestoteam.dto.response;
 
+import com.gestoteam.enums.AttendanceStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -21,4 +22,9 @@ public class TrainingResponse {
     private String observations;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
+    // Campos para información de ausencia del jugador
+    private AttendanceStatus absenceStatus;
+    private String absenceNotes;
+    private LocalDateTime absenceDate;
 }

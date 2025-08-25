@@ -165,13 +165,26 @@ public class TrainingController {
      * Obtiene la lista de asistencia de un entrenamiento
      */
     @GetMapping("/{id}/attendance")
-    @Operation(summary = "Obtener lista de asistencia", description = "Devuelve la lista de asistencia de todos los jugadores del equipo para un entrenamiento específico.")
+    @Operation(summary = "Obtener lista de asistencia", description = "Devuelve la lista de asistencia de un entrenamiento específico.")
     @ApiResponse(responseCode = "200", description = "Lista de asistencia obtenida con éxito")
-    @ApiResponse(responseCode = "404", description = "Entrenamiento no encontrado o no pertenece al usuario")
+    @ApiResponse(responseCode = "404", description = "Entrenamiento no encontrado")
     @ApiResponse(responseCode = "401", description = "Usuario no autenticado")
     public ResponseEntity<List<TrainingAttendanceResponse>> getTrainingAttendance(@PathVariable Long id) {
         List<TrainingAttendanceResponse> attendance = trainingService.getTrainingAttendance(id);
         return ResponseEntity.ok(attendance);
+    }
+
+    /**
+     * Obtiene los entrenamientos a los que un jugador faltó
+     */
+    @GetMapping("/player/{playerId}/absences")
+    @Operation(summary = "Obtener entrenamientos ausentes del jugador", description = "Devuelve la lista de entrenamientos a los que un jugador faltó.")
+    @ApiResponse(responseCode = "200", description = "Lista de entrenamientos ausentes obtenida con éxito")
+    @ApiResponse(responseCode = "404", description = "Jugador no encontrado")
+    @ApiResponse(responseCode = "401", description = "Usuario no autenticado")
+    public ResponseEntity<List<TrainingResponse>> getPlayerAbsentTrainings(@PathVariable Long playerId) {
+        List<TrainingResponse> absentTrainings = trainingService.getPlayerAbsentTrainings(playerId);
+        return ResponseEntity.ok(absentTrainings);
     }
 
     /**

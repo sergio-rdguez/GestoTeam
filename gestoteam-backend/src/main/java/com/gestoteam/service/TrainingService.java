@@ -163,7 +163,9 @@ public class TrainingService {
                 }
             });
             
-            training.setExercises(exercises);
+            // Limpiar ejercicios existentes y añadir los nuevos para evitar duplicados
+            training.getExercises().clear();
+            training.getExercises().addAll(exercises);
         }
 
         Training updatedTraining = trainingRepository.save(training);
@@ -201,7 +203,12 @@ public class TrainingService {
             }
         });
 
-        training.getExercises().addAll(exercises);
+        // Verificar que no se añadan ejercicios duplicados
+        exercises.forEach(exercise -> {
+            if (!training.getExercises().contains(exercise)) {
+                training.getExercises().add(exercise);
+            }
+        });
         training.setUpdatedAt(LocalDateTime.now());
 
         Training updatedTraining = trainingRepository.save(training);
@@ -386,6 +393,52 @@ public class TrainingService {
     }
 
     /**
+     * Obtiene los entrenamientos a los que un jugador faltó
+     */
+    public List<TrainingResponse> getPlayerAbsentTrainings(Long playerId) {
+        Long userId = getCurrentUserId();
+        
+        // Verificar que el jugador pertenece a un equipo del usuario
+        Player player = playerRepository.findById(playerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Jugador no encontrado"));
+        
+        if (!player.getTeam().getOwnerId().equals(userId)) {
+            throw new ResourceNotFoundException("No tienes permisos para acceder a este jugador");
+        }
+        
+        // Obtener todas las asistencias del jugador donde no estuvo presente
+        List<TrainingAttendance> absentAttendances = attendanceRepository.findByPlayerIdAndNotDeleted(playerId)
+            .stream()
+            .filter(ta -> ta.getStatus() != AttendanceStatus.PRESENT && ta.getStatus() != AttendanceStatus.LATE)
+            .filter(ta -> !ta.getTraining().getDeleted())
+            .collect(Collectors.toList());
+        
+        // Mapear a TrainingResponse
+        return absentAttendances.stream()
+            .map(ta -> {
+                TrainingResponse trainingResponse = new TrainingResponse();
+                trainingResponse.setId(ta.getTraining().getId());
+                trainingResponse.setTitle(ta.getTraining().getTitle());
+                trainingResponse.setDate(ta.getTraining().getDate());
+                trainingResponse.setLocation(ta.getTraining().getLocation());
+                trainingResponse.setTrainingType(ta.getTraining().getTrainingType());
+                trainingResponse.setSessionNumber(ta.getTraining().getSessionNumber());
+                trainingResponse.setUserId(ta.getTraining().getUser().getId());
+                trainingResponse.setTeamId(ta.getTraining().getTeam().getId());
+                trainingResponse.setTeamName(ta.getTraining().getTeam().getName());
+                trainingResponse.setObservations(ta.getTraining().getObservations());
+                trainingResponse.setCreatedAt(ta.getTraining().getCreatedAt());
+                trainingResponse.setUpdatedAt(ta.getTraining().getUpdatedAt());
+                // Agregar información de la asistencia
+                trainingResponse.setAbsenceStatus(ta.getStatus());
+                trainingResponse.setAbsenceNotes(ta.getNotes());
+                trainingResponse.setAbsenceDate(ta.getCreatedAt());
+                return trainingResponse;
+            })
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Mapea la entidad TrainingAttendance a TrainingAttendanceResponse
      */
     private TrainingAttendanceResponse mapAttendanceToResponse(TrainingAttendance attendance) {
@@ -395,6 +448,7 @@ public class TrainingService {
         response.setPlayerName(attendance.getPlayer().getName());
         response.setPlayerSurname(attendance.getPlayer().getSurnameFirst());
         response.setPlayerFullName(attendance.getPlayer().getFullName());
+        response.setPhotoPath(attendance.getPlayer().getPhotoPath());
         response.setPosition(attendance.getPlayer().getPosition() != null ? attendance.getPlayer().getPosition().name() : null);
         response.setPositionOrder(attendance.getPlayer().getPosition() != null ? attendance.getPlayer().getPosition().getOrder() : 999);
         response.setStatus(attendance.getStatus());

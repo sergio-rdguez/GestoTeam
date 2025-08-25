@@ -1,114 +1,119 @@
 <template>
   <div class="training-attendance-page">
-         <PageHeader :title="`Control de Asistencia - ${training?.title || 'Entrenamiento'}`" show-back-button @back="goBack" />
+    <PageHeader :title="`Control de Asistencia - ${training?.title || 'Entrenamiento'}`" show-back-button @back="goBack" />
 
-         <!-- Layout de dos columnas -->
-     <div class="training-layout">
-               <!-- Columna izquierda: Solo Lista -->
-        <div class="left-column">
-          <div v-if="loading">
-            <LoadingSpinner message="Cargando asistencia..." />
+    <!-- Estadísticas sutiles en la cabecera -->
+    <div v-if="attendance && attendance.length > 0" class="header-stats">
+      <div class="stat-item">
+        <span class="stat-number">{{ attendanceStats.present }}</span>
+        <span class="stat-label">Presentes</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">{{ attendanceStats.absent }}</span>
+        <span class="stat-label">Ausentes</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">{{ attendanceStats.late }}</span>
+        <span class="stat-label">Retrasos</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">{{ attendanceStats.injured }}</span>
+        <span class="stat-label">Lesionados</span>
+      </div>
+    </div>
+
+    <!-- Información del Entrenamiento -->
+    <div v-if="training" class="training-info-section">
+      <BaseCard title="Información del Entrenamiento" class="training-info-card">
+        <div class="training-info-grid">
+          <div class="info-item">
+            <span class="info-label">Sesión</span>
+            <span class="info-value">Sesión {{ training.sessionNumber }}</span>
           </div>
+          <div class="info-item">
+            <span class="info-label">Fecha y Hora</span>
+            <span class="info-value">{{ formatDate(training.date) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Ubicación</span>
+            <span class="info-value">{{ training.location }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Tipo</span>
+            <span class="info-value">{{ training.trainingType }}</span>
+          </div>
+        </div>
+      </BaseCard>
+    </div>
 
-          <EmptyState
-            v-else-if="!attendance || attendance.length === 0"
-            title="No hay jugadores registrados"
-            message="No se encontraron jugadores para este entrenamiento."
-            icon="fa-users"
+    <!-- Lista de Asistencia -->
+    <div class="attendance-section">
+      <div v-if="loading">
+        <LoadingSpinner message="Cargando asistencia..." />
+      </div>
+
+      <EmptyState
+        v-else-if="!attendance || attendance.length === 0"
+        title="No hay jugadores registrados"
+        message="No se encontraron jugadores para este entrenamiento."
+        icon="fa-users"
+      />
+
+      <!-- Tabla de Asistencia -->
+      <DataTable
+        v-else
+        :items="attendance"
+        :columns="columns"
+        table-name="training-attendance"
+        default-sort-key="position"
+        :default-sort-asc="true"
+        :default-page-size="25"
+        class="attendance-table"
+      >
+        <template #cell-photo="{ item }">
+          <div class="player-photo">
+            <img 
+              v-if="item.photoPath" 
+              :src="getPlayerPhotoUrl(item.photoPath)" 
+              :alt="`Foto de ${item.playerFullName}`"
+              class="player-photo-img"
+              @error="handleImageError"
+            />
+            <div class="player-photo-placeholder" :class="{ 'hidden': item.photoPath }">
+              <i class="fa-solid fa-user"></i>
+            </div>
+          </div>
+        </template>
+        
+        <template #cell-playerFullName="{ item }">
+          <span class="player-name">{{ item.playerFullName }}</span>
+        </template>
+        
+        <template #cell-position="{ item }">
+          <span class="player-position">{{ item.position || 'Sin asignar' }}</span>
+        </template>
+        
+        <template #cell-status="{ item }">
+          <BaseSelect
+            v-model="item.status"
+            :options="attendanceStatusOptions"
+            @update:modelValue="(value) => updateAttendanceStatus(item, value)"
+            size="sm"
+            class="status-select"
           />
-
-          <!-- Tabla de Asistencia -->
-          <DataTable
-            v-else
-            :items="attendance"
-            :columns="columns"
-            table-name="training-attendance"
-            default-sort-key="position"
-            :default-sort-asc="true"
-            :default-page-size="25"
-            class="attendance-table"
-          >
-            <template #cell-playerFullName="{ item }">
-              <span class="player-name">{{ item.playerFullName }}</span>
-            </template>
-            
-            <template #cell-position="{ item }">
-              <span class="player-position">{{ item.position || 'Sin asignar' }}</span>
-            </template>
-            
-            <template #cell-status="{ item }">
-              <BaseSelect
-                v-model="item.status"
-                :options="attendanceStatusOptions"
-                @update:modelValue="(value) => updateAttendanceStatus(item, value)"
-                size="sm"
-                class="status-select"
-              />
-            </template>
-            
-            <template #cell-notes="{ item }">
-              <BaseInput
-                v-model="item.notes"
-                placeholder="Notas..."
-                @update:modelValue="(value) => updateAttendanceNotes(item, value)"
-                size="sm"
-                class="notes-input"
-              />
-            </template>
-          </DataTable>
-        </div>
-
-               <!-- Columna derecha: Información y Estadísticas -->
-        <div class="right-column">
-          <!-- Información del Entrenamiento -->
-          <div v-if="training" class="training-info-section">
-            <BaseCard title="Información del Entrenamiento" class="training-info-card">
-              <div class="training-info-grid">
-                <div class="info-item">
-                  <span class="info-label">Sesión</span>
-                  <span class="info-value">Sesión {{ training.sessionNumber }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Fecha y Hora</span>
-                  <span class="info-value">{{ formatDate(training.date) }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Ubicación</span>
-                  <span class="info-value">{{ training.location }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Tipo</span>
-                  <span class="info-value">{{ training.trainingType }}</span>
-                </div>
-              </div>
-            </BaseCard>
-          </div>
-
-          <!-- Estadísticas de Asistencia -->
-          <div v-if="attendance && attendance.length > 0" class="stats-section">
-            <BaseCard title="Resumen de Asistencia" class="stats-card">
-              <div class="stats-grid">
-                <div class="stat-item">
-                  <span class="stat-number">{{ attendanceStats.present }}</span>
-                  <span class="stat-label">Presentes</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-number">{{ attendanceStats.absent }}</span>
-                  <span class="stat-label">Ausentes</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-number">{{ attendanceStats.late }}</span>
-                  <span class="stat-label">Retrasos</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-number">{{ attendanceStats.injured }}</span>
-                  <span class="stat-label">Lesionados</span>
-                </div>
-              </div>
-            </BaseCard>
-          </div>
-        </div>
-     </div>
+        </template>
+        
+        <template #cell-notes="{ item }">
+          <BaseInput
+            v-model="item.notes"
+            placeholder="Notas..."
+            @update:modelValue="(value) => updateAttendanceNotes(item, value)"
+            size="sm"
+            class="notes-input"
+          />
+        </template>
+      </DataTable>
+    </div>
   </div>
 </template>
 
@@ -123,6 +128,7 @@ import BaseInput from "@/components/base/BaseInput.vue";
 import EmptyState from "@/components/common/EmptyState.vue";
 import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
 import DataTable from "@/components/common/DataTable.vue";
+import { buildImageUrl } from "@/utils/imageUtils";
 
 export default {
   name: "TrainingAttendance",
@@ -152,6 +158,7 @@ export default {
         { value: 'UNJUSTIFIED_ABSENCE', label: 'Falta No Justificada' },
       ],
       columns: [
+        { key: 'photo', label: 'Foto', sortable: false },
         { key: 'playerFullName', label: 'Jugador', sortable: true },
         { key: 'position', label: 'Posición', sortable: true, sortOn: 'positionOrder' },
         { key: 'status', label: 'Estado', sortable: true },
@@ -311,6 +318,24 @@ export default {
       });
     },
     
+    getPlayerPhotoUrl(photoPath) {
+      if (!photoPath) return '';
+      // Construir la URL completa para la foto del jugador
+      const url = buildImageUrl(`/files/${photoPath}`);
+      console.log('Photo URL:', { photoPath, url });
+      return url;
+    },
+    
+    handleImageError(event) {
+      console.error('Error loading image:', event.target.src);
+      // Ocultar la imagen y mostrar el placeholder
+      event.target.style.display = 'none';
+      const placeholder = event.target.nextElementSibling;
+      if (placeholder) {
+        placeholder.style.display = 'flex';
+      }
+    },
+    
     goBack() {
       this.$router.push({ 
         name: 'TrainingDetails', 
@@ -329,25 +354,31 @@ export default {
    padding: 20px;
  }
 
- .training-layout {
-   display: grid;
-   grid-template-columns: 1fr 300px;
-   gap: var(--spacing-6);
-   align-items: start;
+ .header-stats {
+   display: flex;
+   justify-content: space-around;
+   background-color: var(--color-background-soft);
+   padding: var(--spacing-3);
+   border-radius: var(--border-radius-md);
+   margin-bottom: var(--spacing-6);
+   border: 1px solid var(--color-border);
  }
 
- .left-column {
-   display: flex;
-   flex-direction: column;
-   gap: var(--spacing-6);
+ .stat-item {
+   text-align: center;
+   padding: var(--spacing-2);
  }
 
- .right-column {
-   position: sticky;
-   top: 20px;
-   display: flex;
-   flex-direction: column;
-   gap: var(--spacing-6);
+ .stat-number {
+   display: block;
+   font-size: var(--font-size-2xl);
+   font-weight: var(--font-weight-bold);
+   color: var(--color-primary);
+ }
+
+ .stat-label {
+   font-size: var(--font-size-sm);
+   color: var(--color-text-secondary);
  }
 
  .training-info-section {
@@ -380,43 +411,44 @@ export default {
   font-weight: var(--font-weight-medium);
 }
 
-.stats-section {
-  margin-bottom: var(--spacing-6);
-}
-
-.stats-card .card-content {
-  padding-top: 0;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: var(--spacing-4);
-}
-
-.stat-item {
-  text-align: center;
-  padding: var(--spacing-3);
-  background-color: var(--color-background-soft);
-  border-radius: var(--border-radius-md);
-  border: 1px solid var(--color-border);
-}
-
-.stat-number {
-  display: block;
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
-}
-
-.stat-label {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+.attendance-section {
+  margin-top: var(--spacing-6);
 }
 
  .attendance-table {
    margin-top: 0;
  }
+
+.player-photo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.player-photo-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-border);
+}
+
+.player-photo-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--color-background-soft);
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
+}
+
+.player-photo-placeholder.hidden {
+  display: none;
+}
 
 .player-name {
   font-weight: var(--font-weight-semibold);
@@ -446,22 +478,19 @@ export default {
      padding: 16px;
    }
    
-   .training-layout {
-     grid-template-columns: 1fr;
-     gap: var(--spacing-4);
+   .header-stats {
+     flex-direction: column;
+     gap: var(--spacing-2);
+     padding: var(--spacing-2);
    }
-   
-   .right-column {
-     position: static;
-     order: -1;
+
+   .stat-item {
+     text-align: left;
+     padding: var(--spacing-1);
    }
-   
+
    .training-info-grid {
      grid-template-columns: 1fr;
-   }
-   
-   .stats-grid {
-     grid-template-columns: repeat(2, 1fr);
    }
  }
 </style>

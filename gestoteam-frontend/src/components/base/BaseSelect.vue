@@ -1,19 +1,24 @@
 <template>
   <div class="form-group">
     <label v-if="label" :for="id">{{ label }}</label>
-    <select
-      :id="id"
-      :value="modelValue"
-      @change="$emit('update:modelValue', $event.target.value)"
-      :disabled="disabled"
-      class="base-select"
-      :class="{ 'has-error': error }"
-    >
-      <option v-if="placeholder" disabled value="">{{ placeholder }}</option>
-      <option v-for="option in options" :key="option.value" :value="option.value">
-        {{ option.label || option.text }}
-      </option>
-    </select>
+    <div class="select-wrapper">
+      <select
+        :id="id"
+        :value="modelValue"
+        @change="$emit('update:modelValue', $event.target.value)"
+        :disabled="disabled"
+        class="base-select"
+        :class="{ 'has-error': error }"
+      >
+        <option v-if="placeholder" disabled value="">{{ placeholder }}</option>
+        <option v-for="option in options" :key="option.value" :value="option.value">
+          {{ option.label || option.text || option.value }}
+        </option>
+      </select>
+      <div class="select-arrow">
+        <i class="fa-solid fa-chevron-down"></i>
+      </div>
+    </div>
     <p v-if="error" class="error-message">{{ error }}</p>
   </div>
 </template>
@@ -40,11 +45,18 @@ export default {
   flex-direction: column;
   width: 100%;
 }
+
 label {
   margin-bottom: var(--spacing-2);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
+
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .base-select {
   width: 100%;
   padding: var(--spacing-3);
@@ -54,23 +66,54 @@ label {
   color: var(--color-text-primary);
   background-color: var(--color-background-white);
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
-  background-position: right 0.5rem center;
-  background-repeat: no-repeat;
-  background-size: 1.5em 1.5em;
+  cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+
 .base-select:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
+
+.base-select:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+
 .base-select.has-error {
   border-color: var(--color-danger);
 }
+
+.base-select:disabled {
+  background-color: var(--color-background-light);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+.select-arrow {
+  position: absolute;
+  right: var(--spacing-3);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
 .error-message {
   color: var(--color-danger);
   font-size: var(--font-size-sm);
   margin-top: var(--spacing-1);
+}
+
+/* Estilos para las opciones */
+.base-select option {
+  padding: var(--spacing-2);
+  background-color: var(--color-background-white);
+  color: var(--color-text-primary);
+}
+
+.base-select option:hover {
+  background-color: var(--color-primary-light);
 }
 </style>

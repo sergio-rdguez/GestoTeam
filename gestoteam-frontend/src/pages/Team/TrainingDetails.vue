@@ -24,9 +24,11 @@
             
             <div v-if="training.exercises && training.exercises.length > 0" class="exercises-list">
               <div v-for="exercise in training.exercises" :key="exercise.id" class="exercise-item">
-                <div class="exercise-info">
-                  <h5>{{ exercise.title }}</h5>
-                  <p class="exercise-category">{{ exercise.category?.name || 'Sin categoría' }}</p>
+                <div class="exercise-info" @click="viewExerciseDetails(exercise.id)" style="cursor: pointer;">
+                  <div class="exercise-header">
+                    <h5>{{ exercise.title }}</h5>
+                  </div>
+                  <p class="exercise-category">{{ getCategoryLabel(exercise.category) }}</p>
                   <p v-if="exercise.description" class="exercise-description">{{ exercise.description }}</p>
                 </div>
                 <BaseButton @click="removeExercise(exercise.id)" variant="danger" size="sm">
@@ -97,8 +99,10 @@
       v-if="showExerciseModal"
       :team-id="teamId"
       :selected-exercises="training?.exercises || []"
+      :initial-state="exerciseSelectorState"
       @close="showExerciseModal = false"
       @select="addExercisesToTraining"
+      @create-new-exercise="handleCreateNewExercise"
     />
 
 
@@ -132,6 +136,7 @@ export default {
       teamName: '',
       loading: true,
       showExerciseModal: false,
+      exerciseSelectorState: null,
     };
   },
 
@@ -187,6 +192,21 @@ export default {
       });
     },
     
+    viewExerciseDetails(exerciseId) {
+      // Guardar el contexto para que el ejercicio sepa que debe volver al entrenamiento
+      sessionStorage.setItem('exerciseCreationContext', JSON.stringify({
+        from: 'training',
+        teamId: this.teamId,
+        trainingId: this.trainingId,
+        returnRoute: 'TrainingDetails'
+      }));
+      
+      this.$router.push({ 
+        name: 'ExerciseDetails', 
+        params: { id: exerciseId } 
+      });
+    },
+    
     async addExercisesToTraining(exerciseIds) {
       try {
         await trainingService.addExercisesToTraining(this.trainingId, exerciseIds);
@@ -212,6 +232,39 @@ export default {
       }
     },
     
+    getCategoryLabel(category) {
+      const labels = {
+        'CALENTAMIENTO': 'Calentamiento',
+        'TECNICO': 'Técnico',
+        'TACTICO': 'Táctico',
+        'FISICO': 'Físico',
+        'PARTIDO_MODIFICADO': 'Partido Modificado',
+        'TRANSICION': 'Transición',
+        'FINALIZACION': 'Finalización',
+        'POSESION': 'Posesión',
+        'PRESSING': 'Pressing',
+        'OTRO': 'Otro'
+      };
+      return labels[category] || category;
+    },
+
+    handleCreateNewExercise(exerciseState) {
+      // Guardar el estado del modal en sessionStorage para recuperarlo al regresar
+      sessionStorage.setItem('exerciseSelectorState', JSON.stringify(exerciseState));
+      
+      // Guardar información del contexto para saber desde dónde se está creando
+      sessionStorage.setItem('exerciseCreationContext', JSON.stringify({
+        from: 'training',
+        teamId: this.teamId,
+        trainingId: this.trainingId,
+        returnRoute: 'TrainingDetails'
+      }));
+      
+      // Navegar a la página de creación de ejercicios
+      this.$router.push({ 
+        name: 'NewExercise'
+      });
+    },
 
     
     goBack() {
@@ -219,10 +272,29 @@ export default {
         name: 'TeamTrainings', 
         params: { teamId: this.teamId } 
       });
-    }
+    },
+
+    checkForSavedExerciseSelectorState() {
+      const savedState = sessionStorage.getItem('exerciseSelectorState');
+      if (savedState) {
+        // Limpiar el estado guardado
+        sessionStorage.removeItem('exerciseSelectorState');
+        
+        // Restaurar el estado del selector
+        this.exerciseSelectorState = JSON.parse(savedState);
+        
+        // Abrir automáticamente el selector de ejercicios
+        this.$nextTick(() => {
+          this.showExerciseModal = true;
+        });
+      }
+    },
   },
   mounted() {
     this.fetchTrainingDetails();
+    
+    // Verificar si hay un estado guardado del selector de ejercicios
+    this.checkForSavedExerciseSelectorState();
   },
 };
 </script>
@@ -287,6 +359,28 @@ export default {
   margin: 0 0 var(--spacing-1) 0;
   color: var(--color-text-primary);
 }
+
+.exercise-info {
+  flex: 1;
+  transition: all 0.2s ease;
+}
+
+.exercise-info:hover {
+  transform: translateX(4px);
+}
+
+.exercise-info:hover h5 {
+  color: var(--color-primary);
+}
+
+.exercise-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-1);
+}
+
+
 
 .exercise-category {
   font-size: var(--font-size-sm);

@@ -154,6 +154,107 @@
             </div>
           </div>
         </BaseCard>
+
+        <BaseCard class="stats-card" title="Entrenamientos">
+          <div class="stats-content">
+            <div class="stat-item">
+              <div class="stat-icon training-icon">
+                <i class="fas fa-dumbbell"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">{{ player.stats.training.total }}</span>
+                <span class="stat-label">Total</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon present-icon">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">{{ player.stats.training.present }}</span>
+                <span class="stat-label">Presente</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon absent-icon">
+                <i class="fas fa-times-circle"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">{{ player.stats.training.absent }}</span>
+                <span class="stat-label">Ausente</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon attendance-rate-icon">
+                <i class="fas fa-percentage"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">{{ player.stats.training.attendanceRate.toFixed(1) }}%</span>
+                <span class="stat-label">Asistencia</span>
+              </div>
+            </div>
+            <div class="stat-item" v-if="player.stats.training.total > 0">
+              <button class="btn btn-outline btn-sm" @click="showAbsentTrainings">
+                <i class="fas fa-info-circle"></i>
+                Ver detalles
+              </button>
+            </div>
+          </div>
+        </BaseCard>
+      </div>
+    </div>
+
+    <!-- Modal para mostrar entrenamientos ausentes -->
+    <div v-if="showAbsentModal" class="modal-overlay" @click="closeAbsentModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Entrenamientos Ausentes</h3>
+          <button class="modal-close" @click="closeAbsentModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div v-if="loadingAbsent" class="loading-spinner-container">
+            <div class="loading-spinner"></div>
+            <p>Cargando entrenamientos ausentes...</p>
+          </div>
+          <div v-else-if="absentTrainings.length === 0" class="empty-state">
+            <i class="fas fa-check-circle"></i>
+            <p>¡Excelente! El jugador no ha faltado a ningún entrenamiento.</p>
+          </div>
+          <div v-else class="absent-trainings-list">
+            <div v-for="training in absentTrainings" :key="training.id" class="training-item">
+              <div class="training-header">
+                <h4>{{ training.title }}</h4>
+                <span class="training-date">{{ formatDate(training.date) }}</span>
+              </div>
+              <div class="training-details">
+                <div class="detail-row">
+                  <span class="detail-label">Sesión:</span>
+                  <span class="detail-value">{{ training.sessionNumber }}</span>
+                </div>
+                <div class="detail-row" v-if="training.location">
+                  <span class="detail-label">Ubicación:</span>
+                  <span class="detail-value">{{ training.location }}</span>
+                </div>
+                <div class="detail-row" v-if="training.trainingType">
+                  <span class="detail-label">Tipo:</span>
+                  <span class="detail-value">{{ training.trainingType }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Estado:</span>
+                  <span class="detail-value status-badge" :class="getStatusClass(training.absenceStatus)">
+                    {{ getStatusText(training.absenceStatus) }}
+                  </span>
+                </div>
+                <div class="detail-row" v-if="training.absenceNotes">
+                  <span class="detail-label">Notas:</span>
+                  <span class="detail-value">{{ training.absenceNotes }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -178,6 +279,9 @@ export default {
       defaultPhoto: require('@/assets/default-player-photo.png'),
       positions: [],
       foots: [],
+      showAbsentModal: false,
+      loadingAbsent: true,
+      absentTrainings: [],
     };
   },
   methods: {
@@ -269,7 +373,60 @@ export default {
           this.loading = false;
         }
       }
-    }
+    },
+         async showAbsentTrainings() {
+       this.loadingAbsent = true;
+       try {
+         const response = await api.get(`/trainings/player/${this.player.id}/absences`);
+         this.absentTrainings = response.data;
+         this.showAbsentModal = true;
+       } catch (error) {
+         console.error("Error al cargar entrenamientos ausentes:", error);
+         notificationService.showError("Error al cargar entrenamientos ausentes.");
+       } finally {
+         this.loadingAbsent = false;
+       }
+     },
+    closeAbsentModal() {
+      this.showAbsentModal = false;
+      this.absentTrainings = [];
+    },
+    formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    },
+         getStatusClass(status) {
+       switch (status) {
+         case 'JUSTIFIED_ABSENCE':
+           return 'justified';
+         case 'UNJUSTIFIED_ABSENCE':
+           return 'unjustified';
+         case 'INJURED':
+           return 'injured';
+         case 'ABSENT':
+           return 'absent';
+         case 'LATE':
+           return 'late';
+         default:
+           return 'default';
+       }
+     },
+     getStatusText(status) {
+       switch (status) {
+         case 'JUSTIFIED_ABSENCE':
+           return 'Falta Justificada';
+         case 'UNJUSTIFIED_ABSENCE':
+           return 'Falta No Justificada';
+         case 'INJURED':
+           return 'Lesionado';
+         case 'ABSENT':
+           return 'Ausente';
+         case 'LATE':
+           return 'Retraso';
+         default:
+           return status;
+       }
+     }
   },
   mounted() {
     this.fetchPlayerDetails();
@@ -433,11 +590,29 @@ export default {
   color: white;
 }
 
-.btn-danger:hover {
-  background: #dc2626;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-}
+ .btn-danger:hover {
+   background: #dc2626;
+   transform: translateY(-1px);
+   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+ }
+
+ .btn-outline {
+   background: transparent;
+   border: 2px solid #3b82f6;
+   color: #3b82f6;
+ }
+
+ .btn-outline:hover {
+   background: #3b82f6;
+   color: white;
+   transform: translateY(-1px);
+   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+ }
+
+ .btn-sm {
+   padding: 0.5rem 1rem;
+   font-size: 0.75rem;
+ }
 
 .player-stats-grid {
   display: grid;
@@ -504,6 +679,26 @@ export default {
   color: #ea580c;
 }
 
+.training-icon {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.present-icon {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.absent-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.attendance-rate-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
 .stat-info {
   display: flex;
   flex-direction: column;
@@ -521,6 +716,195 @@ export default {
   color: #64748b;
   font-weight: 500;
 }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #1e293b;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.modal-close:hover {
+  color: #3b82f6;
+}
+
+.modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.loading-spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 1rem;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #64748b;
+  font-size: 1.25rem;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.absent-trainings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.training-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.training-item:hover {
+  background: #f1f5f9;
+  transform: translateX(4px);
+}
+
+.training-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.training-header h4 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1e293b;
+}
+
+.training-date {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.training-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detail-value {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.status-badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.justified {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.unjustified {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+ .status-badge.excused {
+   background-color: #fef3c7;
+   color: #d97706;
+ }
+
+ .status-badge.injured {
+   background-color: #fef3c7;
+   color: #d97706;
+ }
+
+ .status-badge.absent {
+   background-color: #fee2e2;
+   color: #dc2626;
+ }
+
+ .status-badge.late {
+   background-color: #fef3c7;
+   color: #d97706;
+ }
+
+ .status-badge.default {
+   background-color: #e2e8f0;
+   color: #475569;
+ }
 
 @media (max-width: 768px) {
   .player-details-page {

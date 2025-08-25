@@ -36,6 +36,7 @@ public class PlayerResponse {
         private MatchesStats matches = new MatchesStats();
         private GoalsStats goals = new GoalsStats();
         private CardsStats cards = new CardsStats();
+        private TrainingStats training = new TrainingStats();
 
         @Data
         public static class MatchesStats {
@@ -56,6 +57,18 @@ public class PlayerResponse {
             private int yellow = 0;
             private int red = 0;
             private int doubleYellow = 0;
+        }
+
+        @Data
+        public static class TrainingStats {
+            private int total = 0;
+            private int present = 0;
+            private int absent = 0;
+            private int injured = 0;
+            private int late = 0;
+            private int unjustifiedAbsence = 0;
+            private int justifiedAbsence = 0;
+            private double attendanceRate = 0.0;
         }
     }
 }

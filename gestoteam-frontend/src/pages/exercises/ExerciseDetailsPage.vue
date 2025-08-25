@@ -42,35 +42,8 @@
     <div v-else class="exercise-content">
       <!-- Columna izquierda: Información del ejercicio -->
       <div class="content-left">
-        <!-- Tarjeta principal de información -->
-        <BaseCard class="main-info-card">
-          <div class="card-header">
-            <div class="category-badge">
-              <StatusBadge 
-                :status="getCategoryLabel(exercise.category)"
-                :variant="getCategoryVariant(exercise.category)"
-                size="lg"
-              />
-            </div>
-            
-            <div class="timestamps">
-              <div class="timestamp-item">
-                <i class="fas fa-calendar-plus"></i>
-                <div class="timestamp-content">
-                  <span class="timestamp-label">Creado</span>
-                  <span class="timestamp-value">{{ formatDate(exercise.createdAt) }}</span>
-                </div>
-              </div>
-              
-              <div v-if="exercise.updatedAt !== exercise.createdAt" class="timestamp-item">
-                <i class="fas fa-calendar-check"></i>
-                <div class="timestamp-content">
-                  <span class="timestamp-label">Actualizado</span>
-                  <span class="timestamp-value">{{ formatDate(exercise.updatedAt) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+                 <!-- Tarjeta principal de información -->
+         <BaseCard class="main-info-card">
 
           <!-- Descripción -->
           <div class="description-section">
@@ -93,9 +66,6 @@
             <div class="objectives-grid">
               <div v-if="exercise.tacticalObjectives" class="objective-card tactical">
                 <div class="objective-header">
-                  <div class="objective-icon">
-                    <i class="fas fa-chess"></i>
-                  </div>
                   <h4>Objetivos Tácticos</h4>
                 </div>
                 <div class="objective-content">
@@ -105,9 +75,6 @@
               
               <div v-if="exercise.technicalObjectives" class="objective-card technical">
                 <div class="objective-header">
-                  <div class="objective-icon">
-                    <i class="fas fa-cog"></i>
-                  </div>
                   <h4>Objetivos Técnicos</h4>
                 </div>
                 <div class="objective-content">
@@ -117,9 +84,6 @@
               
               <div v-if="exercise.physicalObjectives" class="objective-card physical">
                 <div class="objective-header">
-                  <div class="objective-icon">
-                    <i class="fas fa-running"></i>
-                  </div>
                   <h4>Objetivos Físicos</h4>
                 </div>
                 <div class="objective-content">
@@ -170,6 +134,9 @@
                 <button @click="openImageFullscreen" class="fullscreen-button">
                   <i class="fas fa-expand"></i>
                 </button>
+                <button @click="changeImage" class="change-image-button">
+                  <i class="fas fa-camera"></i>
+                </button>
               </div>
             </div>
             
@@ -178,8 +145,13 @@
                 <i class="fas fa-image"></i>
               </div>
               <p>Este ejercicio no tiene imagen</p>
-              <small>Puedes añadir una imagen editando el ejercicio</small>
+              <BaseButton @click="changeImage" variant="primary" size="sm">
+                <i class="fas fa-plus"></i>
+                Añadir Imagen
+              </BaseButton>
             </div>
+            
+
           </div>
         </BaseCard>
 
@@ -192,34 +164,29 @@
             </h3>
           </div>
           
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">ID del Ejercicio</div>
-              <div class="info-value">{{ exercise.id }}</div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-label">Categoría</div>
-              <div class="info-value">
-                <StatusBadge 
-                  :status="getCategoryLabel(exercise.category)"
-                  :variant="getCategoryVariant(exercise.category)"
-                  size="sm"
-                />
-              </div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-label">Estado</div>
-              <div class="info-value">
-                <StatusBadge 
-                  status="Activo"
-                  variant="success"
-                  size="sm"
-                />
-              </div>
-            </div>
-          </div>
+                     <div class="info-grid">
+             <div class="info-item">
+               <div class="info-label">Categoría</div>
+               <div class="info-value">
+                 <StatusBadge 
+                   :status="getCategoryLabel(exercise.category)"
+                   :variant="getCategoryVariant(exercise.category)"
+                   size="sm"
+                 />
+               </div>
+             </div>
+             
+             <div class="info-item">
+               <div class="info-label">Estado</div>
+               <div class="info-value">
+                 <StatusBadge 
+                   status="Activo"
+                   variant="success"
+                   size="sm"
+                 />
+               </div>
+             </div>
+           </div>
         </BaseCard>
       </div>
     </div>
@@ -239,6 +206,59 @@
         />
       </div>
     </div>
+
+    <!-- Modal para cambiar imagen -->
+    <div v-if="showChangeImageModal" class="modal-overlay" @click="closeChangeImageModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>
+            <i class="fas fa-camera"></i>
+            {{ exercise?.imageUrl ? 'Cambiar Imagen' : 'Añadir Imagen' }}
+          </h3>
+          <button @click="closeChangeImageModal" class="modal-close">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div v-if="currentImagePreview" class="current-image-preview">
+            <h4>Imagen actual:</h4>
+            <img :src="currentImagePreview" alt="Imagen actual" class="preview-image" />
+          </div>
+          
+          <div class="form-group">
+            <label for="newImageFile">Seleccionar nueva imagen:</label>
+            <input 
+              id="newImageFile" 
+              type="file" 
+              accept="image/*" 
+              @change="onNewImageSelected" 
+              class="file-input"
+            />
+            <small class="form-help">Formatos soportados: JPG, PNG, GIF, WEBP</small>
+          </div>
+          
+          <div v-if="newImagePreview" class="new-image-preview">
+            <h4>Nueva imagen:</h4>
+            <img :src="newImagePreview" alt="Nueva imagen" class="preview-image" />
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <BaseButton @click="closeChangeImageModal" variant="secondary">
+            Cancelar
+          </BaseButton>
+          <BaseButton 
+            @click="saveNewImage" 
+            variant="primary" 
+            :loading="uploadingImage"
+            :disabled="!selectedImageFile"
+          >
+            {{ exercise?.imageUrl ? 'Actualizar' : 'Subir' }} Imagen
+          </BaseButton>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -254,6 +274,7 @@ import PageHeader from '@/components/layout/PageHeader.vue';
 import { exerciseService } from '@/services/exerciseService';
 import { useNotification } from '@/composables/useNotification';
 import { buildImageUrl } from '@/utils/imageUtils';
+import api from '@/services/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -265,6 +286,13 @@ const loading = ref(false);
 
 const showFullscreenImage = ref(false);
 const imageLoaded = ref(false);
+
+// Estado para el modal de cambio de imagen
+const showChangeImageModal = ref(false);
+const selectedImageFile = ref(null);
+const newImagePreview = ref(null);
+const currentImagePreview = ref(null);
+const uploadingImage = ref(false);
 
 // Computed properties
 const hasObjectives = computed(() => {
@@ -295,6 +323,34 @@ const editExercise = () => {
 
 
 const goBack = () => {
+  // Verificar si hay información de contexto guardada
+  const exerciseCreationContext = sessionStorage.getItem('exerciseCreationContext');
+  
+  if (exerciseCreationContext) {
+    try {
+      const context = JSON.parse(exerciseCreationContext);
+      
+      // Si viene del entrenamiento, volver al entrenamiento
+      if (context.from === 'training') {
+        // Limpiar el contexto
+        sessionStorage.removeItem('exerciseCreationContext');
+        
+        // Navegar de vuelta al entrenamiento
+        router.push({
+          name: 'TrainingDetails',
+          params: { 
+            teamId: context.teamId, 
+            trainingId: context.trainingId 
+          }
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('Error al parsear el contexto:', error);
+    }
+  }
+  
+  // Por defecto, volver a la lista de ejercicios
   router.push('/my-resources/exercises');
 };
 
@@ -330,17 +386,7 @@ const getExerciseImageUrl = () => {
   return buildImageUrl(exercise.value.imageUrl);
 };
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  
-  return new Date(dateString).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
+
 
 const handleImageError = () => {
   imageLoaded.value = false;
@@ -356,6 +402,66 @@ const openImageFullscreen = () => {
 
 const closeFullscreenImage = () => {
   showFullscreenImage.value = false;
+};
+
+const changeImage = () => {
+  showChangeImageModal.value = true;
+  currentImagePreview.value = exercise.value?.imageUrl ? getExerciseImageUrl() : null;
+  selectedImageFile.value = null;
+  newImagePreview.value = null;
+};
+
+const closeChangeImageModal = () => {
+  showChangeImageModal.value = false;
+  selectedImageFile.value = null;
+  newImagePreview.value = null;
+};
+
+const onNewImageSelected = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    selectedImageFile.value = file;
+    // Crear preview de la nueva imagen
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      newImagePreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const saveNewImage = async () => {
+  if (!selectedImageFile.value) return;
+  
+  try {
+    uploadingImage.value = true;
+    
+    const formData = new FormData();
+    formData.append('file', selectedImageFile.value);
+    
+    const response = await api.post(`/files/exercises/${exercise.value.id}/image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    // Actualizar la imagen del ejercicio
+    if (response.data) {
+      exercise.value.imageUrl = response.data;
+      showNotification('Imagen actualizada correctamente', 'success');
+    }
+    
+    closeChangeImageModal();
+    
+    // Recargar el ejercicio para asegurar que se muestre la nueva imagen
+    await loadExercise();
+    
+  } catch (error) {
+    console.error('Error al subir imagen:', error);
+    showNotification(`Error al subir la imagen: ${error.message || 'Error desconocido'}`, 'error');
+  } finally {
+    uploadingImage.value = false;
+  }
 };
 
 // Lifecycle
@@ -397,9 +503,8 @@ onMounted(() => {
   padding: var(--spacing-6);
   border-bottom: 1px solid var(--color-border);
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--spacing-6);
+  justify-content: center;
+  align-items: center;
 }
 
 .category-badge {
@@ -676,6 +781,29 @@ onMounted(() => {
   transform: scale(1.05);
 }
 
+.change-image-button {
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  color: var(--color-text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.change-image-button:hover {
+  background: white;
+  transform: scale(1.05);
+}
+
+
+
 .no-image-placeholder {
   text-align: center;
   padding: var(--spacing-8) var(--spacing-4);
@@ -796,6 +924,137 @@ onMounted(() => {
   border-radius: var(--border-radius-md);
 }
 
+/* Modal de cambio de imagen */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: var(--spacing-4);
+}
+
+.modal-content {
+  background: var(--color-background-white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-6);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background-subtle);
+}
+
+.modal-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.modal-header h3 i {
+  color: var(--color-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  padding: var(--spacing-2);
+  border-radius: var(--border-radius-sm);
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: var(--color-background-subtle);
+  color: var(--color-text-primary);
+}
+
+.modal-body {
+  padding: var(--spacing-6);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-4);
+  padding: var(--spacing-6);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-background-subtle);
+}
+
+.current-image-preview,
+.new-image-preview {
+  margin-bottom: var(--spacing-4);
+}
+
+.current-image-preview h4,
+.new-image-preview h4 {
+  margin: 0 0 var(--spacing-3) 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: var(--border-radius-md);
+  border: 2px solid var(--color-border);
+  object-fit: cover;
+}
+
+.form-group {
+  margin-bottom: var(--spacing-4);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.file-input {
+  width: 100%;
+  padding: var(--spacing-3);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--border-radius-md);
+  background: var(--color-background-subtle);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-input:hover {
+  border-color: var(--color-primary);
+  background: var(--color-background-white);
+}
+
+.form-help {
+  display: block;
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
 /* Estados de carga y error */
 .loading-container,
 .error-container {
@@ -899,6 +1158,21 @@ onMounted(() => {
   
   .material-content {
     padding: var(--spacing-4);
+  }
+  
+  .modal-content {
+    margin: var(--spacing-4);
+    max-width: calc(100% - 2 * var(--spacing-4));
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: var(--spacing-4);
+  }
+  
+  .modal-footer {
+    flex-direction: column;
   }
 }
 </style>

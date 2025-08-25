@@ -86,13 +86,27 @@ class PlayerServiceTest {
         testPlayer = new Player();
         testPlayer.setId(1L);
         testPlayer.setName("Test Player");
-        testPlayer.setTeam(testTeam);
-        testPlayer.setStatus(PlayerStatus.ACTIVO);
+        testPlayer.setSurnameFirst("Doe");
+        testPlayer.setSurnameSecond("Smith");
         testPlayer.setPosition(Position.DC);
         testPlayer.setFoot(Foot.DIESTRO);
+        testPlayer.setNumber(10);
+        testPlayer.setStatus(PlayerStatus.ACTIVO);
+        testPlayer.setBirthDate(java.time.LocalDate.of(1995, 5, 15));
+        testPlayer.setTeam(testTeam);
+        testPlayer.setDeleted(false);
+        testPlayer.setCreatedAt(java.time.LocalDateTime.now());
+        testPlayer.setUpdatedAt(java.time.LocalDateTime.now());
 
         testPlayerRequest = new PlayerRequest();
         testPlayerRequest.setName("New Player");
+        testPlayerRequest.setSurnameFirst("New");
+        testPlayerRequest.setSurnameSecond("Player");
+        testPlayerRequest.setPosition(Position.DC);
+        testPlayerRequest.setFoot(Foot.DIESTRO);
+        testPlayerRequest.setNumber(11);
+        testPlayerRequest.setStatus(PlayerStatus.ACTIVO);
+        testPlayerRequest.setBirthDate(java.time.LocalDate.of(1996, 6, 16));
         testPlayerRequest.setTeamId(1L);
     }
 

@@ -9,20 +9,25 @@
       </div>
 
       <div class="modal-body">
-        <!-- Filtros -->
-        <div class="filters">
-          <BaseInput
-            v-model="searchTerm"
-            placeholder="Buscar ejercicios..."
-            icon="fa-search"
-            class="search-input"
-          />
-          <BaseSelect
-            v-model="selectedCategory"
-            :options="categoryOptions"
-            placeholder="Todas las categorías"
-            class="category-filter"
-          />
+        <!-- Filtros y botón de crear -->
+        <div class="filters-section">
+          <div class="filters">
+            <BaseInput
+              v-model="searchTerm"
+              placeholder="Buscar ejercicios..."
+              icon="fa-search"
+              class="search-input"
+            />
+            <BaseSelect
+              v-model="selectedCategory"
+              :options="categoryOptions"
+              placeholder="Todas las categorías"
+              class="category-filter"
+            />
+          </div>
+          <BaseButton @click="createNewExercise" variant="primary" class="create-exercise-btn">
+            <i class="fa-solid fa-plus"></i> Nuevo Ejercicio
+          </BaseButton>
         </div>
 
         <!-- Lista de ejercicios -->
@@ -34,6 +39,9 @@
           <div v-else-if="filteredExercises.length === 0" class="empty-state">
             <i class="fa-solid fa-search empty-icon"></i>
             <p>No se encontraron ejercicios</p>
+            <BaseButton @click="createNewExercise" variant="primary" class="create-first-exercise-btn">
+              <i class="fa-solid fa-plus"></i> Crear primer ejercicio
+            </BaseButton>
           </div>
           
           <div v-else class="exercises-grid">
@@ -46,7 +54,7 @@
             >
               <div class="exercise-header">
                 <h4>{{ exercise.title }}</h4>
-                <span class="exercise-category">{{ exercise.category?.name || 'Sin categoría' }}</span>
+                <span class="exercise-category">{{ getCategoryLabel(exercise.category) }}</span>
               </div>
               
               <p v-if="exercise.description" class="exercise-description">
@@ -117,6 +125,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    initialState: {
+      type: Object,
+      default: null,
+    },
   },
   data() {
     return {
@@ -129,15 +141,27 @@ export default {
   },
   computed: {
     categoryOptions() {
-      const categories = this.exercises
+      // Obtener categorías únicas de los ejercicios
+      const uniqueCategories = [...new Set(this.exercises
         .map(e => e.category)
-        .filter(Boolean)
-        .filter((category, index, arr) => arr.findIndex(c => c.id === category.id) === index);
+        .filter(Boolean))];
       
-      return [
-        { value: '', label: 'Todas las categorías' },
-        ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+      console.log('Categorías únicas encontradas:', uniqueCategories);
+      
+      const options = [
+        { value: '', label: 'Todas las categorías' }
       ];
+      
+      // Agregar opciones para cada categoría
+      uniqueCategories.forEach(category => {
+        options.push({
+          value: category,
+          label: this.getCategoryLabel(category)
+        });
+      });
+      
+      console.log('Opciones de categoría generadas:', options);
+      return options;
     },
     
     filteredExercises() {
@@ -152,7 +176,7 @@ export default {
       }
       
       if (this.selectedCategory) {
-        filtered = filtered.filter(exercise => exercise.category?.id === this.selectedCategory);
+        filtered = filtered.filter(exercise => exercise.category === this.selectedCategory);
       }
       
       return filtered;
@@ -163,7 +187,15 @@ export default {
       this.loading = true;
       try {
         const response = await exerciseService.getExercises();
+        console.log('Ejercicios recibidos:', response);
         this.exercises = response;
+        
+        // Log para debuggear las categorías
+        const categories = this.exercises
+          .map(e => e.category)
+          .filter(Boolean);
+        console.log('Categorías encontradas:', categories);
+        console.log('Opciones de categoría generadas:', this.categoryOptions);
       } catch (error) {
         console.error("Error al cargar ejercicios:", error);
         notificationService.showError("Error al cargar ejercicios");
@@ -192,9 +224,54 @@ export default {
     closeModal() {
       this.$emit('close');
     },
+
+    getCategoryLabel(category) {
+      const labels = {
+        'CALENTAMIENTO': 'Calentamiento',
+        'TECNICO': 'Técnico',
+        'TACTICO': 'Táctico',
+        'FISICO': 'Físico',
+        'PARTIDO_MODIFICADO': 'Partido Modificado',
+        'TRANSICION': 'Transición',
+        'FINALIZACION': 'Finalización',
+        'POSESION': 'Posesión',
+        'PRESSING': 'Pressing',
+        'OTRO': 'Otro'
+      };
+      return labels[category] || category;
+    },
+
+    createNewExercise() {
+      // Guardar el estado actual del modal
+      const currentState = {
+        searchTerm: this.searchTerm,
+        selectedCategory: this.selectedCategory,
+        selectedExerciseIds: Array.from(this.selectedExerciseIds)
+      };
+      
+      // Emitir evento para crear nuevo ejercicio con el estado actual
+      this.$emit('create-new-exercise', currentState);
+    },
+
+    restoreInitialState() {
+      if (this.initialState.searchTerm) {
+        this.searchTerm = this.initialState.searchTerm;
+      }
+      if (this.initialState.selectedCategory) {
+        this.selectedCategory = this.initialState.selectedCategory;
+      }
+      if (this.initialState.selectedExerciseIds) {
+        this.selectedExerciseIds = new Set(this.initialState.selectedExerciseIds);
+      }
+    },
   },
   mounted() {
     this.fetchExercises();
+    
+    // Restaurar estado inicial si existe
+    if (this.initialState) {
+      this.restoreInitialState();
+    }
   },
 };
 </script>
@@ -259,11 +336,17 @@ export default {
   overflow-y: auto;
 }
 
+.filters-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-6);
+}
+
 .filters {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: var(--spacing-4);
-  margin-bottom: var(--spacing-6);
 }
 
 .search-input {
@@ -272,6 +355,16 @@ export default {
 
 .category-filter {
   min-width: 150px;
+}
+
+.create-exercise-btn {
+  min-width: 180px;
+  justify-self: flex-end;
+}
+
+.create-first-exercise-btn {
+  margin-top: var(--spacing-4);
+  width: 100%;
 }
 
 .exercises-list {
@@ -413,6 +506,16 @@ export default {
     grid-template-columns: 1fr;
   }
   
+  .filters-section {
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  .create-exercise-btn {
+    width: 100%;
+    justify-self: stretch;
+  }
+
   .exercises-grid {
     grid-template-columns: 1fr;
   }

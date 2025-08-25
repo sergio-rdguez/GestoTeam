@@ -13,6 +13,7 @@ public class TrainingAttendanceResponse {
     private String playerName;
     private String playerSurname;
     private String playerFullName;
+    private String photoPath;
     private String position;
     private int positionOrder;
     private AttendanceStatus status;

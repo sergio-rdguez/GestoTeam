@@ -55,6 +55,7 @@ class TrainingControllerTest {
         exerciseResponse.setUserId(1L);
 
         trainingRequest = new TrainingRequest();
+        trainingRequest.setTitle("Test Training");
         trainingRequest.setDate(LocalDateTime.now());
         trainingRequest.setLocation("Test Field");
         trainingRequest.setTrainingType("Technical");
@@ -63,10 +64,14 @@ class TrainingControllerTest {
 
         trainingResponse = new TrainingResponse();
         trainingResponse.setId(1L);
+        trainingResponse.setTitle("Test Training");
         trainingResponse.setDate(LocalDateTime.now());
         trainingResponse.setLocation("Test Field");
         trainingResponse.setTrainingType("Technical");
+        trainingResponse.setSessionNumber(1);
         trainingResponse.setUserId(1L);
+        trainingResponse.setTeamId(1L);
+        trainingResponse.setTeamName("Test Team");
         trainingResponse.setExercises(Arrays.asList(exerciseResponse));
         trainingResponse.setCreatedAt(LocalDateTime.now());
         trainingResponse.setUpdatedAt(LocalDateTime.now());
@@ -84,13 +89,35 @@ class TrainingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].title").value("Test Training"))
                 .andExpect(jsonPath("$[0].location").value("Test Field"))
                 .andExpect(jsonPath("$[0].trainingType").value("Technical"))
+                .andExpect(jsonPath("$[0].sessionNumber").value(1))
                 .andExpect(jsonPath("$[0].userId").value(1))
+                .andExpect(jsonPath("$[0].teamId").value(1))
+                .andExpect(jsonPath("$[0].teamName").value("Test Team"))
                 .andExpect(jsonPath("$[0].exercises").exists())
                 .andExpect(jsonPath("$[0].exercises[0].title").value("Test Exercise"));
 
         verify(trainingService).getUserTrainings();
+    }
+
+    @Test
+    @WithMockUser
+    void getTeamTrainings_ShouldReturnTeamTrainings() throws Exception {
+        // Arrange
+        List<TrainingResponse> trainings = Arrays.asList(trainingResponse);
+        when(trainingService.getTeamTrainings(1L)).thenReturn(trainings);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/trainings/team/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].title").value("Test Training"))
+                .andExpect(jsonPath("$[0].teamId").value(1));
+
+        verify(trainingService).getTeamTrainings(1L);
     }
 
     @Test
@@ -103,9 +130,13 @@ class TrainingControllerTest {
         mockMvc.perform(get("/api/trainings/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("Test Training"))
                 .andExpect(jsonPath("$.location").value("Test Field"))
                 .andExpect(jsonPath("$.trainingType").value("Technical"))
+                .andExpect(jsonPath("$.sessionNumber").value(1))
                 .andExpect(jsonPath("$.userId").value(1))
+                .andExpect(jsonPath("$.teamId").value(1))
+                .andExpect(jsonPath("$.teamName").value("Test Team"))
                 .andExpect(jsonPath("$.exercises").exists())
                 .andExpect(jsonPath("$.exercises[0].title").value("Test Exercise"));
 
@@ -125,8 +156,11 @@ class TrainingControllerTest {
                         .content(objectMapper.writeValueAsString(trainingRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("Test Training"))
                 .andExpect(jsonPath("$.location").value("Test Field"))
-                .andExpect(jsonPath("$.trainingType").value("Technical"));
+                .andExpect(jsonPath("$.trainingType").value("Technical"))
+                .andExpect(jsonPath("$.sessionNumber").value(1))
+                .andExpect(jsonPath("$.teamId").value(1));
 
         verify(trainingService).createTraining(any(TrainingRequest.class));
     }
@@ -160,6 +194,7 @@ class TrainingControllerTest {
                         .content(objectMapper.writeValueAsString(trainingRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("Test Training"))
                 .andExpect(jsonPath("$.location").value("Test Field"))
                 .andExpect(jsonPath("$.trainingType").value("Technical"));
 
@@ -237,7 +272,7 @@ class TrainingControllerTest {
     void createTraining_ShouldReturnBadRequest_WhenInvalidData() throws Exception {
         // Arrange
         TrainingRequest invalidRequest = new TrainingRequest();
-        // Missing required fields
+        // Missing required fields: title, date, location, trainingType, teamId
 
         // Act & Assert
         mockMvc.perform(post("/api/trainings")
@@ -251,7 +286,7 @@ class TrainingControllerTest {
     void updateTraining_ShouldReturnBadRequest_WhenInvalidData() throws Exception {
         // Arrange
         TrainingRequest invalidRequest = new TrainingRequest();
-        // Missing required fields
+        // Missing required fields: title, date, location, trainingType, teamId
 
         // Act & Assert
         mockMvc.perform(put("/api/trainings/1")
@@ -302,6 +337,10 @@ class TrainingControllerTest {
         attendanceResponse.setStatus(AttendanceStatus.PRESENT);
         attendanceResponse.setPlayerName("John");
         attendanceResponse.setPlayerSurname("Doe");
+        attendanceResponse.setPlayerFullName("John Doe");
+        attendanceResponse.setPhotoPath("/path/to/photo.jpg");
+        attendanceResponse.setPosition("DC");
+        attendanceResponse.setPositionOrder(10);
         
         List<TrainingAttendanceResponse> attendanceList = Arrays.asList(attendanceResponse);
         when(trainingService.getTrainingAttendance(1L)).thenReturn(attendanceList);
@@ -313,7 +352,12 @@ class TrainingControllerTest {
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].playerId").value(1))
                 .andExpect(jsonPath("$[0].status").value("PRESENT"))
-                .andExpect(jsonPath("$[0].playerName").value("John"));
+                .andExpect(jsonPath("$[0].playerName").value("John"))
+                .andExpect(jsonPath("$[0].playerSurname").value("Doe"))
+                .andExpect(jsonPath("$[0].playerFullName").value("John Doe"))
+                .andExpect(jsonPath("$[0].photoPath").value("/path/to/photo.jpg"))
+                .andExpect(jsonPath("$[0].position").value("DC"))
+                .andExpect(jsonPath("$[0].positionOrder").value(10));
 
         verify(trainingService).getTrainingAttendance(1L);
     }
@@ -347,5 +391,22 @@ class TrainingControllerTest {
                 .andExpect(jsonPath("$.notes").value("Player arrived on time"));
 
         verify(trainingService).updatePlayerAttendance(eq(1L), eq(1L), any(TrainingAttendanceRequest.class));
+    }
+
+    @Test
+    @WithMockUser
+    void getPlayerAbsentTrainings_ShouldReturnAbsentTrainings() throws Exception {
+        // Arrange
+        List<TrainingResponse> absentTrainings = Arrays.asList(trainingResponse);
+        when(trainingService.getPlayerAbsentTrainings(1L)).thenReturn(absentTrainings);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/trainings/player/1/absences"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].title").value("Test Training"));
+
+        verify(trainingService).getPlayerAbsentTrainings(1L);
     }
 }

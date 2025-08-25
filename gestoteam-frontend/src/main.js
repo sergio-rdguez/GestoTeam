@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
+import authService from './services/auth';
 
 // Importar FontAwesome
 import '@fortawesome/fontawesome-free/css/all.css';
@@ -12,4 +13,7 @@ const app = createApp(App);
 
 app.use(router);
 
-app.mount('#app');
+// Inicializar la validación de autenticación antes de montar la app
+authService.checkAuth().then(() => {
+  app.mount('#app');
+});

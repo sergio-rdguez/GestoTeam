@@ -2,10 +2,14 @@ package com.gestoteam.repository;
 
 import com.gestoteam.enums.Category;
 import com.gestoteam.enums.ExerciseCategory;
+import com.gestoteam.enums.Foot;
+import com.gestoteam.enums.PlayerStatus;
+import com.gestoteam.enums.Position;
 import com.gestoteam.model.Exercise;
 import com.gestoteam.model.Team;
 import com.gestoteam.model.Training;
 import com.gestoteam.model.User;
+import com.gestoteam.model.Player;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +45,7 @@ class TrainingRepositoryTest {
     private Training testTraining1;
     private Training testTraining2;
     private Training testTraining3;
+    private Player testPlayer;
 
     @BeforeEach
     void setUp() {
@@ -62,6 +68,22 @@ class TrainingRepositoryTest {
         testTeam.setUpdatedAt(LocalDateTime.now());
         testTeam = entityManager.persistAndFlush(testTeam);
 
+        // Crear jugador de prueba con todos los campos obligatorios
+        testPlayer = new Player();
+        testPlayer.setName("John");
+        testPlayer.setSurnameFirst("Doe");
+        testPlayer.setSurnameSecond("Smith");
+        testPlayer.setPosition(Position.DC);
+        testPlayer.setFoot(Foot.DIESTRO);
+        testPlayer.setNumber(10);
+        testPlayer.setStatus(PlayerStatus.ACTIVO);
+        testPlayer.setBirthDate(LocalDate.of(1995, 5, 15));
+        testPlayer.setTeam(testTeam);
+        testPlayer.setDeleted(false);
+        testPlayer.setCreatedAt(LocalDateTime.now());
+        testPlayer.setUpdatedAt(LocalDateTime.now());
+        testPlayer = entityManager.persistAndFlush(testPlayer);
+
         // Crear ejercicio de prueba
         testExercise = new Exercise();
         testExercise.setTitle("Test Exercise");
@@ -79,9 +101,11 @@ class TrainingRepositoryTest {
 
         // Crear entrenamientos de prueba
         testTraining1 = new Training();
+        testTraining1.setTitle("Test Training 1");
         testTraining1.setDate(LocalDateTime.now());
         testTraining1.setLocation("Field 1");
         testTraining1.setTrainingType("Technical");
+        testTraining1.setSessionNumber(1);
         testTraining1.setUser(testUser);
         testTraining1.setTeam(testTeam);
         testTraining1.setExercises(List.of(testExercise));
@@ -91,9 +115,11 @@ class TrainingRepositoryTest {
         testTraining1 = entityManager.persistAndFlush(testTraining1);
 
         testTraining2 = new Training();
+        testTraining2.setTitle("Test Training 2");
         testTraining2.setDate(LocalDateTime.now().plusDays(1));
         testTraining2.setLocation("Field 2");
         testTraining2.setTrainingType("Tactical");
+        testTraining2.setSessionNumber(2);
         testTraining2.setUser(testUser);
         testTraining2.setTeam(testTeam);
         testTraining2.setExercises(List.of());
@@ -103,9 +129,11 @@ class TrainingRepositoryTest {
         testTraining2 = entityManager.persistAndFlush(testTraining2);
 
         testTraining3 = new Training();
+        testTraining3.setTitle("Test Training 3");
         testTraining3.setDate(LocalDateTime.now().plusDays(2));
         testTraining3.setLocation("Field 3");
         testTraining3.setTrainingType("Physical");
+        testTraining3.setSessionNumber(3);
         testTraining3.setUser(testUser);
         testTraining3.setTeam(testTeam);
         testTraining3.setExercises(List.of());
@@ -129,17 +157,16 @@ class TrainingRepositoryTest {
         assertTrue(result.stream().allMatch(training -> training.getUser().getId().equals(testUser.getId())));
         
         // Verificar que los entrenamientos correctos están en la lista
-        List<String> locations = result.stream().map(Training::getLocation).toList();
-        assertTrue(locations.contains("Field 1"));
-        assertTrue(locations.contains("Field 2"));
-        assertFalse(locations.contains("Field 3")); // Este está eliminado
+        List<String> titles = result.stream().map(Training::getTitle).toList();
+        assertTrue(titles.contains("Test Training 1"));
+        assertTrue(titles.contains("Test Training 2"));
+        assertFalse(titles.contains("Test Training 3")); // Este está eliminado
     }
 
     @Test
     void findByUserIdAndDeletedFalse_ShouldReturnEmptyList_WhenUserHasNoTrainings() {
         // Arrange
         User newUser = new User();
-        newUser.setUsername("newuser");
         newUser.setUsername("newuser");
         newUser.setPassword("password");
         newUser = entityManager.persistAndFlush(newUser);
@@ -171,9 +198,11 @@ class TrainingRepositoryTest {
         teamForDeletedUser = entityManager.persistAndFlush(teamForDeletedUser);
 
         Training deletedTraining = new Training();
+        deletedTraining.setTitle("Deleted Training");
         deletedTraining.setDate(LocalDateTime.now());
         deletedTraining.setLocation("Deleted Field");
         deletedTraining.setTrainingType("Deleted Type");
+        deletedTraining.setSessionNumber(1);
         deletedTraining.setUser(userWithDeletedTrainings);
         deletedTraining.setTeam(teamForDeletedUser);
         deletedTraining.setExercises(List.of());
@@ -202,10 +231,13 @@ class TrainingRepositoryTest {
         // Assert
         assertTrue(result.isPresent());
         assertEquals(testTraining1.getId(), result.get().getId());
+        assertEquals("Test Training 1", result.get().getTitle());
         assertEquals("Field 1", result.get().getLocation());
         assertEquals("Technical", result.get().getTrainingType());
+        assertEquals(1, result.get().getSessionNumber());
         assertFalse(result.get().getDeleted());
         assertEquals(testUser.getId(), result.get().getUser().getId());
+        assertEquals(testTeam.getId(), result.get().getTeam().getId());
     }
 
     @Test
@@ -245,12 +277,31 @@ class TrainingRepositoryTest {
     }
 
     @Test
+    void findByTeamIdAndDeletedFalse_ShouldReturnTeamTrainings() {
+        // Act
+        List<Training> result = trainingRepository.findByTeamIdAndDeletedFalse(testTeam.getId());
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertTrue(result.stream().allMatch(training -> !training.getDeleted()));
+        assertTrue(result.stream().allMatch(training -> training.getTeam().getId().equals(testTeam.getId())));
+        
+        // Verificar que los entrenamientos están ordenados por fecha
+        List<String> titles = result.stream().map(Training::getTitle).toList();
+        assertEquals("Test Training 1", titles.get(0));
+        assertEquals("Test Training 2", titles.get(1));
+    }
+
+    @Test
     void save_ShouldPersistTraining() {
         // Arrange
         Training newTraining = new Training();
+        newTraining.setTitle("New Training");
         newTraining.setDate(LocalDateTime.now().plusDays(3));
         newTraining.setLocation("New Field");
         newTraining.setTrainingType("New Type");
+        newTraining.setSessionNumber(4);
         newTraining.setUser(testUser);
         newTraining.setTeam(testTeam);
         newTraining.setExercises(List.of(testExercise));
@@ -263,9 +314,12 @@ class TrainingRepositoryTest {
 
         // Assert
         assertNotNull(savedTraining.getId());
+        assertEquals("New Training", savedTraining.getTitle());
         assertEquals("New Field", savedTraining.getLocation());
         assertEquals("New Type", savedTraining.getTrainingType());
+        assertEquals(4, savedTraining.getSessionNumber());
         assertEquals(testUser.getId(), savedTraining.getUser().getId());
+        assertEquals(testTeam.getId(), savedTraining.getTeam().getId());
         assertFalse(savedTraining.getDeleted());
         assertEquals(1, savedTraining.getExercises().size());
         assertEquals(testExercise.getId(), savedTraining.getExercises().get(0).getId());
@@ -274,17 +328,19 @@ class TrainingRepositoryTest {
     @Test
     void save_ShouldUpdateExistingTraining() {
         // Arrange
-        String newLocation = "Updated Field";
-        testTraining1.setLocation(newLocation);
+        String newTitle = "Updated Training";
+        testTraining1.setTitle(newTitle);
 
         // Act
         Training updatedTraining = trainingRepository.save(testTraining1);
 
         // Assert
         assertEquals(testTraining1.getId(), updatedTraining.getId());
-        assertEquals(newLocation, updatedTraining.getLocation());
+        assertEquals(newTitle, updatedTraining.getTitle());
         assertEquals("Technical", updatedTraining.getTrainingType());
+        assertEquals(1, updatedTraining.getSessionNumber());
         assertEquals(testUser.getId(), updatedTraining.getUser().getId());
+        assertEquals(testTeam.getId(), updatedTraining.getTeam().getId());
     }
 
     @Test
@@ -308,7 +364,7 @@ class TrainingRepositoryTest {
         
         // Verificar que el entrenamiento con ejercicios tiene la relación correcta
         Training trainingWithExercises = result.stream()
-                .filter(t -> t.getLocation().equals("Field 1"))
+                .filter(t -> t.getTitle().equals("Test Training 1"))
                 .findFirst()
                 .orElse(null);
         
@@ -328,7 +384,7 @@ class TrainingRepositoryTest {
         
         // Verificar que el entrenamiento sin ejercicios tiene la lista vacía
         Training trainingWithoutExercises = result.stream()
-                .filter(t -> t.getLocation().equals("Field 2"))
+                .filter(t -> t.getTitle().equals("Test Training 2"))
                 .findFirst()
                 .orElse(null);
         

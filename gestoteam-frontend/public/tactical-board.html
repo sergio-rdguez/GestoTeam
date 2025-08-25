@@ -6,7 +6,8 @@
     <title>Pizarra Táctica de Fútbol Profesional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=400;500;600;700&display=swap" rel="stylesheet">
+    <script src="tactical-board-config.js"></script>
     <style>
         :root {
             --brand-blue: #2563eb;
@@ -88,6 +89,79 @@
             transform: scale(1);
             opacity: 1;
         }
+        
+        .tab-btn {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        
+        .tab-btn.active {
+            color: white;
+            border-bottom-color: #3b82f6;
+        }
+        
+        .tab-content {
+            transition: opacity 0.2s ease-in-out;
+        }
+        
+        /* Estilos para las alertas del sistema de notificaciones */
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+        }
+        
+        .alert-success {
+            color: #065f46;
+            background-color: #d1fae5;
+            border-color: #a7f3d0;
+        }
+        
+        .alert-danger {
+            color: #991b1b;
+            background-color: #fee2e2;
+            border-color: #fecaca;
+        }
+        
+        .alert-warning {
+            color: #92400e;
+            background-color: #fef3c7;
+            border-color: #fde68a;
+        }
+        
+        .alert-info {
+            color: #1e40af;
+            background-color: #dbeafe;
+            border-color: #bfdbfe;
+        }
+        
+        .alert-dismissible {
+            padding-right: 3rem;
+        }
+        
+        .btn-close {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 2;
+            padding: 0.75rem 1rem;
+            background: transparent;
+            border: 0;
+            font-size: 1.25rem;
+            line-height: 1;
+            color: #000;
+            opacity: 0.5;
+            cursor: pointer;
+        }
+        
+        .btn-close:hover {
+            opacity: 0.75;
+        }
+        
+
         #toolbar {
             position: absolute;
             bottom: 1rem;
@@ -188,6 +262,7 @@
                 <!-- Board Actions -->
                 <div class="flex items-center gap-2 flex-shrink-0">
                      <button id="export-image" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-md flex items-center gap-2" title="Exportar como imagen"><i data-lucide="download" class="w-4 h-4"></i> Exportar</button>
+                     
                      <button id="clear-drawings-btn" class="tool-btn bg-yellow-600 hover:bg-yellow-700 text-white p-2 rounded-md" title="Borrar solo los dibujos"><i data-lucide="eraser" class="w-5 h-5"></i></button>
                      <button id="clear-board" class="tool-btn bg-red-800 hover:bg-red-900 text-white p-2 rounded-md" title="Limpiar todo el tablero"><i data-lucide="x-square" class="w-5 h-5"></i></button>
                 </div>
@@ -209,6 +284,8 @@
             </div>
         </div>
     </div>
+
+
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -217,21 +294,21 @@
             const ctx = canvas.getContext('2d');
 
             // --- State Management ---
-            let state = {
-                elements: [],
-                history: [],
-                historyIndex: -1,
-                selectedElements: [],
-                draggingState: null,
-                rotatingElement: null,
-                drawing: false,
-                currentPath: null,
-                currentTool: 'select',
-                currentDrawColor: '#1e40af',
-                elementScale: 0.8,
-                currentFieldType: 'full',
-                selectionRect: null
-            };
+                         let state = {
+                 elements: [],
+                 history: [],
+                 historyIndex: -1,
+                 selectedElements: [],
+                 draggingState: null,
+                 rotatingElement: null,
+                 drawing: false,
+                 currentPath: null,
+                 currentTool: 'select',
+                 currentDrawColor: '#1e40af',
+                 elementScale: 0.8,
+                 currentFieldType: 'full',
+                 selectionRect: null
+             };
 
             // --- Constants ---
             const ROTATE_ICON_PATH = new Path2D("M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L12 12h9V3l-3.26 3.26A9.96 9.96 0 0 0 12 2a10 10 0 1 0 10 10z");
@@ -872,6 +949,10 @@
             };
             const confirmationModal = setupModal('confirmation-modal');
 
+            
+
+            
+
             // --- UI & Tool Management ---
             const setActiveTool = (tool) => {
                 state.currentTool = tool;
@@ -1009,6 +1090,8 @@
                     link.href = canvas.toDataURL('image/png');
                     link.click();
                 });
+
+                
                 
                 const canvasContainer = document.getElementById('canvas-container');
                 const toggleToolbarBtn = document.getElementById('toggle-toolbar');
